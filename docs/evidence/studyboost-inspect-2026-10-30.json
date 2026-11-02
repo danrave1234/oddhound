@@ -1,0 +1,7 @@
+{
+  "exitCode": 0,
+  "output": "(node:4) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.\nIn the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.\n\nTo prepare for this change:\n- If you want the current behavior, explicitly use 'sslmode=verify-full'\n- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'\n\nSee https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.\n(Use `node --trace-warnings ...` to show where the warning was created)\n{\"check\":\"fresh_ownership\",\"origin\":\"https://preview.studyboost.com\",\"verified\":true,\"method\":\"dns_txt\",\"reason\":\"token_found\",\"checkedAt\":\"2026-10-29T20:19:57.293Z\"}\n{\"check\":\"fresh_ownership\",\"origin\":\"https://preview.api.studyboost.com\",\"verified\":true,\"method\":\"dns_txt\",\"reason\":\"token_found\",\"checkedAt\":\"2026-10-29T20:19:57.328Z\"}\n{\"readyForEvaluation\":true,\"projectId\":\"20711898-fb35-44ae-8a06-c8d27951c9b9\",\"model\":\"muse-spark-1.3\",\"gatewayImageConfigured\":true}\n",
+  "workerImage": "im-dx4vcuDc6FcLEiojApWRCv",
+  "controllerImage": "im-Zdhsl9FKWU8qE9spRmz5hm",
+  "gatewayImage": "im-VFVycsDf9x78A5ZYAg47E0"
+}

@@ -1,0 +1,13 @@
+Fresh process after supplied-account guard finished saving (prior full run overlapped edits)
+Command: ./.tools/node26/node.exe node_modules/vitest/vitest.mjs run tests/unit/supplied-accounts.test.ts tests/integration/supplied-account-replay.test.ts
+
+
+ RUN  v5.0.5 C:/Users/Danrave/Desktop/Project/Oddhound/claude
+
+
+ Test Files  1 passed (1)
+      Tests  5 passed (5)
+   Start at  02:13:36
+   Duration  15.78s (tests 95%, import 5%, transform 1%)
+
+Vitest exit code: 0

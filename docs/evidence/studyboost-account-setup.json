@@ -1,0 +1,21 @@
+{
+  "at": "2026-10-29T18:08:16.042Z",
+  "setup": "Owner-authorized preview-only fixture preparation; email delivery was not tested",
+  "previewDistinctFromProduction": true,
+  "before": {
+    "user_id": "11cf3ef0-621b-48bf-bbdc-25da2f6bfab5",
+    "email": "oddhound_qa_1030_292260ee@example.test",
+    "first_name": "Oddhound",
+    "last_name": "QA",
+    "email_verified": false,
+    "is_verified": false,
+    "role": "STUDENT",
+    "created_at": "2026-10-29T09:59:04.596Z"
+  },
+  "after": {
+    "user_id": "11cf3ef0-621b-48bf-bbdc-25da2f6bfab5",
+    "email": "oddhound_qa_1030_292260ee@example.test",
+    "email_verified": true,
+    "is_verified": true
+  }
+}

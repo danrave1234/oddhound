@@ -1,0 +1,470 @@
+{
+  "capturedAt": "2026-10-29T20:32:28.363Z",
+  "node": "v26.12.1",
+  "method": "Read-only route-file inventory; no target request, database query, provider call, environment-file read, or target modification.",
+  "sourceRoot": "C:/Users/Danrave/Desktop/Studyboost.com",
+  "sourceCommit": "08e78bd1f130ddd20bdb011419e13c00b22b9247",
+  "sourceDeploymentParity": "not asserted; hashes describe current checked-out files",
+  "evaluationRun": "aeb4dd1d-c239-4e24-81cc-7712857cd38d",
+  "runComparison": "Not yet performed; run was in progress when requested.",
+  "contractSource": "tests/e2e/studyboost-evaluation.ts",
+  "contractSourceSha256": "66eb04e5cb6b81b718c67f478940ef7e06acd7784ec5187d9005286d6db4f288",
+  "pageCount": 54,
+  "handlerCount": 7,
+  "routes": [
+    {
+      "route": "/",
+      "kind": "page",
+      "source": "frontend/app/(features)/page.tsx",
+      "sha256": "f08ac0cbbb6e996cb1d04fe91dcd47d041ab4d5553b9980e2748cc049e83ff10",
+      "topLevelPathDisposition": "not_path_excluded"
+    },
+    {
+      "route": "/about",
+      "kind": "page",
+      "source": "frontend/app/about/page.tsx",
+      "sha256": "cd545ea73783545c4ea727b43faed112822877a8b9212da5687b26bf2cb1ee03",
+      "topLevelPathDisposition": "not_path_excluded"
+    },
+    {
+      "route": "/ads.txt",
+      "kind": "handler",
+      "source": "frontend/app/ads.txt/route.ts",
+      "sha256": "dee242f03859ed3efd1d69ef4d0a0dfba4d99444e374ecc48c40b9162814cf4a",
+      "topLevelPathDisposition": "not_path_excluded"
+    },
+    {
+      "route": "/ai",
+      "kind": "page",
+      "source": "frontend/app/(features)/ai/page.tsx",
+      "sha256": "fac33c80e921ae30d263e3091a243ee3cedb0e3f72dfe5ffb7af001157d3363a",
+      "topLevelPathDisposition": "excluded_by_current_contract",
+      "deniedKeyword": "ai"
+    },
+    {
+      "route": "/ai-courses/[id]",
+      "kind": "page",
+      "source": "frontend/app/(features)/ai-courses/[id]/page.tsx",
+      "sha256": "b93e003f68abe09d55a5881c03a73c945749d26db5fe7718e3577412c8762489",
+      "topLevelPathDisposition": "excluded_by_current_contract",
+      "deniedKeyword": "ai"
+    },
+    {
+      "route": "/ai/ask-documents",
+      "kind": "page",
+      "source": "frontend/app/(features)/ai/ask-documents/page.tsx",
+      "sha256": "fcd26bbc9e52c1bb2fe9ff610bf02cf148b90bd73fd1e1f8d4f818295dc26dea",
+      "topLevelPathDisposition": "excluded_by_current_contract",
+      "deniedKeyword": "ai"
+    },
+    {
+      "route": "/ai/cloze-game",
+      "kind": "page",
+      "source": "frontend/app/(features)/ai/cloze-game/page.tsx",
+      "sha256": "f23ace4ddf4645992b96482dd393cb95e8ee6a90e25ae0cfdc11c18c9e7f62bf",
+      "topLevelPathDisposition": "excluded_by_current_contract",
+      "deniedKeyword": "ai"
+    },
+    {
+      "route": "/ai/crossword-game",
+      "kind": "page",
+      "source": "frontend/app/(features)/ai/crossword-game/page.tsx",
+      "sha256": "c4debc9674fe799ccc6e7a5c9f972b6c3435457c24df9eb523e15a8ccc00fd7c",
+      "topLevelPathDisposition": "excluded_by_current_contract",
+      "deniedKeyword": "ai"
+    },
+    {
+      "route": "/ai/document-analyzer",
+      "kind": "page",
+      "source": "frontend/app/(features)/ai/document-analyzer/page.tsx",
+      "sha256": "0f99bd841ae2d3c4152a51d7a214f69ea16e962d45454fada6e9aeae6079b96f",
+      "topLevelPathDisposition": "excluded_by_current_contract",
+      "deniedKeyword": "ai"
+    },
+    {
+      "route": "/ai/flashcard-builder",
+      "kind": "page",
+      "source": "frontend/app/(features)/ai/flashcard-builder/page.tsx",
+      "sha256": "eeefecc48c1f266a7f8f54efbf4035016955d72bac1a8737043d04daa91375db",
+      "topLevelPathDisposition": "excluded_by_current_contract",
+      "deniedKeyword": "ai"
+    },
+    {
+      "route": "/ai/hangman-game",
+      "kind": "page",
+      "source": "frontend/app/(features)/ai/hangman-game/page.tsx",
+      "sha256": "da28bf8a7a69d9fa1591d0c841e9740e9f1ba15807c8a106702e6e399b89cd58",
+      "topLevelPathDisposition": "excluded_by_current_contract",
+      "deniedKeyword": "ai"
+    },
+    {
+      "route": "/ai/meditation-medley",
+      "kind": "page",
+      "source": "frontend/app/(features)/ai/meditation-medley/page.tsx",
+      "sha256": "7267ae76891bf89010a8bd403cab1f69efd83aaaddec6f0c05a08df7c9d67692",
+      "topLevelPathDisposition": "excluded_by_current_contract",
+      "deniedKeyword": "ai"
+    },
+    {
+      "route": "/ai/memory-game",
+      "kind": "page",
+      "source": "frontend/app/(features)/ai/memory-game/page.tsx",
+      "sha256": "7cc45a0e882934917623455b857a6ffca3e250efd64fbae7db55ac2f30a7d594",
+      "topLevelPathDisposition": "excluded_by_current_contract",
+      "deniedKeyword": "ai"
+    },
+    {
+      "route": "/ai/misconception-siege",
+      "kind": "page",
+      "source": "frontend/app/(features)/ai/misconception-siege/page.tsx",
+      "sha256": "badcfe635e32d2a58ab6af38085a350982d7c5309c846de0b9b5b0f0e13524c9",
+      "topLevelPathDisposition": "excluded_by_current_contract",
+      "deniedKeyword": "ai"
+    },
+    {
+      "route": "/ai/quiz-generator",
+      "kind": "page",
+      "source": "frontend/app/(features)/ai/quiz-generator/page.tsx",
+      "sha256": "94e1a4d9a09360daeb59cec3e5049787f8bc9c39c20b56db37699647507a93fa",
+      "topLevelPathDisposition": "excluded_by_current_contract",
+      "deniedKeyword": "ai"
+    },
+    {
+      "route": "/ai/scenario-simulator",
+      "kind": "page",
+      "source": "frontend/app/(features)/ai/scenario-simulator/page.tsx",
+      "sha256": "40f262ec02c610eeffd40aa4a9513e6a8ed38cbe90af6672b6008b1499ab53be",
+      "topLevelPathDisposition": "excluded_by_current_contract",
+      "deniedKeyword": "ai"
+    },
+    {
+      "route": "/ai/trivia-game",
+      "kind": "page",
+      "source": "frontend/app/(features)/ai/trivia-game/page.tsx",
+      "sha256": "a9897514650c9136d719bf478ae888f044f13063a6d6f9961d6de0dd3805c803",
+      "topLevelPathDisposition": "excluded_by_current_contract",
+      "deniedKeyword": "ai"
+    },
+    {
+      "route": "/ai/typing-game",
+      "kind": "page",
+      "source": "frontend/app/(features)/ai/typing-game/page.tsx",
+      "sha256": "12c10ebb98d3eda9e8028bd6b1b7f3d4ab003602d6816e00138010ea349d5286",
+      "topLevelPathDisposition": "excluded_by_current_contract",
+      "deniedKeyword": "ai"
+    },
+    {
+      "route": "/ai/word-search",
+      "kind": "page",
+      "source": "frontend/app/(features)/ai/word-search/page.tsx",
+      "sha256": "35e54dc9bb0438dbd7c16b70a9ab4365e740065a8e0146470fbe9e16c4fbed36",
+      "topLevelPathDisposition": "excluded_by_current_contract",
+      "deniedKeyword": "ai"
+    },
+    {
+      "route": "/ai/word-unscramble-game",
+      "kind": "page",
+      "source": "frontend/app/(features)/ai/word-unscramble-game/page.tsx",
+      "sha256": "839ef7b0283cc26d6dbee6e5598a4ce9be14f8807278d6a3957c1b72b6a9f8a7",
+      "topLevelPathDisposition": "excluded_by_current_contract",
+      "deniedKeyword": "ai"
+    },
+    {
+      "route": "/api/csp-report",
+      "kind": "handler",
+      "source": "frontend/app/api/csp-report/route.ts",
+      "sha256": "69700fdc1817bf23223237def8d219568b1fede8a079566ab1d76f4bbb85d392",
+      "topLevelPathDisposition": "not_path_excluded"
+    },
+    {
+      "route": "/contact",
+      "kind": "page",
+      "source": "frontend/app/contact/page.tsx",
+      "sha256": "5ac7064d12481881d412c07f974323e2a444b48ea65d1aa35754ea79a342ed45",
+      "topLevelPathDisposition": "not_path_excluded"
+    },
+    {
+      "route": "/cookies",
+      "kind": "page",
+      "source": "frontend/app/cookies/page.tsx",
+      "sha256": "fb6d30720b3610306693685880dc3cb7c806562a3adbf45e8f822d717c64c941",
+      "topLevelPathDisposition": "not_path_excluded"
+    },
+    {
+      "route": "/courses",
+      "kind": "page",
+      "source": "frontend/app/(features)/courses/page.tsx",
+      "sha256": "90fc6390d35049c095222ff1f460ddbcb133a678572ce2ae0d2c79c5b9a1c256",
+      "topLevelPathDisposition": "not_path_excluded"
+    },
+    {
+      "route": "/courses/[slug]",
+      "kind": "page",
+      "source": "frontend/app/(features)/courses/[slug]/page.tsx",
+      "sha256": "5a9353f8435b20a35ca7af7678eb31d3c8f92b2fcabd9730a09ccb83766893dc",
+      "topLevelPathDisposition": "not_path_excluded"
+    },
+    {
+      "route": "/credits/music",
+      "kind": "page",
+      "source": "frontend/app/credits/music/page.tsx",
+      "sha256": "5ae276352857e6b54b8e25ff3145bd0b1133862465e29a159c65db36a26628aa",
+      "topLevelPathDisposition": "not_path_excluded"
+    },
+    {
+      "route": "/dashboard/earnings",
+      "kind": "page",
+      "source": "frontend/app/(features)/dashboard/earnings/page.tsx",
+      "sha256": "7f7307a0eaaea0afd6b3d033031633e02abe792e2c21ce955aee76b13730695d",
+      "topLevelPathDisposition": "not_path_excluded"
+    },
+    {
+      "route": "/dmca",
+      "kind": "page",
+      "source": "frontend/app/dmca/page.tsx",
+      "sha256": "ce5d6c4775f710e55f97387d26175146671192f9e90b11dac34dc7330e591bfa",
+      "topLevelPathDisposition": "not_path_excluded"
+    },
+    {
+      "route": "/docs",
+      "kind": "page",
+      "source": "frontend/app/docs/page.tsx",
+      "sha256": "cb481aa209dabaf91faf9bfb1466b8c9a3675aec27184ae73c8589883c263591",
+      "topLevelPathDisposition": "not_path_excluded"
+    },
+    {
+      "route": "/documents",
+      "kind": "page",
+      "source": "frontend/app/(features)/documents/page.tsx",
+      "sha256": "05266974b304aabeace02168bfa5deb2191b6b39e5b7c87a5e6662bcc1267b46",
+      "topLevelPathDisposition": "not_path_excluded"
+    },
+    {
+      "route": "/documents/[slug]",
+      "kind": "page",
+      "source": "frontend/app/(features)/documents/[slug]/page.tsx",
+      "sha256": "60c8e8cee3f7ad1c2c431de9034066c87e29a4aa94af0275f1196675687ca253",
+      "topLevelPathDisposition": "not_path_excluded"
+    },
+    {
+      "route": "/forgot-password",
+      "kind": "page",
+      "source": "frontend/app/forgot-password/page.tsx",
+      "sha256": "1b01119df8258b98279c15cf417967f101f7e59d4ede0d133a1ba771e0dbf0fd",
+      "topLevelPathDisposition": "excluded_by_current_contract",
+      "deniedKeyword": "password"
+    },
+    {
+      "route": "/institutions",
+      "kind": "page",
+      "source": "frontend/app/(features)/institutions/page.tsx",
+      "sha256": "80a0e997884563f1a20581eda160ab5ce6e2b3409ecd6a49b21fb7ee0f708e01",
+      "topLevelPathDisposition": "not_path_excluded"
+    },
+    {
+      "route": "/institutions/[slug]",
+      "kind": "page",
+      "source": "frontend/app/(features)/institutions/[slug]/page.tsx",
+      "sha256": "d129e15d599b48ee3b35be8805b8d2d4d6316966212ca88df64d451d96034d9c",
+      "topLevelPathDisposition": "not_path_excluded"
+    },
+    {
+      "route": "/institutions/[slug]/courses",
+      "kind": "page",
+      "source": "frontend/app/(features)/institutions/[slug]/courses/page.tsx",
+      "sha256": "89e27f10d21d041102205619116852bc22fb554171eefbd56aff98ab36e670b1",
+      "topLevelPathDisposition": "not_path_excluded"
+    },
+    {
+      "route": "/llms.txt",
+      "kind": "handler",
+      "source": "frontend/app/llms.txt/route.ts",
+      "sha256": "201fdbb7e32901a3028f588bf801e07105f8c50145b5c9c544ee042477a13fa2",
+      "topLevelPathDisposition": "not_path_excluded"
+    },
+    {
+      "route": "/login",
+      "kind": "page",
+      "source": "frontend/app/login/page.tsx",
+      "sha256": "fa3fbec39c57db6bf5312f2175d1c325b755752655e5531453400962292e28f7",
+      "topLevelPathDisposition": "not_path_excluded"
+    },
+    {
+      "route": "/my-room",
+      "kind": "page",
+      "source": "frontend/app/(features)/my-room/page.tsx",
+      "sha256": "2a639d5cec645a601cf6f82197ecd3f81403797c1e7d4b374b691757f6250618",
+      "topLevelPathDisposition": "not_path_excluded"
+    },
+    {
+      "route": "/my-room/shelves/[id]",
+      "kind": "page",
+      "source": "frontend/app/(features)/my-room/shelves/[id]/page.tsx",
+      "sha256": "3b12bd32bab25fd8713933ed6a44dcc2366b8952eb1f3af290246a943bdf77f0",
+      "topLevelPathDisposition": "not_path_excluded"
+    },
+    {
+      "route": "/onboarding",
+      "kind": "page",
+      "source": "frontend/app/onboarding/page.tsx",
+      "sha256": "6178c91aed527b29be4db4d8431fe56a794b0dc5f29b8f6291b2db85fce88158",
+      "topLevelPathDisposition": "not_path_excluded"
+    },
+    {
+      "route": "/pricing",
+      "kind": "page",
+      "source": "frontend/app/pricing/page.tsx",
+      "sha256": "e1775cd77089c5128ded5912b60594661c991b9ef90825c80ad6af6646841e09",
+      "topLevelPathDisposition": "not_path_excluded"
+    },
+    {
+      "route": "/privacy",
+      "kind": "page",
+      "source": "frontend/app/privacy/page.tsx",
+      "sha256": "4ee08ec9386006ef269d755f95c4f3ed7eb097845055110076b37914025ecd1c",
+      "topLevelPathDisposition": "not_path_excluded"
+    },
+    {
+      "route": "/purchases",
+      "kind": "page",
+      "source": "frontend/app/(features)/purchases/page.tsx",
+      "sha256": "cb50c221a15d615d57c1950101457c3bbbe790328ac6f4533a732d6feb60a3a5",
+      "topLevelPathDisposition": "not_path_excluded"
+    },
+    {
+      "route": "/reset-password",
+      "kind": "page",
+      "source": "frontend/app/reset-password/page.tsx",
+      "sha256": "4b8edb1640690ee99ba995f65d38ee178ffa1977eba948475e429e8cc4250bea",
+      "topLevelPathDisposition": "excluded_by_current_contract",
+      "deniedKeyword": "password"
+    },
+    {
+      "route": "/robots.txt",
+      "kind": "handler",
+      "source": "frontend/app/robots.txt/route.ts",
+      "sha256": "168443981afe923760f2d848e10ce6420f4379beeffeec16137369543fc76d99",
+      "topLevelPathDisposition": "not_path_excluded"
+    },
+    {
+      "route": "/settings",
+      "kind": "page",
+      "source": "frontend/app/(features)/settings/page.tsx",
+      "sha256": "81a532fdf5abef5e7e3308533d86e7fe5176ce3c2437b7ee77f4f6dfc1c8e4c3",
+      "topLevelPathDisposition": "not_path_excluded"
+    },
+    {
+      "route": "/settings/account",
+      "kind": "page",
+      "source": "frontend/app/(features)/settings/account/page.tsx",
+      "sha256": "dee4540336032fc2c2c03ce589b083ec23a2fddba14c538df4eb28ce274c3ad8",
+      "topLevelPathDisposition": "not_path_excluded"
+    },
+    {
+      "route": "/settings/billing",
+      "kind": "page",
+      "source": "frontend/app/(features)/settings/billing/page.tsx",
+      "sha256": "6ba7f09afdf1699d9b53e57b900a6808558b079fd125921939b45c97a1236cac",
+      "topLevelPathDisposition": "excluded_by_current_contract",
+      "deniedKeyword": "billing"
+    },
+    {
+      "route": "/settings/notifications",
+      "kind": "page",
+      "source": "frontend/app/(features)/settings/notifications/page.tsx",
+      "sha256": "aba0bc821d6f5e93ca7321b682c4c396e1426996552c7f95154a820b832f75aa",
+      "topLevelPathDisposition": "not_path_excluded"
+    },
+    {
+      "route": "/settings/security",
+      "kind": "page",
+      "source": "frontend/app/(features)/settings/security/page.tsx",
+      "sha256": "f5160b7b4b5d10eb6c66890ff49be9d8f4d7080969d9721f39bec95f17763f94",
+      "topLevelPathDisposition": "excluded_by_current_contract",
+      "deniedKeyword": "security"
+    },
+    {
+      "route": "/settings/usage",
+      "kind": "page",
+      "source": "frontend/app/(features)/settings/usage/page.tsx",
+      "sha256": "1f0a7c8f81841e1a0cb03bb9038cc7c593a8ab3982e7ed14ce7478cb1b4d7cf7",
+      "topLevelPathDisposition": "not_path_excluded"
+    },
+    {
+      "route": "/signup",
+      "kind": "page",
+      "source": "frontend/app/signup/page.tsx",
+      "sha256": "98ef15bfd62711b190377dd1aa5d7ab0cd114c04492c0833106c6a64ced8d648",
+      "topLevelPathDisposition": "not_path_excluded"
+    },
+    {
+      "route": "/sitemap.xml",
+      "kind": "handler",
+      "source": "frontend/app/sitemap.xml/route.ts",
+      "sha256": "14029f2adb02fc575f1d6b12ff5c999e8821554244e1803fc5e946312fab61bd",
+      "topLevelPathDisposition": "not_path_excluded"
+    },
+    {
+      "route": "/sitemaps/[kind]/[chunk]",
+      "kind": "handler",
+      "source": "frontend/app/sitemaps/[kind]/[chunk]/route.ts",
+      "sha256": "f42bab91ec000815fe47d31a5300857fc191900240f35d39e8006c9338e41f24",
+      "topLevelPathDisposition": "not_path_excluded"
+    },
+    {
+      "route": "/sitemaps/static",
+      "kind": "handler",
+      "source": "frontend/app/sitemaps/static/route.ts",
+      "sha256": "acebf21dfaaf2ecc6b734150e00b18247503e01a624c2c1c25c0432ab853a636",
+      "topLevelPathDisposition": "not_path_excluded"
+    },
+    {
+      "route": "/study-room",
+      "kind": "page",
+      "source": "frontend/app/(features)/study-room/page.tsx",
+      "sha256": "e0818acb8c0466e26f0288f57a8b702f33a83d081f99f8bc191c629cd9ad537a",
+      "topLevelPathDisposition": "not_path_excluded"
+    },
+    {
+      "route": "/study-room/[slug]",
+      "kind": "page",
+      "source": "frontend/app/(features)/study-room/[slug]/page.tsx",
+      "sha256": "3a42d645535159315cde3d69dab46e02af7e8a0bb7d5e7b1663bee72a90d19ce",
+      "topLevelPathDisposition": "not_path_excluded"
+    },
+    {
+      "route": "/terms",
+      "kind": "page",
+      "source": "frontend/app/terms/page.tsx",
+      "sha256": "d59f65faa62d083d3030aac235015e12671dbb0e2154f92c7cfa752848c28b52",
+      "topLevelPathDisposition": "not_path_excluded"
+    },
+    {
+      "route": "/unauthorized",
+      "kind": "page",
+      "source": "frontend/app/unauthorized/page.tsx",
+      "sha256": "22f552c26c7fa4bf248e47315f156985ec8b63a7ed2d87c0003c89e9bf326b34",
+      "topLevelPathDisposition": "not_path_excluded"
+    },
+    {
+      "route": "/verify-email",
+      "kind": "page",
+      "source": "frontend/app/verify-email/page.tsx",
+      "sha256": "d90c7671664cd81d4d11eae4dd7bbc47be68066ddae540535996794dbfde1eeb",
+      "topLevelPathDisposition": "not_path_excluded"
+    },
+    {
+      "route": "/warning",
+      "kind": "page",
+      "source": "frontend/app/(features)/warning/page.tsx",
+      "sha256": "85e3d06ff53ab6524c5cd3556125ff38fc1b2473e3be1669288fc1ab768e9d80",
+      "topLevelPathDisposition": "not_path_excluded"
+    }
+  ],
+  "limitations": [
+    "Path classification is not authorization for an operation.",
+    "Dynamic patterns establish a page family, not the set of valid resource IDs.",
+    "Viewing a route is not an outcome assertion or replay.",
+    "No oracle routes were supplied to Oddhound worker/model."
+  ]
+}

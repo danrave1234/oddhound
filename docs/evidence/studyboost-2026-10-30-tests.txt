@@ -1,0 +1,25 @@
+Oddhound Claude validation: 2026-10-30 Asia/Manila
+Baseline typecheck: ./.tools/node26/node.exe node_modules/typescript/bin/tsc -p tsconfig.json --noEmit
+Baseline typecheck result: PASS (exit 0)
+Runtime: Node v26.12.1; Playwright 1.64.1; Vitest 5.0.5; TypeScript 5.9.3; pg 8.23.1; zod 4.6.7
+Database: existing oddhound-claude-pg, oddhound_test; localhost only
+Model/provider calls: none; scripted providers in integration tests
+Command: ./.tools/node26/node.exe node_modules/vitest/vitest.mjs run
+
+
+ RUN  v5.0.5 C:/Users/Danrave/Desktop/Project/Oddhound/claude
+
+
+ Test Files  21 passed (21)
+      Tests  186 passed (186)
+   Start at  02:00:36
+   Duration  182.93s (tests 93%, import 6%)
+
+Vitest exit code: 0
+Additional validation command: ./.tools/node26/node.exe tests/lint/no-lucide.ts
+Result: PASS; no-lucide: OK (no Lucide; icons only via the local icon layer)
+Additional validation command: ./.tools/node26/node.exe node_modules/typescript/bin/tsc -p apps/web/tsconfig.json --noEmit
+Result: PASS (exit 0)
+Installed PostgreSQL server: 17.11; Chromium package: 156.0.8078.4 revision 1248; Modal SDK: 0.11.1
+Command: isolated LocalBrowserRuntime provision, chrome://sandbox verdict, and destroy; no target or model call
+{"runtime":"local","chromium":"156.0.8078.4","sandboxVerdict":"sandbox_on","egress":{"requests":7,"bytes":33821,"denied":0,"exhausted":null},"cleanup":{"confirmed":true,"detail":"local browser process closed and egress proxy stopped"}}

@@ -1,0 +1,460 @@
+{
+  "run": {
+    "id": "883c2266-0b91-4cc6-bb3b-fa4fd111cd80",
+    "status": "running",
+    "stop_reason": null,
+    "browser_state": "ready",
+    "sandbox_verdict": "sandbox_on"
+  },
+  "actions": [
+    {
+      "seq": 136,
+      "tool": "click",
+      "state": "succeeded",
+      "actor": "A",
+      "device": "desktop",
+      "path": "/my-room/shelves/f035e363-e76a-46ba-bdfb-d2db2c16c16e"
+    },
+    {
+      "seq": 135,
+      "tool": "navigate",
+      "state": "succeeded",
+      "actor": "A",
+      "device": "desktop",
+      "path": "/my-room/shelves/f035e363-e76a-46ba-bdfb-d2db2c16c16e"
+    },
+    {
+      "seq": 134,
+      "tool": "click",
+      "state": "succeeded",
+      "actor": "A",
+      "device": "desktop",
+      "path": "/my-room/shelves/f035e363-e76a-46ba-bdfb-d2db2c16c16e"
+    },
+    {
+      "seq": 133,
+      "tool": "click",
+      "state": "succeeded",
+      "actor": "A",
+      "device": "desktop",
+      "path": "/my-room/shelves/f035e363-e76a-46ba-bdfb-d2db2c16c16e"
+    },
+    {
+      "seq": 132,
+      "tool": "navigate",
+      "state": "succeeded",
+      "actor": "A",
+      "device": "desktop",
+      "path": "/my-room/shelves/f035e363-e76a-46ba-bdfb-d2db2c16c16e"
+    },
+    {
+      "seq": 131,
+      "tool": "navigate",
+      "state": "succeeded",
+      "actor": "A",
+      "device": "desktop",
+      "path": "/courses/general-physics-i-algebra-based-5817"
+    },
+    {
+      "seq": 130,
+      "tool": "click",
+      "state": "succeeded",
+      "actor": "A",
+      "device": "desktop",
+      "path": "/documents"
+    },
+    {
+      "seq": 129,
+      "tool": "navigate",
+      "state": "succeeded",
+      "actor": "A",
+      "device": "desktop",
+      "path": "/documents"
+    },
+    {
+      "seq": 128,
+      "tool": "click",
+      "state": "succeeded",
+      "actor": "A",
+      "device": "desktop",
+      "path": "/institutions"
+    },
+    {
+      "seq": 127,
+      "tool": "navigate",
+      "state": "succeeded",
+      "actor": "A",
+      "device": "desktop",
+      "path": "/institutions"
+    },
+    {
+      "seq": 126,
+      "tool": "click",
+      "state": "succeeded",
+      "actor": "A",
+      "device": "desktop",
+      "path": "/my-room/shelves/f035e363-e76a-46ba-bdfb-d2db2c16c16e"
+    },
+    {
+      "seq": 125,
+      "tool": "click",
+      "state": "succeeded",
+      "actor": "A",
+      "device": "desktop",
+      "path": "/my-room/shelves/f035e363-e76a-46ba-bdfb-d2db2c16c16e"
+    }
+  ],
+  "workflows": [
+    {
+      "name": "Sign in",
+      "status": "completed",
+      "summary": "Sign in at /login reached \"Study notes, guides and past exams for your courses\" (recorded by Oddhound)."
+    }
+  ],
+  "events": [
+    {
+      "type": "recipe.recorded",
+      "count": 1
+    }
+  ],
+  "spend": {
+    "calls": 54,
+    "settled_micros": "376411",
+    "outstanding_micros": "0"
+  },
+  "admissionAllowance": {
+    "limiting": "daily_cap",
+    "availableMicros": 7000000,
+    "runExposureMicros": 0,
+    "configuredCapMicros": 10000000,
+    "accountDailyRemainingMicros": 7000000,
+    "accountLifetimeRemainingMicros": 45841819
+  },
+  "discovery": {
+    "next": [
+      {
+        "kind": "control",
+        "path": "/my-room/shelves/f035e363-e76a-46ba-bdfb-d2db2c16c16e?view=board",
+        "label": "Set a deadline"
+      },
+      {
+        "kind": "control",
+        "path": "/my-room/shelves/f035e363-e76a-46ba-bdfb-d2db2c16c16e?view=table",
+        "label": "Set a deadline"
+      },
+      {
+        "kind": "control",
+        "path": "/my-room/shelves/f035e363-e76a-46ba-bdfb-d2db2c16c16e?view=list",
+        "label": "Set a deadline"
+      },
+      {
+        "kind": "control",
+        "path": "/my-room?section=ai-courses",
+        "label": "Expand Oddhound QA 292260ee"
+      },
+      {
+        "kind": "control",
+        "path": "/my-room?section=ai-courses",
+        "label": "Expand QA Shelf NEWTASK 7X9Z"
+      }
+    ],
+    "blocked": 12,
+    "visited": 50,
+    "excluded": 8,
+    "revision": 1015,
+    "discovered": 490,
+    "pendingRoutes": 432,
+    "outcomeChecked": 2,
+    "pendingControls": 370,
+    "sampledVariants": 0
+  },
+  "preview": {
+    "seq": "164",
+    "state": "available",
+    "reason": null,
+    "updated_at": "2026-11-02 15:59:51.867011+00"
+  },
+  "plan": {
+    "charters": [
+      {
+        "id": "C1",
+        "area": "Auth + navigation breadth",
+        "note": null,
+        "risk": "high",
+        "status": "testing",
+        "technique": "Discover routes, logout protection, login again"
+      },
+      {
+        "id": "C2",
+        "area": "My-room shelves/tasks",
+        "note": null,
+        "risk": "high",
+        "status": "testing",
+        "technique": "Shelf limit reached (3 shelves, upgrade prompt for 20). Test task CRUD, notes pinboard, persistence"
+      },
+      {
+        "id": "C3",
+        "area": "Documents/courses search",
+        "note": null,
+        "risk": "medium",
+        "status": "testing",
+        "technique": "Search/filter/sort, document pages"
+      },
+      {
+        "id": "C4",
+        "area": "Study-room tools",
+        "note": null,
+        "risk": "medium",
+        "status": "testing",
+        "technique": "Exercise flashcards, games, summarize, study-guide controls"
+      },
+      {
+        "id": "C5",
+        "area": "Forms XSS + validation",
+        "note": null,
+        "risk": "high",
+        "status": "testing",
+        "technique": "Markup probe, blank/whitespace/long"
+      },
+      {
+        "id": "C6",
+        "area": "Mobile + controls",
+        "note": null,
+        "risk": "medium",
+        "status": "not_run",
+        "technique": "390px phone key pages"
+      }
+    ]
+  },
+  "routes": [
+    {
+      "route": "/",
+      "actor": "A",
+      "device": "desktop",
+      "states": 6
+    },
+    {
+      "route": "/about",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/contact",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/cookies",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/courses/accounting-program-a54f9313",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/courses/cloud-computing-6047",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/courses/general-physics-i-algebra-based-5817",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/courses/introduction-to-literature-6363",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/courses/nursing-process-iv-medical-surgical-nursing-4937",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/courses/university-physics-i-9878",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/credits/music",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/dmca",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/docs",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/documents",
+      "actor": "A",
+      "device": "desktop",
+      "states": 6
+    },
+    {
+      "route": "/documents/presentational-devices-in-chicken-run-revealing-good-and-evilssssss-b961b919",
+      "actor": "A",
+      "device": "desktop",
+      "states": 3
+    },
+    {
+      "route": "/institutions",
+      "actor": "A",
+      "device": "desktop",
+      "states": 2
+    },
+    {
+      "route": "/institutions/arizona-state-university",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/login",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/my-room",
+      "actor": "A",
+      "device": "desktop",
+      "states": 11
+    },
+    {
+      "route": "/my-room/shelves/f035e363-e76a-46ba-bdfb-d2db2c16c16e",
+      "actor": "A",
+      "device": "desktop",
+      "states": 23
+    },
+    {
+      "route": "/pricing",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/privacy",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/settings/account",
+      "actor": "A",
+      "device": "desktop",
+      "states": 2
+    },
+    {
+      "route": "/settings/appearance",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/settings/notifications",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/settings/usage",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/study-room",
+      "actor": "A",
+      "device": "desktop",
+      "states": 2
+    },
+    {
+      "route": "/study-room/flashcards",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/study-room/study-guide",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/study-room/summarize",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/terms",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    }
+  ],
+  "scenarios": [
+    {
+      "family": "claim_vs_truth",
+      "outcome": "failed",
+      "count": 1
+    }
+  ],
+  "recentChecks": [
+    {
+      "seq": 638,
+      "type": "finding.candidate",
+      "payload": {
+        "kind": "claim_check",
+        "title": "\"Task title\" not saved after submitting /my-room/shelves/f035e363-e76a-46ba-bdfb-d2db2c16c16e",
+        "family": "claim_vs_truth",
+        "ruleId": null,
+        "source": "agent"
+      }
+    },
+    {
+      "seq": 637,
+      "type": "scenario.finished",
+      "payload": {
+        "claim": null,
+        "found": [],
+        "looks": 3,
+        "family": "claim_vs_truth",
+        "missing": [
+          "Task title"
+        ],
+        "outcome": "failed",
+        "windowMs": 4500,
+        "windowUsedMs": 22030
+      }
+    }
+  ],
+  "coverage": {
+    "pages": 31,
+    "total": 1618,
+    "exercised": 45,
+    "blocked": 47,
+    "outcomeChecked": 1
+  }
+}

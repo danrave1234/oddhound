@@ -1,0 +1,425 @@
+{
+  "run": {
+    "id": "883c2266-0b91-4cc6-bb3b-fa4fd111cd80",
+    "status": "running",
+    "stop_reason": null,
+    "browser_state": "ready",
+    "sandbox_verdict": "sandbox_on"
+  },
+  "actions": [
+    {
+      "seq": 121,
+      "tool": "click",
+      "state": "succeeded",
+      "actor": "A",
+      "device": "desktop",
+      "path": "/my-room/shelves/f035e363-e76a-46ba-bdfb-d2db2c16c16e"
+    },
+    {
+      "seq": 120,
+      "tool": "fill",
+      "state": "succeeded",
+      "actor": "A",
+      "device": "desktop",
+      "path": "/my-room/shelves/f035e363-e76a-46ba-bdfb-d2db2c16c16e"
+    },
+    {
+      "seq": 119,
+      "tool": "fill",
+      "state": "succeeded",
+      "actor": "A",
+      "device": "desktop",
+      "path": "/my-room/shelves/f035e363-e76a-46ba-bdfb-d2db2c16c16e"
+    },
+    {
+      "seq": 118,
+      "tool": "click",
+      "state": "succeeded",
+      "actor": "A",
+      "device": "desktop",
+      "path": "/my-room/shelves/f035e363-e76a-46ba-bdfb-d2db2c16c16e"
+    },
+    {
+      "seq": 117,
+      "tool": "click",
+      "state": "succeeded",
+      "actor": "A",
+      "device": "desktop",
+      "path": "/my-room/shelves/f035e363-e76a-46ba-bdfb-d2db2c16c16e"
+    },
+    {
+      "seq": 116,
+      "tool": "click",
+      "state": "succeeded",
+      "actor": "A",
+      "device": "desktop",
+      "path": "/my-room/shelves/f035e363-e76a-46ba-bdfb-d2db2c16c16e"
+    },
+    {
+      "seq": 115,
+      "tool": "click",
+      "state": "succeeded",
+      "actor": "A",
+      "device": "desktop",
+      "path": "/my-room/shelves/f035e363-e76a-46ba-bdfb-d2db2c16c16e"
+    },
+    {
+      "seq": 114,
+      "tool": "click",
+      "state": "succeeded",
+      "actor": "A",
+      "device": "desktop",
+      "path": "/my-room/shelves/f035e363-e76a-46ba-bdfb-d2db2c16c16e"
+    },
+    {
+      "seq": 113,
+      "tool": "click",
+      "state": "succeeded",
+      "actor": "A",
+      "device": "desktop",
+      "path": "/my-room/shelves/f035e363-e76a-46ba-bdfb-d2db2c16c16e"
+    },
+    {
+      "seq": 112,
+      "tool": "click",
+      "state": "succeeded",
+      "actor": "A",
+      "device": "desktop",
+      "path": "/my-room/shelves/f035e363-e76a-46ba-bdfb-d2db2c16c16e"
+    },
+    {
+      "seq": 111,
+      "tool": "click",
+      "state": "succeeded",
+      "actor": "A",
+      "device": "desktop",
+      "path": "/my-room/shelves/f035e363-e76a-46ba-bdfb-d2db2c16c16e"
+    },
+    {
+      "seq": 110,
+      "tool": "click",
+      "state": "succeeded",
+      "actor": "A",
+      "device": "desktop",
+      "path": "/my-room/shelves/f035e363-e76a-46ba-bdfb-d2db2c16c16e"
+    }
+  ],
+  "workflows": [
+    {
+      "name": "Sign in",
+      "status": "completed",
+      "summary": "Sign in at /login reached \"Study notes, guides and past exams for your courses\" (recorded by Oddhound)."
+    }
+  ],
+  "events": [
+    {
+      "type": "recipe.recorded",
+      "count": 1
+    }
+  ],
+  "spend": {
+    "calls": 48,
+    "settled_micros": "335523",
+    "outstanding_micros": "0"
+  },
+  "admissionAllowance": {
+    "limiting": "daily_cap",
+    "availableMicros": 7000000,
+    "runExposureMicros": 0,
+    "configuredCapMicros": 10000000,
+    "accountDailyRemainingMicros": 7000000,
+    "accountLifetimeRemainingMicros": 45841819
+  },
+  "discovery": {
+    "next": [
+      {
+        "kind": "route",
+        "path": "/institutions?page=5",
+        "label": "Next \u2192"
+      },
+      {
+        "kind": "route",
+        "path": "/documents?page=5",
+        "label": "Next \u2192"
+      },
+      {
+        "kind": "route",
+        "path": "/institutions/florida-state-university",
+        "label": "FSUFlorida State UniversityTallahassee, Florida, United States992 courses"
+      },
+      {
+        "kind": "route",
+        "path": "/institutions/massachusetts-institute-of-technology",
+        "label": "MITMassachusetts Institute of TechnologyCambridge, Massachusetts, United States1,082 courses"
+      },
+      {
+        "kind": "route",
+        "path": "/institutions/university-of-maryland",
+        "label": "UMUniversity of MarylandCollege Park, Maryland, United States1,337 courses"
+      }
+    ],
+    "blocked": 12,
+    "visited": 47,
+    "excluded": 8,
+    "revision": 918,
+    "discovered": 427,
+    "pendingRoutes": 372,
+    "outcomeChecked": 2,
+    "pendingControls": 353,
+    "sampledVariants": 0
+  },
+  "preview": {
+    "seq": "146",
+    "state": "available",
+    "reason": null,
+    "updated_at": "2026-11-02 15:57:25.398878+00"
+  },
+  "plan": {
+    "charters": [
+      {
+        "id": "C1",
+        "area": "Auth + navigation breadth",
+        "note": null,
+        "risk": "high",
+        "status": "testing",
+        "technique": "Discover routes, logout protection, login again"
+      },
+      {
+        "id": "C2",
+        "area": "My-room shelves/tasks",
+        "note": null,
+        "risk": "high",
+        "status": "testing",
+        "technique": "Shelf limit reached (3 shelves, upgrade prompt for 20). Test task CRUD, notes pinboard, persistence"
+      },
+      {
+        "id": "C3",
+        "area": "Documents/courses search",
+        "note": null,
+        "risk": "medium",
+        "status": "testing",
+        "technique": "Search/filter/sort, document pages"
+      },
+      {
+        "id": "C4",
+        "area": "Study-room tools",
+        "note": null,
+        "risk": "medium",
+        "status": "testing",
+        "technique": "Exercise flashcards, games, summarize, study-guide controls"
+      },
+      {
+        "id": "C5",
+        "area": "Forms XSS + validation",
+        "note": null,
+        "risk": "high",
+        "status": "testing",
+        "technique": "Markup probe, blank/whitespace/long"
+      },
+      {
+        "id": "C6",
+        "area": "Mobile + controls",
+        "note": null,
+        "risk": "medium",
+        "status": "not_run",
+        "technique": "390px phone key pages"
+      }
+    ]
+  },
+  "routes": [
+    {
+      "route": "/",
+      "actor": "A",
+      "device": "desktop",
+      "states": 6
+    },
+    {
+      "route": "/about",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/contact",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/cookies",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/courses/accounting-program-a54f9313",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/courses/cloud-computing-6047",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/courses/introduction-to-literature-6363",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/courses/nursing-process-iv-medical-surgical-nursing-4937",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/courses/university-physics-i-9878",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/credits/music",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/dmca",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/docs",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/documents",
+      "actor": "A",
+      "device": "desktop",
+      "states": 4
+    },
+    {
+      "route": "/documents/presentational-devices-in-chicken-run-revealing-good-and-evilssssss-b961b919",
+      "actor": "A",
+      "device": "desktop",
+      "states": 3
+    },
+    {
+      "route": "/institutions",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/institutions/arizona-state-university",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/login",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/my-room",
+      "actor": "A",
+      "device": "desktop",
+      "states": 11
+    },
+    {
+      "route": "/my-room/shelves/f035e363-e76a-46ba-bdfb-d2db2c16c16e",
+      "actor": "A",
+      "device": "desktop",
+      "states": 18
+    },
+    {
+      "route": "/pricing",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/privacy",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/settings/account",
+      "actor": "A",
+      "device": "desktop",
+      "states": 2
+    },
+    {
+      "route": "/settings/appearance",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/settings/notifications",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/settings/usage",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/study-room",
+      "actor": "A",
+      "device": "desktop",
+      "states": 2
+    },
+    {
+      "route": "/study-room/flashcards",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/study-room/study-guide",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/study-room/summarize",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/terms",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    }
+  ],
+  "scenarios": [
+    {
+      "family": "claim_vs_truth",
+      "outcome": "failed",
+      "count": 1
+    }
+  ],
+  "coverage": {
+    "pages": 30,
+    "total": 1477,
+    "exercised": 42,
+    "blocked": 45,
+    "outcomeChecked": 1
+  }
+}

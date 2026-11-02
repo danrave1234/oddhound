@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Icon, type IconName } from '@/ui/icons';
 import { BASELINE_RULES, DEFAULT_DENIED_PATH_KEYWORDS, DEFAULT_DENIED_OPERATIONS } from '@core/contracts/contract.ts';
+import { LIMITS } from '@core/contracts/limits.ts';
 
 const lines = (s: string) => s.split('\n').map((l) => l.trim()).filter(Boolean);
 
@@ -21,7 +22,7 @@ function Option({ name, icon, title, desc, defaultChecked, checked, onChange, ch
   );
 }
 
-export function RunSetup({ projectId, environment }: { projectId: string; environment: 'staging' | 'production' }) {
+export function RunSetup({ projectId, environment, availableRunUsd }: { projectId: string; environment: 'staging' | 'production'; availableRunUsd: number }) {
   const router = useRouter();
   const [mode, setMode] = useState<'active' | 'observation_only'>(environment === 'production' ? 'observation_only' : 'active');
   const [ack, setAck] = useState(false);
@@ -131,7 +132,7 @@ export function RunSetup({ projectId, environment }: { projectId: string; enviro
       {error && <p role="alert" className="status-line" style={{ color: 'var(--bad)', marginBottom: 12 }}><Icon name="fail" /> {error}</p>}
       <div className="sticky-actions">
         <button className="btn btn-primary" disabled={busy || (needsAck && !ack)} aria-busy={busy || undefined}><Icon name="play" /> {busy ? 'Starting…' : 'Start run'}</button>
-        <span className="muted" style={{ fontSize: 12.5 }}>Each run stops at $2 of model spend or after 60 minutes. Turns and actions are not limited.</span>
+        <span className="muted" style={{ fontSize: 12.5 }}>Up to ${(LIMITS.modelSpendPerRunMicros / 1e6).toFixed(2)} per run; ${availableRunUsd.toFixed(2)} currently available under the shared daily and lifetime ceilings. Availability is checked before every model call. The backstop is {LIMITS.runWallClockMs / 60_000} minutes; turns and actions are not limited.</span>
       </div>
     </form>
   );

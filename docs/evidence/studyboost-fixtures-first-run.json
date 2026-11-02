@@ -1,0 +1,118 @@
+{
+  "capturedAt": "2026-10-29T18:35:14.521Z",
+  "snapshotAt": "2026-10-29T18:35:17.323Z",
+  "runId": "71bde0c6-f031-4c6f-bcfe-c87bc7cd9676",
+  "runStatusAtRequest": "in_progress",
+  "finalRunSnapshot": false,
+  "source": "Independent read-only PostgreSQL snapshot of preview database",
+  "previewDistinctFromProduction": true,
+  "productionConnectionOpened": false,
+  "transactionReadOnly": true,
+  "accountId": "11cf3ef0-621b-48bf-bbdc-25da2f6bfab5",
+  "timestampRepresentation": "Record timestamps are verbatim PostgreSQL timestamp-without-time-zone text; no timezone was inferred. snapshotAt is the timezone-aware database transaction timestamp; capturedAt is the client clock. Their clock offset is not normalized.",
+  "scope": "Only shelves, tasks, and notes owned by the exact synthetic test account; 200-row limit per table",
+  "manualBaseline": {
+    "shelfId": "f035e363-e76a-46ba-bdfb-d2db2c16c16e",
+    "noteText": "Oddhound QA 292260ee: saved note survives reload"
+  },
+  "attributionLimit": "Target tables do not store the Oddhound run ID. Additional records are distinguished from the supplied manual baseline; run attribution requires correlation with the run action evidence. This snapshot was requested while the run was in progress.",
+  "counts": {
+    "shelves": 1,
+    "tasks": 2,
+    "structured_notes": 0,
+    "note_boards": 2,
+    "note_elements": 4
+  },
+  "shelves": [
+    {
+      "id": "f035e363-e76a-46ba-bdfb-d2db2c16c16e",
+      "label": "Oddhound QA 292260ee",
+      "created_at": "2026-10-29 18:02:52.639",
+      "updated_at": "2026-10-29 18:29:48.77",
+      "provenance": "known_manual_baseline"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "6a035b10-143c-46d8-97c1-c5e0239a64c9",
+      "shelf_id": "f035e363-e76a-46ba-bdfb-d2db2c16c16e",
+      "label": "QA Task ABC123 edited",
+      "status": "done",
+      "completed_at": "2026-10-29 18:28:17.883",
+      "created_at": "2026-10-29 18:28:05.419",
+      "updated_at": "2026-10-29 18:28:17.886",
+      "belongs_to_manual_baseline_shelf": true
+    },
+    {
+      "id": "11ffef1f-d86a-4ff5-bbed-a7747ddf28dc",
+      "shelf_id": "f035e363-e76a-46ba-bdfb-d2db2c16c16e",
+      "label": "QA Neighbour Valid 292260ee",
+      "status": "todo",
+      "completed_at": null,
+      "created_at": "2026-10-29 18:29:48.822",
+      "updated_at": "2026-10-29 18:29:48.822",
+      "belongs_to_manual_baseline_shelf": true
+    }
+  ],
+  "structuredNotes": [],
+  "noteBoards": [
+    {
+      "id": "0a203677-9d5d-470c-8a59-afcb532f7fd5",
+      "label": "Unsorted",
+      "kind": "inbox",
+      "status": "active",
+      "created_at": "2026-10-29 18:01:34.645",
+      "updated_at": "2026-10-29 18:01:34.645"
+    },
+    {
+      "id": "babed212-ae00-4bdc-b410-3c6e8c5b7213",
+      "label": "Home",
+      "kind": "root",
+      "status": "active",
+      "created_at": "2026-10-29 18:01:34.647",
+      "updated_at": "2026-10-29 18:01:34.647"
+    }
+  ],
+  "noteElements": [
+    {
+      "id": "c41c4368-49c1-4c7c-84f0-c59b72f73c72",
+      "board_id": "0a203677-9d5d-470c-8a59-afcb532f7fd5",
+      "element_type": "text",
+      "label": "Oddhound QA 292260ee: saved note survives reload",
+      "status": "active",
+      "created_at": "2026-10-29 18:02:18.242",
+      "updated_at": "2026-10-29 18:02:18.242",
+      "provenance": "known_manual_baseline"
+    },
+    {
+      "id": "d241d273-b641-4f33-9af5-392dafefbf19",
+      "board_id": "0a203677-9d5d-470c-8a59-afcb532f7fd5",
+      "element_type": "text",
+      "label": "QA Note XYZ789 292260ee survives reload",
+      "status": "active",
+      "created_at": "2026-10-29 18:28:59.304",
+      "updated_at": "2026-10-29 18:28:59.304",
+      "provenance": "additional_account_fixture"
+    },
+    {
+      "id": "dbcd9024-8bb1-4ab1-89fc-6bcd8fde11e3",
+      "board_id": "0a203677-9d5d-470c-8a59-afcb532f7fd5",
+      "element_type": "text",
+      "label": "<i data-oh-probe=\"1\">OHPROBE</i>",
+      "status": "active",
+      "created_at": "2026-10-29 18:30:44.324",
+      "updated_at": "2026-10-29 18:30:44.324",
+      "provenance": "additional_account_fixture"
+    },
+    {
+      "id": "24a45a70-3982-4850-81c1-a1535729e1a1",
+      "board_id": "0a203677-9d5d-470c-8a59-afcb532f7fd5",
+      "element_type": "text",
+      "label": "Mobile QA note 292260ee",
+      "status": "active",
+      "created_at": "2026-10-29 18:32:57.803",
+      "updated_at": "2026-10-29 18:32:57.803",
+      "provenance": "additional_account_fixture"
+    }
+  ]
+}

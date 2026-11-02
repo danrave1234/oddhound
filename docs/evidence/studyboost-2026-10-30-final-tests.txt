@@ -1,0 +1,12 @@
+Fresh full suite after all shared core edits frozen; existing failures retained in earlier evidence.
+Command: ./.tools/node26/node.exe node_modules/vitest/vitest.mjs run
+
+ RUN  v5.0.5 C:/Users/Danrave/Desktop/Project/Oddhound/claude
+
+
+ Test Files  24 passed (24)
+      Tests  208 passed (208)
+   Start at  02:24:13
+   Duration  225.69s (tests 95%, import 4%)
+
+Exit code: 0

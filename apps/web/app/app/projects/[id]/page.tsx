@@ -13,6 +13,7 @@ import { isIP } from 'node:net';
 /** Domain-wide record suggestion; none for IP literals or single-label hosts. */
 const domainRecord = (host: string) => (isIP(host.replace(/^\[|\]$/g, '')) || !host.includes('.') ? undefined : suggestedDomainRecord(host));
 import { RunSetup } from './run-setup';
+import { publicStatus } from '@/lib/status-data';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,6 +31,7 @@ export default async function Project({ params }: { params: Promise<{ id: string
   const runs = (await db().query(`SELECT id, mode, status, stop_reason, created_at, (SELECT count(*) FROM findings f WHERE f.run_id = r.id AND f.verification = 'verified' AND f.category = 'verified_issue')::int AS issues
     FROM runs r WHERE project_id = $1 ORDER BY created_at DESC LIMIT 20`, [id])).rows;
   const host = new URL(project.origin).hostname;
+  const budget = sv.verified ? await publicStatus() : null;
   return (
     <Shell active="/app" user={user} toolbar={<div className="crumbs"><Link href="/app">Projects</Link><span className="muted">/</span><strong className="truncate">{project.name}</strong></div>}>
       <div className="stack content-medium">
@@ -70,7 +72,7 @@ export default async function Project({ params }: { params: Promise<{ id: string
               <p className="muted" style={{ margin: '4px 0 0', fontSize: 13.5 }}>{sv.verified ? 'Safe defaults are filled in. Adjust anything, then start the run.' : 'Unlocks once the site is verified.'}</p>
             </div>
           </div>
-          {sv.verified && <RunSetup projectId={id} environment={project.environment} />}
+          {sv.verified && <RunSetup projectId={id} environment={project.environment} availableRunUsd={budget?.availableRunUsd ?? 0} />}
         </section>
 
         <section className="card" aria-labelledby="runs-h">

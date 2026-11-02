@@ -1,0 +1,374 @@
+{
+  "runId": "883c2266-0b91-4cc6-bb3b-fa4fd111cd80",
+  "sourceRecordingSha256": "209c0876afa5e487578d667dee3861efc4a26e3eea529b802144540ef4b4faea",
+  "status": "stopped",
+  "stopReason": "budget_time_reserved_for_verification",
+  "counts": {
+    "states": 142,
+    "actions": 351,
+    "transitions": 221,
+    "events": 2128,
+    "workflows": 1,
+    "findings": 3,
+    "spend": 156
+  },
+  "paths": [
+    "/",
+    "/about",
+    "/contact",
+    "/cookies",
+    "/courses",
+    "/courses/accounting-program-a54f9313",
+    "/courses/cloud-computing-6047",
+    "/courses/electrical-circuits-9426",
+    "/courses/electronics-7035",
+    "/courses/evidence-6771",
+    "/courses/general-physics-i-algebra-based-5817",
+    "/courses/introduction-to-literature-6363",
+    "/courses/nursing-process-iv-medical-surgical-nursing-4937",
+    "/courses/university-physics-i-9878",
+    "/credits/music",
+    "/dmca",
+    "/docs",
+    "/documents",
+    "/documents/presentational-devices-in-chicken-run-revealing-good-and-evilssssss-b961b919",
+    "/institutions",
+    "/institutions/arizona-state-university",
+    "/login",
+    "/my-room",
+    "/my-room/shelves/3d541602-f6f9-4eb0-b697-8812dc1c71a1",
+    "/my-room/shelves/f035e363-e76a-46ba-bdfb-d2db2c16c16e",
+    "/pricing",
+    "/privacy",
+    "/settings/account",
+    "/settings/appearance",
+    "/settings/notifications",
+    "/settings/usage",
+    "/study-room",
+    "/study-room/ask-documents",
+    "/study-room/flashcards",
+    "/study-room/hangman-game",
+    "/study-room/misconception-siege",
+    "/study-room/scenario-simulator",
+    "/study-room/study-guide",
+    "/study-room/summarize",
+    "/study-room/trivia-game",
+    "/study-room/word-unscramble-game",
+    "/terms"
+  ],
+  "devices": [
+    "desktop"
+  ],
+  "coverage": {
+    "pages": 42,
+    "total": 2792,
+    "routes": [
+      {
+        "route": "/",
+        "total": 351,
+        "blocked": 1,
+        "exercised": 5
+      },
+      {
+        "route": "/documents",
+        "total": 349,
+        "blocked": 2,
+        "exercised": 2
+      },
+      {
+        "route": "/institutions",
+        "total": 334,
+        "blocked": 2,
+        "exercised": 1
+      },
+      {
+        "route": "/my-room",
+        "total": 142,
+        "blocked": 2,
+        "exercised": 26
+      },
+      {
+        "route": "/courses",
+        "total": 123,
+        "blocked": 3,
+        "exercised": 1
+      },
+      {
+        "route": "/my-room/shelves/f035e363-e76a-46ba-bdfb-d2db2c16c16e",
+        "total": 99,
+        "blocked": 0,
+        "exercised": 22
+      },
+      {
+        "route": "/settings/account",
+        "total": 74,
+        "blocked": 2,
+        "exercised": 9
+      },
+      {
+        "route": "/courses/electrical-circuits-9426",
+        "total": 68,
+        "blocked": 0,
+        "exercised": 1
+      },
+      {
+        "route": "/settings/appearance",
+        "total": 63,
+        "blocked": 2,
+        "exercised": 0
+      },
+      {
+        "route": "/study-room",
+        "total": 62,
+        "blocked": 3,
+        "exercised": 3
+      },
+      {
+        "route": "/study-room/hangman-game",
+        "total": 62,
+        "blocked": 1,
+        "exercised": 2
+      },
+      {
+        "route": "/courses/cloud-computing-6047",
+        "total": 58,
+        "blocked": 0,
+        "exercised": 0
+      },
+      {
+        "route": "/institutions/arizona-state-university",
+        "total": 58,
+        "blocked": 0,
+        "exercised": 0
+      },
+      {
+        "route": "/courses/evidence-6771",
+        "total": 54,
+        "blocked": 2,
+        "exercised": 1
+      },
+      {
+        "route": "/study-room/study-guide",
+        "total": 53,
+        "blocked": 4,
+        "exercised": 1
+      },
+      {
+        "route": "/study-room/scenario-simulator",
+        "total": 53,
+        "blocked": 4,
+        "exercised": 1
+      },
+      {
+        "route": "/documents/presentational-devices-in-chicken-run-revealing-good-and-evilssssss-b961b919",
+        "total": 50,
+        "blocked": 0,
+        "exercised": 2
+      },
+      {
+        "route": "/courses/general-physics-i-algebra-based-5817",
+        "total": 50,
+        "blocked": 0,
+        "exercised": 0
+      },
+      {
+        "route": "/courses/electronics-7035",
+        "total": 46,
+        "blocked": 0,
+        "exercised": 0
+      },
+      {
+        "route": "/courses/nursing-process-iv-medical-surgical-nursing-4937",
+        "total": 45,
+        "blocked": 0,
+        "exercised": 0
+      },
+      {
+        "route": "/my-room/shelves/3d541602-f6f9-4eb0-b697-8812dc1c71a1",
+        "total": 44,
+        "blocked": 0,
+        "exercised": 0
+      },
+      {
+        "route": "/courses/university-physics-i-9878",
+        "total": 43,
+        "blocked": 0,
+        "exercised": 0
+      },
+      {
+        "route": "/courses/introduction-to-literature-6363",
+        "total": 43,
+        "blocked": 0,
+        "exercised": 0
+      },
+      {
+        "route": "/settings/notifications",
+        "total": 42,
+        "blocked": 2,
+        "exercised": 0
+      },
+      {
+        "route": "/study-room/word-unscramble-game",
+        "total": 42,
+        "blocked": 1,
+        "exercised": 0
+      },
+      {
+        "route": "/study-room/trivia-game",
+        "total": 41,
+        "blocked": 1,
+        "exercised": 0
+      },
+      {
+        "route": "/settings/usage",
+        "total": 40,
+        "blocked": 3,
+        "exercised": 0
+      },
+      {
+        "route": "/study-room/misconception-siege",
+        "total": 40,
+        "blocked": 1,
+        "exercised": 0
+      },
+      {
+        "route": "/study-room/summarize",
+        "total": 39,
+        "blocked": 2,
+        "exercised": 1
+      },
+      {
+        "route": "/study-room/flashcards",
+        "total": 39,
+        "blocked": 2,
+        "exercised": 0
+      }
+    ],
+    "blocked": 67,
+    "exercised": 81,
+    "unexercised": [
+      {
+        "kind": "link",
+        "label": "MY ROOM",
+        "route": "/"
+      },
+      {
+        "kind": "link",
+        "label": "STUDY ROOM",
+        "route": "/"
+      },
+      {
+        "kind": "link",
+        "label": "UPGRADE PLAN",
+        "route": "/"
+      },
+      {
+        "kind": "button",
+        "label": "Toggle sidebar",
+        "route": "/"
+      },
+      {
+        "kind": "link",
+        "label": "Upgrade your plan",
+        "route": "/"
+      },
+      {
+        "kind": "button",
+        "label": "Switch to dark mode",
+        "route": "/"
+      },
+      {
+        "kind": "button",
+        "label": "Notifications",
+        "route": "/"
+      },
+      {
+        "kind": "link",
+        "label": "HOME",
+        "route": "/"
+      },
+      {
+        "kind": "link",
+        "label": "INSTITUTION SEARCH Browse all institutions in one directory ",
+        "route": "/"
+      },
+      {
+        "kind": "select",
+        "label": "Sort results",
+        "route": "/"
+      },
+      {
+        "kind": "button",
+        "label": "ALL",
+        "route": "/"
+      },
+      {
+        "kind": "button",
+        "label": "HIGH SCHOOL",
+        "route": "/"
+      }
+    ],
+    "outcomeChecked": 7
+  },
+  "frontier": {
+    "blocked": 59,
+    "visited": 85,
+    "excluded": 14,
+    "revision": 1995,
+    "discovered": 960,
+    "pendingRoutes": 861,
+    "outcomeChecked": 6,
+    "pendingControls": 642,
+    "sampledVariants": 0
+  },
+  "findings": [
+    {
+      "id": "96e02c6f-cd6c-4b59-8382-444d9dfba363",
+      "title": "No Content-Security-Policy on HTML pages",
+      "category": "configuration_observation",
+      "verification": "verified",
+      "lifecycle": null,
+      "rule_id": null,
+      "observed": "No Content-Security-Policy header on 42 page route(s): /, /my-room, /settings/account, /study-room, /pricing, /institutions."
+    },
+    {
+      "id": "da943ff4-c926-4d2e-a3e4-0659f875c0d1",
+      "title": "\"Task title\" not saved after submitting /my-room/shelves/f035e363-e76a-46ba-bdfb-d2db2c16c16e",
+      "category": "needs_review",
+      "verification": "inconclusive",
+      "lifecycle": null,
+      "rule_id": null,
+      "observed": "authentication did not reach success text \"Study notes, guides and past exams for your courses\" without a sign-in form within 5 seconds"
+    },
+    {
+      "id": "0bf166d7-2b78-48ab-841e-066e3bebdc0c",
+      "title": "\"Bio\", \"Location\" not saved after submitting /settings/account",
+      "category": "needs_review",
+      "verification": "inconclusive",
+      "lifecycle": null,
+      "rule_id": null,
+      "observed": "authentication did not reach success text \"Study notes, guides and past exams for your courses\" without a sign-in form within 5 seconds"
+    }
+  ],
+  "usage": {
+    "calls": 156,
+    "settled_micros": "1055517",
+    "outstanding_micros": "0"
+  },
+  "scenarios": [
+    {
+      "family": "claim_vs_truth",
+      "outcome": "failed",
+      "count": 3
+    }
+  ],
+  "limitations": [
+    "Graph paths are not independently checked features.",
+    "Multiple record URLs share one route family.",
+    "No mobile graph state; no assertion of mobile coverage.",
+    "Three scenario failures yielded two merged, rule-less candidates; independent authentication failed, so both remain inconclusive.",
+    "960 discovered destinations include 861 pending routes; no whole-site all-clear.",
+    "Pricing view only; billing/payment changes excluded.",
+    "Owned task and note totals include older fixtures; totals alone do not establish successful workflows."
+  ]
+}

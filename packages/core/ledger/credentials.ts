@@ -25,6 +25,18 @@ export function decrypt(sealed: string): string {
 
 export const newCredentialRef = () => `cred_${randomBytes(12).toString('base64url')}`;
 
+/** Remove exact known secrets and their URL-encoded form from plain JSON model/evidence data. */
+export function redactKnownSecrets<T>(value: T, secrets: Iterable<string>): T {
+  const needles = [...new Set([...secrets].filter(Boolean).flatMap((secret) => [secret, encodeURIComponent(secret)]))].sort((a, b) => b.length - a.length);
+  const visit = (item: unknown): unknown => {
+    if (typeof item === 'string') return needles.reduce((text, needle) => text.split(needle).join('[redacted]'), item);
+    if (Array.isArray(item)) return item.map(visit);
+    if (item && typeof item === 'object') return Object.fromEntries(Object.entries(item).map(([key, child]) => [String(visit(key)), visit(child)]));
+    return item;
+  };
+  return visit(value) as T;
+}
+
 export async function storeCredential(db: Db, input: { ref?: string; projectId?: string | null; runId?: string | null; label: string; username: string; secret: string; generated?: boolean }): Promise<string> {
   const ref = input.ref ?? newCredentialRef();
   await db.query(

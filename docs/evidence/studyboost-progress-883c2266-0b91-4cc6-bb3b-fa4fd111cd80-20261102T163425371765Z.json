@@ -1,0 +1,571 @@
+{
+  "run": {
+    "id": "883c2266-0b91-4cc6-bb3b-fa4fd111cd80",
+    "status": "running",
+    "stop_reason": null,
+    "browser_state": "ready",
+    "sandbox_verdict": "sandbox_on"
+  },
+  "actions": [
+    {
+      "seq": 343,
+      "tool": "navigate",
+      "state": "succeeded",
+      "actor": "A",
+      "device": "desktop",
+      "path": "/my-room"
+    },
+    {
+      "seq": 342,
+      "tool": "click",
+      "state": "succeeded",
+      "actor": "A",
+      "device": "desktop",
+      "path": "/my-room"
+    },
+    {
+      "seq": 341,
+      "tool": "click",
+      "state": "succeeded",
+      "actor": "A",
+      "device": "desktop",
+      "path": "/my-room"
+    },
+    {
+      "seq": 340,
+      "tool": "click",
+      "state": "succeeded",
+      "actor": "A",
+      "device": "desktop",
+      "path": "/my-room"
+    },
+    {
+      "seq": 339,
+      "tool": "click",
+      "state": "failed",
+      "actor": "A",
+      "device": "desktop",
+      "path": "/my-room"
+    },
+    {
+      "seq": 338,
+      "tool": "navigate",
+      "state": "succeeded",
+      "actor": "A",
+      "device": "desktop",
+      "path": "/my-room"
+    },
+    {
+      "seq": 337,
+      "tool": "click",
+      "state": "succeeded",
+      "actor": "A",
+      "device": "desktop",
+      "path": "/settings/account"
+    },
+    {
+      "seq": 336,
+      "tool": "click",
+      "state": "succeeded",
+      "actor": "A",
+      "device": "desktop",
+      "path": "/settings/account"
+    },
+    {
+      "seq": 335,
+      "tool": "fill",
+      "state": "succeeded",
+      "actor": "A",
+      "device": "desktop",
+      "path": "/settings/account"
+    },
+    {
+      "seq": 334,
+      "tool": "fill",
+      "state": "succeeded",
+      "actor": "A",
+      "device": "desktop",
+      "path": "/settings/account"
+    },
+    {
+      "seq": 333,
+      "tool": "navigate",
+      "state": "succeeded",
+      "actor": "A",
+      "device": "desktop",
+      "path": "/settings/account"
+    },
+    {
+      "seq": 332,
+      "tool": "navigate",
+      "state": "succeeded",
+      "actor": "A",
+      "device": "desktop",
+      "path": "/settings/account"
+    }
+  ],
+  "workflows": [
+    {
+      "name": "Sign in",
+      "status": "completed",
+      "summary": "Sign in at /login reached \"Study notes, guides and past exams for your courses\" (recorded by Oddhound)."
+    }
+  ],
+  "events": [
+    {
+      "type": "recipe.recorded",
+      "count": 1
+    }
+  ],
+  "spend": {
+    "calls": 149,
+    "settled_micros": "1004505",
+    "outstanding_micros": "0"
+  },
+  "admissionAllowance": {
+    "limiting": "daily_cap",
+    "availableMicros": 7000000,
+    "runExposureMicros": 0,
+    "configuredCapMicros": 10000000,
+    "accountDailyRemainingMicros": 7000000,
+    "accountLifetimeRemainingMicros": 45841819
+  },
+  "discovery": {
+    "next": [
+      {
+        "kind": "route",
+        "path": "/my-room?section=documents",
+        "label": "Your library"
+      },
+      {
+        "kind": "route",
+        "path": "/?page=9&q=&sort=nearby",
+        "label": "Next"
+      },
+      {
+        "kind": "route",
+        "path": "/my-room/shelves/2529e34d-4c08-43ee-9192-0d0b58ef9ae0",
+        "label": "QA Shelf NEWTASK 7X9Z2 open"
+      },
+      {
+        "kind": "route",
+        "path": "/institutions?page=12",
+        "label": "Next \u2192"
+      },
+      {
+        "kind": "route",
+        "path": "/documents?page=12",
+        "label": "Next \u2192"
+      }
+    ],
+    "blocked": 59,
+    "visited": 85,
+    "excluded": 14,
+    "revision": 1985,
+    "discovered": 960,
+    "pendingRoutes": 861,
+    "outcomeChecked": 6,
+    "pendingControls": 642,
+    "sampledVariants": 0
+  },
+  "preview": {
+    "seq": "414",
+    "state": "available",
+    "reason": null,
+    "updated_at": "2026-11-02 16:34:26.014067+00"
+  },
+  "plan": {
+    "charters": [
+      {
+        "id": "C1",
+        "area": "Auth + navigation breadth",
+        "note": null,
+        "risk": "high",
+        "status": "testing",
+        "technique": "Logout protection + breadth"
+      },
+      {
+        "id": "C2",
+        "area": "My-room shelves/tasks",
+        "note": null,
+        "risk": "high",
+        "status": "testing",
+        "technique": "CRUD persistence, shelf limit"
+      },
+      {
+        "id": "C3",
+        "area": "Documents/courses search",
+        "note": null,
+        "risk": "medium",
+        "status": "testing",
+        "technique": "Search/filter/sort"
+      },
+      {
+        "id": "C4",
+        "area": "Study-room tools",
+        "note": null,
+        "risk": "medium",
+        "status": "testing",
+        "technique": "Flashcards/games/tools"
+      },
+      {
+        "id": "C5",
+        "area": "Forms XSS + validation",
+        "note": null,
+        "risk": "high",
+        "status": "testing",
+        "technique": "Markup probe as text, blank/long"
+      },
+      {
+        "id": "C6",
+        "area": "Mobile + controls",
+        "note": null,
+        "risk": "medium",
+        "status": "testing",
+        "technique": "390px key pages differential"
+      }
+    ]
+  },
+  "routes": [
+    {
+      "route": "/",
+      "actor": "A",
+      "device": "desktop",
+      "states": 12
+    },
+    {
+      "route": "/about",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/contact",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/cookies",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/courses",
+      "actor": "A",
+      "device": "desktop",
+      "states": 2
+    },
+    {
+      "route": "/courses/accounting-program-a54f9313",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/courses/cloud-computing-6047",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/courses/electrical-circuits-9426",
+      "actor": "A",
+      "device": "desktop",
+      "states": 2
+    },
+    {
+      "route": "/courses/electronics-7035",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/courses/evidence-6771",
+      "actor": "A",
+      "device": "desktop",
+      "states": 2
+    },
+    {
+      "route": "/courses/general-physics-i-algebra-based-5817",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/courses/introduction-to-literature-6363",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/courses/nursing-process-iv-medical-surgical-nursing-4937",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/courses/university-physics-i-9878",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/credits/music",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/dmca",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/docs",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/documents",
+      "actor": "A",
+      "device": "desktop",
+      "states": 15
+    },
+    {
+      "route": "/documents/presentational-devices-in-chicken-run-revealing-good-and-evilssssss-b961b919",
+      "actor": "A",
+      "device": "desktop",
+      "states": 3
+    },
+    {
+      "route": "/institutions",
+      "actor": "A",
+      "device": "desktop",
+      "states": 2
+    },
+    {
+      "route": "/institutions/arizona-state-university",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/login",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/my-room",
+      "actor": "A",
+      "device": "desktop",
+      "states": 31
+    },
+    {
+      "route": "/my-room/shelves/3d541602-f6f9-4eb0-b697-8812dc1c71a1",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/my-room/shelves/f035e363-e76a-46ba-bdfb-d2db2c16c16e",
+      "actor": "A",
+      "device": "desktop",
+      "states": 30
+    },
+    {
+      "route": "/pricing",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/privacy",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/settings/account",
+      "actor": "A",
+      "device": "desktop",
+      "states": 7
+    },
+    {
+      "route": "/settings/appearance",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/settings/notifications",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/settings/usage",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/study-room",
+      "actor": "A",
+      "device": "desktop",
+      "states": 2
+    },
+    {
+      "route": "/study-room/ask-documents",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/study-room/flashcards",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/study-room/hangman-game",
+      "actor": "A",
+      "device": "desktop",
+      "states": 2
+    },
+    {
+      "route": "/study-room/misconception-siege",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/study-room/scenario-simulator",
+      "actor": "A",
+      "device": "desktop",
+      "states": 2
+    },
+    {
+      "route": "/study-room/study-guide",
+      "actor": "A",
+      "device": "desktop",
+      "states": 2
+    },
+    {
+      "route": "/study-room/summarize",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/study-room/trivia-game",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/study-room/word-unscramble-game",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    },
+    {
+      "route": "/terms",
+      "actor": "A",
+      "device": "desktop",
+      "states": 1
+    }
+  ],
+  "scenarios": [
+    {
+      "family": "claim_vs_truth",
+      "outcome": "failed",
+      "count": 3
+    }
+  ],
+  "recentChecks": [
+    {
+      "seq": 2007,
+      "type": "scenario.finished",
+      "payload": {
+        "claim": null,
+        "found": [],
+        "looks": 3,
+        "family": "claim_vs_truth",
+        "missing": [
+          "Bio",
+          "Location"
+        ],
+        "outcome": "failed",
+        "windowMs": 4500,
+        "windowUsedMs": 22935
+      }
+    },
+    {
+      "seq": 1973,
+      "type": "finding.candidate",
+      "payload": {
+        "kind": "claim_check",
+        "title": "\"Bio\", \"Location\" not saved after submitting /settings/account",
+        "family": "claim_vs_truth",
+        "ruleId": null,
+        "source": "agent"
+      }
+    },
+    {
+      "seq": 1972,
+      "type": "scenario.finished",
+      "payload": {
+        "claim": null,
+        "found": [],
+        "looks": 3,
+        "family": "claim_vs_truth",
+        "missing": [
+          "Bio",
+          "Location"
+        ],
+        "outcome": "failed",
+        "windowMs": 4500,
+        "windowUsedMs": 25236
+      }
+    },
+    {
+      "seq": 638,
+      "type": "finding.candidate",
+      "payload": {
+        "kind": "claim_check",
+        "title": "\"Task title\" not saved after submitting /my-room/shelves/f035e363-e76a-46ba-bdfb-d2db2c16c16e",
+        "family": "claim_vs_truth",
+        "ruleId": null,
+        "source": "agent"
+      }
+    },
+    {
+      "seq": 637,
+      "type": "scenario.finished",
+      "payload": {
+        "claim": null,
+        "found": [],
+        "looks": 3,
+        "family": "claim_vs_truth",
+        "missing": [
+          "Task title"
+        ],
+        "outcome": "failed",
+        "windowMs": 4500,
+        "windowUsedMs": 22030
+      }
+    }
+  ],
+  "coverage": {
+    "pages": 42,
+    "total": 2790,
+    "exercised": 80,
+    "blocked": 67,
+    "outcomeChecked": 7
+  }
+}
