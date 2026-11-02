@@ -43,6 +43,7 @@ export function RunSetup({ projectId, environment, availableRunUsd }: { projectI
       deniedPathKeywords: String(f.get('keywords') ?? '').split(/[\s,]+/).map((k) => k.trim().toLowerCase()).filter(Boolean),
       handoff: { enabled: Boolean(f.get('handoff')), startPath: String(f.get('startPath') || '/login') },
       ...(username && password ? { account: { username, password, label: 'Owner test account' } } : {}),
+      ...(String(f.get('report') ?? '').trim() ? { report: String(f.get('report')).trim() } : {}),
     }) });
     const body = await res.json().catch(() => ({}));
     if (res.ok) router.push(`/runs/${body.runId}`);
@@ -79,6 +80,14 @@ export function RunSetup({ projectId, environment, availableRunUsd }: { projectI
             )}
           </Option>
         </div>
+      </div>
+
+      <div className="form-section">
+        <h3 className="h3" id="report-title">Reproduce a bug report</h3>
+        <label className="field"><span>Bug report <span className="muted" style={{ fontWeight: 400 }}>— optional</span></span>
+          <textarea className="textarea" name="report" rows={4} maxLength={4000} aria-describedby="report-hint"
+            placeholder="“I booked a table for my team, the page said Saved, but the booking isn’t in my list.” Paste the ticket as the user wrote it." />
+          <small id="report-hint">The agent tries to reproduce it first. You get either a verified finding with replays, or “not reproduced within the tested scope” with what was tried. The report is treated as a claim to check, never as instructions.</small></label>
       </div>
 
       <div className="form-section">

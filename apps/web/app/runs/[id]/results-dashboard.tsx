@@ -2,11 +2,13 @@
 import { useState } from 'react';
 import { Icon, type IconName } from '@/ui/icons';
 import { StatusBadge, findingStatus } from '@/ui/status';
+import type { ReportVerdict } from '@/lib/run-data';
 import { RESULT_DOMAINS, resultCounts, resultDomain, type ResultDomain, type ResultFinding } from './results-data';
 
 const ICONS: Record<ResultDomain, IconName> = { functional: 'workflow', security: 'shield', seo: 'globe', ux: 'desktop', other: 'list' };
 type Props = {
   status: string; reason?: string; findings: ResultFinding[];
+  report?: string | null; reportVerdict?: ReportVerdict | null;
   rules: { id: string; text: string; source?: string }[];
   states: { route: string; device: string }[];
   coverage?: { exercised: number; total: number; outcomeChecked?: number; blocked: number } | null;
@@ -14,7 +16,7 @@ type Props = {
   onSelectFinding: (id: string) => void; onOpenCoverage: () => void;
 };
 
-export function ResultsDashboard({ status, reason, findings, rules, states, coverage, discovery, onSelectFinding, onOpenCoverage }: Props) {
+export function ResultsDashboard({ status, reason, report, reportVerdict, findings, rules, states, coverage, discovery, onSelectFinding, onOpenCoverage }: Props) {
   const [filter, setFilter] = useState<ResultDomain | 'all'>('all');
   const totals = resultCounts(findings);
   const grouped = RESULT_DOMAINS.map(domain => ({ ...domain, findings: findings.filter(f => resultDomain(f, rules) === domain.key) }));
@@ -26,6 +28,15 @@ export function ResultsDashboard({ status, reason, findings, rules, states, cove
       <div className="row" style={{ gap: 10, alignItems: 'center' }}><h1 className="h1">Run results</h1><StatusBadge value={status} /></div>
       <p className="text-2" style={{ margin: 0 }}>{status === 'completed' ? 'Results from the tested scope.' : 'Partial results. This run did not complete its exploration.'}{reason ? ` Reason: ${reason.replace(/_/g, ' ')}.` : ''}</p>
     </header>
+    {report && <section className="rs-report" aria-labelledby="rs-report-title">
+      <h2 id="rs-report-title" className="h3">Bug report to reproduce</h2>
+      <blockquote className="rs-report-text">{report}</blockquote>
+      {reportVerdict?.verdict === 'reproduced'
+        ? <p className="rs-verdict rs-verdict-yes"><Icon name="fail" /><span><strong>Reproduced.</strong> Verified as <button type="button" className="link-btn" onClick={() => onSelectFinding(reportVerdict.findingId)}>{reportVerdict.title}</button>, with fresh replays.</span></p>
+        : reportVerdict?.verdict === 'not_reproduced'
+          ? <p className="rs-verdict"><Icon name="info" /><span><strong>{reportVerdict.text}.</strong> {[reportVerdict.actions != null && `${reportVerdict.actions} actions`, reportVerdict.pages != null && `${reportVerdict.pages} pages`, reportVerdict.candidates != null && `${reportVerdict.candidates} candidates checked`].filter(Boolean).join(', ')}{reportVerdict.actions != null ? '. ' : ''}This does not show the bug is absent; it was not reproduced in what this run tried.</span></p>
+          : <p className="rs-verdict"><Icon name="clock" /><span>No reproduction verdict was recorded for this run.</span></p>}
+    </section>}
     <dl className="instruments rs-totals">
       <div className={totals.verified ? 'is-hot' : undefined}><dt>Verified issues</dt><dd className="tabular">{totals.verified}</dd></div>
       <div><dt>Needs review</dt><dd className="tabular">{totals.review}</dd></div>

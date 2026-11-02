@@ -10,6 +10,8 @@ const Body = z.object({
   testMode: z.enum(['active', 'observation_only']),
   productionWritesAcknowledged: z.boolean().default(false),
   goals: z.array(z.string().trim().min(3).max(300)).max(8).default([]),
+  // A user's bug report to reproduce first; untrusted text, fenced in the prompt by the agent core.
+  report: z.string().trim().min(10).max(4000).optional(),
   rules: z.array(z.string().trim().min(3).max(400)).max(20).default([]),
   allowRegistration: z.boolean(),
   emailDomain: z.string().trim().regex(/^[a-z0-9.-]+\.[a-z]{2,}$/).default('example.test'),
@@ -55,6 +57,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     productionWritesAcknowledged: b.productionWritesAcknowledged,
     description: project.description || 'No description provided.',
     goals: b.goals,
+    ...(b.report ? { report: b.report } : {}),
     rules: withBaselineRules(b.rules.map((text, i) => ({ id: `R${i + 1}`, text, source: 'owner' as const }))),
     capabilities: { register: writes && b.allowRegistration, login: true, createRecords: writes, editRecords: writes, cancelRecords: writes, boundaryValues: true, repeatSubmission: writes, unusualOrder: true, crossAccountRead: b.secondActor && !b.handoff.enabled },
     accounts,

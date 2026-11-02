@@ -737,3 +737,10 @@ details.disclosure > .disclosure-body { padding: 4px 14px 16px; display: grid; g
 @media (max-width: 560px) { .rs-findings button { grid-template-columns: minmax(0, 1fr) 16px; } .rs-findings button > :first-child { grid-column: 1 / -1; justify-self: start; } .rs-cov div { grid-template-columns: minmax(0, 1fr); gap: 0; } }
 .rs-findings .badge { white-space: nowrap; justify-self: start; }
 .rs-findings button { grid-template-columns: 120px minmax(0, 1fr) 16px; }
+.rs-report { display: grid; gap: 8px; padding: 14px 16px; border-radius: var(--radius); background: var(--surface); border: 1px solid var(--separator); }
+.rs-report-text { margin: 0; padding-left: 12px; border-left: 3px solid var(--accent); color: var(--text-2); white-space: pre-wrap; overflow-wrap: anywhere; max-height: 9.5em; overflow: auto; }
+.rs-verdict { display: flex; gap: 8px; align-items: flex-start; margin: 0; font-size: 13.5px; }
+.rs-verdict svg { margin-top: 2px; flex: none; color: var(--text-3); }
+.rs-verdict-yes svg { color: var(--bad); }
+.link-btn { all: unset; color: var(--accent-text); font-weight: 600; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+.link-btn:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 3px; }
