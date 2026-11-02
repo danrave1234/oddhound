@@ -1,0 +1,24 @@
+{
+  "at": "2026-10-29T18:22:52.732Z",
+  "profile": "opt-in gateway evaluation; internal Docker target network plus separate bridge for loopback control ports; synthetic HTTPS targets; no production enablement",
+  "node": "v26.12.1",
+  "playwright": "1.64.1",
+  "chromium": "not_run",
+  "sandbox": "not_run",
+  "image": "oddhound-claude-gateway:evaluation",
+  "imageId": "sha256:9f2ce7f1dfab2f26dc9b8ea356fd5a42dfc9d4778658eebe31459579015b0747",
+  "provider": "none",
+  "mocked": "synthetic target pages/endpoints only; real TLS, mitmproxy/smokescreen/firewall/Chromium and destination arrivals",
+  "result": "incomplete",
+  "passed": 0,
+  "failed": 0,
+  "fatal": "Error: Gateway exited before ready: {\"labDiagnostic\":\"firewall_rejected\",\"details\":\"/run/oddhound-evaluation/firewall.nft:18:22-28: Error: syntax error, unexpected counter, expecting newline or semicolon\\n counter rx_pass { } counter tx_pass { } counter rx_drop { } counter tx_drop { } counter fence_drop { }\\n                     ^^^^^^^\\n/run/oddhound-evaluation/firewall.nft:19:2-4: Error: syntax error, unexpected set\\n set closed { type mark; }\\n ^^^\\n/run/oddhound-evaluation/firewall.nft:25:11-17: Error: No such file or directory\\n  ct mark @closed counter name fence_drop drop\\n          ^^^^^^^\\n/run/oddhound-evaluation/firewall.nft:30:11-17: Error: No such file or directory\\n  ct mark @closed counter name fence_drop drop\\n          ^^^^^^^\\n\"}\n{\"error\":\"evaluation_gateway_startup_failed\",\"stage\":\"firewall\"}\n{\"egress\":\"exhausted\",\"reason\":\"gateway_startup_failed\"}\n    at file:///C:/Users/Danrave/Desktop/Project/Oddhound/claude/tests/lab/gateway-evaluation-canary.ts:94:94\n    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)",
+  "cleanup": {
+    "gateway": true,
+    "target": true,
+    "network": true,
+    "controlNetwork": true
+  },
+  "targetLogs": "Owned gateway TLS canary ready",
+  "checks": []
+}

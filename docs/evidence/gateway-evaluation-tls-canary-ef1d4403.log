@@ -1,0 +1,2 @@
+{"error":"evaluation_gateway_startup_failed","stage":"firewall"}
+{"egress":"exhausted","reason":"gateway_startup_failed"}

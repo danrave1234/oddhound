@@ -1,0 +1,12 @@
+Commands actually executed from claude (pinned Node 26):
+./.tools/node26/node.exe node_modules/vitest/vitest.mjs run tests/integration/delayed-auth-form.test.ts
+./.tools/node26/node.exe node_modules/typescript/bin/tsc --noEmit
+python -m py_compile apps/browser/gateway/policy.py
+docker build -f apps/browser/gateway/Dockerfile -t oddhound-claude-gateway:attribution-20261030 .
+ODDHOUND_EVALUATION_IMAGE=oddhound-claude-gateway:attribution-20261030 ./.tools/node26/node.exe tests/lab/gateway-evaluation-canary.ts
+python infra/modal/gateway_evaluation_image.py
+
+Hydration results are in delayed-auth-form-2026-10-30-tests.txt (3 passed).
+Typecheck and Python syntax validation completed with exit code 0 and no diagnostics.
+Canary final result: 58 passed, 0 failed, sandbox_on, all four cleanup entries true.
+The first two extended canary runs failed the H2 lab ALPN destination-arrival control; retained in immutable JSON files 64c30a50 and a0e94463.

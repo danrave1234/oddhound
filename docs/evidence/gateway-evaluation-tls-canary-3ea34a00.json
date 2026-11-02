@@ -1,0 +1,20 @@
+{
+  "at": "2026-10-29T18:17:29.101Z",
+  "profile": "opt-in gateway evaluation; internal Docker network; synthetic HTTPS targets; no production enablement",
+  "node": "v26.12.1",
+  "playwright": "1.64.1",
+  "chromium": "not_run",
+  "sandbox": "not_run",
+  "image": "oddhound-claude-gateway:evaluation",
+  "provider": "none",
+  "mocked": "synthetic target pages/endpoints only; real TLS, mitmproxy/smokescreen/firewall/Chromium and destination arrivals",
+  "result": "incomplete",
+  "passed": 0,
+  "failed": 0,
+  "fatal": "Error: Command failed: docker port oddhound-gateway-target-3ea34a00 8080/tcp\nno public port '8080/tcp' published for oddhound-gateway-target-3ea34a00\n\n    at genericNodeError (node:internal/errors:999:15)\n    at wrappedFn (node:internal/errors:544:14)\n    at checkExecSyncError (node:child_process:990:11)\n    at execFileSync (node:child_process:1026:15)\n    at docker (file:///C:/Users/Danrave/Desktop/Project/Oddhound/claude/tests/lab/gateway-evaluation-canary.ts:33:54)\n    at file:///C:/Users/Danrave/Desktop/Project/Oddhound/claude/tests/lab/gateway-evaluation-canary.ts:77:21",
+  "cleanup": {
+    "target": true,
+    "network": true
+  },
+  "checks": []
+}

@@ -1,0 +1,49 @@
+{
+  "at": "2026-10-29T19:29:11.637Z",
+  "imageId": "im-VFVycsDf9x78A5ZYAg47E0",
+  "appName": "oddhound-browser-preflight",
+  "runId": "e92bfb63-b950-4861-bf9d-3e1ae38d14ca",
+  "policyHash": "b34b25b615e90de199f5ea3823c772a1bade5b6b37c25fcbfb513e5e89ce8c68",
+  "runtime": "vm",
+  "control": "token",
+  "outbound": "canonical public IPv4",
+  "node": "v26.12.1",
+  "limitations": "Startup/control/sandbox/teardown only. No target navigation, target credentials, model call, resource/authority canary or public-launch clearance.",
+  "checks": [
+    {
+      "check": "frozen policy hash attested before authenticated browser connection",
+      "pass": true,
+      "detail": "Runtime required the exact SHA256 policy hash before connecting"
+    },
+    {
+      "check": "Chromium sandbox",
+      "pass": true,
+      "detail": "sandbox_on"
+    },
+    {
+      "check": "browser version",
+      "pass": true,
+      "detail": "156.0.8078.4"
+    },
+    {
+      "check": "blank context only",
+      "pass": true,
+      "detail": "about:blank"
+    },
+    {
+      "check": "sandbox termination confirmed",
+      "pass": true,
+      "detail": "sandbox sb-01M64J6Q12HM6PWHM2243BJST6 terminated (exit 137)"
+    },
+    {
+      "check": "independent cleanup of this run tag",
+      "pass": true,
+      "detail": {
+        "unconfirmed": []
+      }
+    }
+  ],
+  "sandboxId": "sb-01M64J6Q12HM6PWHM2243BJST6",
+  "startupMs": 8389,
+  "pass": true
+}

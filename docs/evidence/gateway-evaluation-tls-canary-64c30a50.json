@@ -1,0 +1,1868 @@
+{
+  "at": "2026-10-29T19:23:40.517Z",
+  "profile": "opt-in gateway evaluation; internal Docker target network plus separate bridge for loopback control ports; synthetic HTTPS targets; no production enablement",
+  "node": "v26.12.1",
+  "playwright": "1.64.1",
+  "chromium": "156.0.8078.4",
+  "sandbox": "sandbox_on",
+  "image": "oddhound-claude-gateway:attribution-20261030",
+  "imageId": "sha256:ba04ff29ea56f83dcb23491719392fcde1d1b3fa876dc3a40a0b4eecd0de4431",
+  "provider": "none",
+  "mocked": "synthetic target pages/endpoints only; real TLS, mitmproxy/smokescreen/firewall/Chromium and destination arrivals",
+  "result": "failed",
+  "passed": 55,
+  "failed": 1,
+  "cleanup": {
+    "gateway": true,
+    "target": true,
+    "network": true,
+    "controlNetwork": true
+  },
+  "targetLogs": "Owned gateway TLS canary ready",
+  "checks": [
+    {
+      "id": "GT-01",
+      "name": "native http/1.1 transport error attributed",
+      "passed": true,
+      "expected": "negotiated native protocol; proxy 502 attributed; target sent no HTTP response",
+      "nonce": "c7b2acf7-605c-4aa8-ac45-4f311c1583e1",
+      "browserResult": "{\"protocol\":\"http/1.1\",\"status\":502,\"server\":\"oddhound-evaluation-gateway/12.3.1\"}",
+      "arrivals": [
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "c7b2acf7-605c-4aa8-ac45-4f311c1583e1",
+          "path": "/transport-failure",
+          "method": "GET",
+          "body": "",
+          "origin": "https://fixture.test",
+          "activeForNonce": 1
+        }
+      ],
+      "denials": [
+        {
+          "egress": "denied",
+          "host": "fixture.test",
+          "port": 443,
+          "reason": "upstream_error",
+          "canaryNonce": "c7b2acf7-605c-4aa8-ac45-4f311c1583e1"
+        }
+      ]
+    },
+    {
+      "id": "GT-02",
+      "name": "native h2 transport error attributed",
+      "passed": false,
+      "expected": "negotiated native protocol; proxy 502 attributed; target sent no HTTP response",
+      "nonce": "5b09708e-c4d8-41bd-82b1-1d28b35022a8",
+      "browserResult": "{\"protocol\":\"h2\",\"status\":502,\"server\":\"oddhound-evaluation-gateway/12.3.1\"}",
+      "arrivals": [],
+      "denials": [
+        {
+          "egress": "denied",
+          "host": "fixture.test",
+          "port": 443,
+          "reason": "upstream_error",
+          "canaryNonce": "5b09708e-c4d8-41bd-82b1-1d28b35022a8"
+        }
+      ]
+    },
+    {
+      "id": "GT-03",
+      "name": "transport-failure sentinel attribution control",
+      "passed": true,
+      "expected": "gateway 502 excluded from target findings",
+      "nonce": "e5d3e725-09b9-4645-8081-6d5a7187830c",
+      "browserResult": "{\"status\":502,\"reason\":\"upstream_error\",\"server\":\"oddhound-evaluation-gateway/12.3.1\",\"signals\":[]}",
+      "arrivals": [
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "e5d3e725-09b9-4645-8081-6d5a7187830c",
+          "path": "/transport-failure",
+          "method": "GET",
+          "body": "",
+          "origin": null,
+          "activeForNonce": 1
+        }
+      ],
+      "denials": [
+        {
+          "egress": "denied",
+          "host": "fixture.test",
+          "port": 443,
+          "reason": "upstream_error",
+          "canaryNonce": "e5d3e725-09b9-4645-8081-6d5a7187830c"
+        }
+      ]
+    },
+    {
+      "id": "GT-04",
+      "name": "target-502 sentinel attribution control",
+      "passed": true,
+      "expected": "real target 502 remains a finding, including spoofed gateway headers",
+      "nonce": "42f3c601-4a7d-49a1-8622-252c5ceb8b21",
+      "browserResult": "{\"status\":502,\"reason\":null,\"server\":\"Owned TLS fixture\",\"signals\":[\"http_5xx\"]}",
+      "arrivals": [
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "42f3c601-4a7d-49a1-8622-252c5ceb8b21",
+          "path": "/target-502",
+          "method": "GET",
+          "body": "",
+          "origin": null,
+          "activeForNonce": 1
+        }
+      ]
+    },
+    {
+      "id": "GT-05",
+      "name": "target-502?spoof=1 sentinel attribution control",
+      "passed": true,
+      "expected": "real target 502 remains a finding, including spoofed gateway headers",
+      "nonce": "f61c6f1d-d06a-4f63-82ff-56d6352b82bc",
+      "browserResult": "{\"status\":502,\"reason\":null,\"server\":null,\"signals\":[\"http_5xx\"]}",
+      "arrivals": [
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "f61c6f1d-d06a-4f63-82ff-56d6352b82bc",
+          "path": "/target-502",
+          "method": "GET",
+          "body": "",
+          "origin": null,
+          "activeForNonce": 1
+        }
+      ]
+    },
+    {
+      "id": "GT-06",
+      "name": "same-origin active POST",
+      "passed": true,
+      "expected": "one primary POST with unchanged synthetic body",
+      "nonce": "29441cfb-5195-41cd-8de1-5f3ca35273f6",
+      "browserResult": "response:200",
+      "arrivals": [
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "29441cfb-5195-41cd-8de1-5f3ca35273f6",
+          "path": "/sink",
+          "method": "POST",
+          "body": "synthetic=29441cfb-5195-41cd-8de1-5f3ca35273f6",
+          "origin": "https://fixture.test",
+          "activeForNonce": 1
+        }
+      ]
+    },
+    {
+      "id": "GT-07",
+      "name": "verified API POST",
+      "passed": true,
+      "expected": "one API write from verified UI Origin",
+      "nonce": "1fc608d1-457a-485c-854b-48b290932ed4",
+      "browserResult": "response:200",
+      "arrivals": [
+        {
+          "kind": "http",
+          "host": "api.test",
+          "nonce": "1fc608d1-457a-485c-854b-48b290932ed4",
+          "path": "/sink",
+          "method": "POST",
+          "body": "synthetic=1fc608d1-457a-485c-854b-48b290932ed4",
+          "origin": "https://fixture.test",
+          "activeForNonce": 1
+        }
+      ]
+    },
+    {
+      "id": "GT-08",
+      "name": "verified API PUT",
+      "passed": true,
+      "expected": "one API write from verified UI Origin",
+      "nonce": "11d641c4-a939-400c-80ab-b34b8c9ce251",
+      "browserResult": "response:200",
+      "arrivals": [
+        {
+          "kind": "http",
+          "host": "api.test",
+          "nonce": "11d641c4-a939-400c-80ab-b34b8c9ce251",
+          "path": "/sink",
+          "method": "OPTIONS",
+          "body": "",
+          "origin": "https://fixture.test",
+          "activeForNonce": 1
+        },
+        {
+          "kind": "http",
+          "host": "api.test",
+          "nonce": "11d641c4-a939-400c-80ab-b34b8c9ce251",
+          "path": "/sink",
+          "method": "PUT",
+          "body": "synthetic=11d641c4-a939-400c-80ab-b34b8c9ce251",
+          "origin": "https://fixture.test",
+          "activeForNonce": 1
+        }
+      ]
+    },
+    {
+      "id": "GT-09",
+      "name": "verified API PATCH",
+      "passed": true,
+      "expected": "one API write from verified UI Origin",
+      "nonce": "03b063d6-ba5c-42a2-b1d1-fd320fb97bba",
+      "browserResult": "response:200",
+      "arrivals": [
+        {
+          "kind": "http",
+          "host": "api.test",
+          "nonce": "03b063d6-ba5c-42a2-b1d1-fd320fb97bba",
+          "path": "/sink",
+          "method": "OPTIONS",
+          "body": "",
+          "origin": "https://fixture.test",
+          "activeForNonce": 1
+        },
+        {
+          "kind": "http",
+          "host": "api.test",
+          "nonce": "03b063d6-ba5c-42a2-b1d1-fd320fb97bba",
+          "path": "/sink",
+          "method": "PATCH",
+          "body": "synthetic=03b063d6-ba5c-42a2-b1d1-fd320fb97bba",
+          "origin": "https://fixture.test",
+          "activeForNonce": 1
+        }
+      ]
+    },
+    {
+      "id": "GT-10",
+      "name": "verified API DELETE",
+      "passed": true,
+      "expected": "one API write from verified UI Origin",
+      "nonce": "f9d23a71-f38f-47d7-b5df-0fd64d883953",
+      "browserResult": "response:200",
+      "arrivals": [
+        {
+          "kind": "http",
+          "host": "api.test",
+          "nonce": "f9d23a71-f38f-47d7-b5df-0fd64d883953",
+          "path": "/sink",
+          "method": "OPTIONS",
+          "body": "",
+          "origin": "https://fixture.test",
+          "activeForNonce": 1
+        },
+        {
+          "kind": "http",
+          "host": "api.test",
+          "nonce": "f9d23a71-f38f-47d7-b5df-0fd64d883953",
+          "path": "/sink",
+          "method": "DELETE",
+          "body": "synthetic=f9d23a71-f38f-47d7-b5df-0fd64d883953",
+          "origin": "https://fixture.test",
+          "activeForNonce": 1
+        }
+      ]
+    },
+    {
+      "id": "GT-11",
+      "name": "resource CSS positive control",
+      "passed": true,
+      "expected": "resource CSS reached",
+      "nonce": "93f64b4f-1f44-4d65-937c-c6c7c1ec301c",
+      "browserResult": "loaded",
+      "arrivals": [
+        {
+          "kind": "http",
+          "host": "resource.test",
+          "nonce": "93f64b4f-1f44-4d65-937c-c6c7c1ec301c",
+          "path": "/asset.css",
+          "method": "GET",
+          "body": "",
+          "origin": null,
+          "activeForNonce": 1
+        }
+      ]
+    },
+    {
+      "id": "GT-12",
+      "name": "twelve parallel resources are queued and all load",
+      "passed": true,
+      "expected": "12 resource CSS responses; destination concurrency at most 6",
+      "nonce": "8642a52c-bbb5-4b65-afab-fe3cfd5fa7ee",
+      "browserResult": "12 loaded",
+      "arrivals": [
+        {
+          "kind": "http",
+          "host": "resource.test",
+          "nonce": "8642a52c-bbb5-4b65-afab-fe3cfd5fa7ee",
+          "path": "/asset.css",
+          "method": "GET",
+          "body": "",
+          "origin": null,
+          "activeForNonce": 1
+        },
+        {
+          "kind": "http",
+          "host": "resource.test",
+          "nonce": "8642a52c-bbb5-4b65-afab-fe3cfd5fa7ee",
+          "path": "/asset.css",
+          "method": "GET",
+          "body": "",
+          "origin": null,
+          "activeForNonce": 2
+        },
+        {
+          "kind": "http",
+          "host": "resource.test",
+          "nonce": "8642a52c-bbb5-4b65-afab-fe3cfd5fa7ee",
+          "path": "/asset.css",
+          "method": "GET",
+          "body": "",
+          "origin": null,
+          "activeForNonce": 3
+        },
+        {
+          "kind": "http",
+          "host": "resource.test",
+          "nonce": "8642a52c-bbb5-4b65-afab-fe3cfd5fa7ee",
+          "path": "/asset.css",
+          "method": "GET",
+          "body": "",
+          "origin": null,
+          "activeForNonce": 4
+        },
+        {
+          "kind": "http",
+          "host": "resource.test",
+          "nonce": "8642a52c-bbb5-4b65-afab-fe3cfd5fa7ee",
+          "path": "/asset.css",
+          "method": "GET",
+          "body": "",
+          "origin": null,
+          "activeForNonce": 5
+        },
+        {
+          "kind": "http",
+          "host": "resource.test",
+          "nonce": "8642a52c-bbb5-4b65-afab-fe3cfd5fa7ee",
+          "path": "/asset.css",
+          "method": "GET",
+          "body": "",
+          "origin": null,
+          "activeForNonce": 1
+        },
+        {
+          "kind": "http",
+          "host": "resource.test",
+          "nonce": "8642a52c-bbb5-4b65-afab-fe3cfd5fa7ee",
+          "path": "/asset.css",
+          "method": "GET",
+          "body": "",
+          "origin": null,
+          "activeForNonce": 2
+        },
+        {
+          "kind": "http",
+          "host": "resource.test",
+          "nonce": "8642a52c-bbb5-4b65-afab-fe3cfd5fa7ee",
+          "path": "/asset.css",
+          "method": "GET",
+          "body": "",
+          "origin": null,
+          "activeForNonce": 3
+        },
+        {
+          "kind": "http",
+          "host": "resource.test",
+          "nonce": "8642a52c-bbb5-4b65-afab-fe3cfd5fa7ee",
+          "path": "/asset.css",
+          "method": "GET",
+          "body": "",
+          "origin": null,
+          "activeForNonce": 4
+        },
+        {
+          "kind": "http",
+          "host": "resource.test",
+          "nonce": "8642a52c-bbb5-4b65-afab-fe3cfd5fa7ee",
+          "path": "/asset.css",
+          "method": "GET",
+          "body": "",
+          "origin": null,
+          "activeForNonce": 5
+        },
+        {
+          "kind": "http",
+          "host": "resource.test",
+          "nonce": "8642a52c-bbb5-4b65-afab-fe3cfd5fa7ee",
+          "path": "/asset.css",
+          "method": "GET",
+          "body": "",
+          "origin": null,
+          "activeForNonce": 5
+        },
+        {
+          "kind": "http",
+          "host": "resource.test",
+          "nonce": "8642a52c-bbb5-4b65-afab-fe3cfd5fa7ee",
+          "path": "/asset.css",
+          "method": "GET",
+          "body": "",
+          "origin": null,
+          "activeForNonce": 2
+        }
+      ]
+    },
+    {
+      "id": "GT-13",
+      "name": "allowed redirect pair 301/301",
+      "passed": true,
+      "expected": "final permitted sink reached once with browser-correct method/body",
+      "nonce": "ee65819e-d688-45b9-a7be-70345a0ddd8a",
+      "browserResult": "response:200",
+      "arrivals": [
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "ee65819e-d688-45b9-a7be-70345a0ddd8a",
+          "path": "/redirect",
+          "method": "POST",
+          "body": "synthetic=ee65819e-d688-45b9-a7be-70345a0ddd8a",
+          "origin": "https://fixture.test",
+          "activeForNonce": 1
+        },
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "ee65819e-d688-45b9-a7be-70345a0ddd8a",
+          "path": "/redirect",
+          "method": "GET",
+          "body": "",
+          "origin": null,
+          "activeForNonce": 1
+        },
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "ee65819e-d688-45b9-a7be-70345a0ddd8a",
+          "path": "/sink",
+          "method": "GET",
+          "body": "",
+          "origin": null,
+          "activeForNonce": 1
+        }
+      ]
+    },
+    {
+      "id": "GT-14",
+      "name": "allowed redirect pair 301/302",
+      "passed": true,
+      "expected": "final permitted sink reached once with browser-correct method/body",
+      "nonce": "a66977e1-7fc5-4bef-bd2c-d8e40d019ff7",
+      "browserResult": "response:200",
+      "arrivals": [
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "a66977e1-7fc5-4bef-bd2c-d8e40d019ff7",
+          "path": "/redirect",
+          "method": "POST",
+          "body": "synthetic=a66977e1-7fc5-4bef-bd2c-d8e40d019ff7",
+          "origin": "https://fixture.test",
+          "activeForNonce": 1
+        },
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "a66977e1-7fc5-4bef-bd2c-d8e40d019ff7",
+          "path": "/redirect",
+          "method": "GET",
+          "body": "",
+          "origin": null,
+          "activeForNonce": 1
+        },
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "a66977e1-7fc5-4bef-bd2c-d8e40d019ff7",
+          "path": "/sink",
+          "method": "GET",
+          "body": "",
+          "origin": null,
+          "activeForNonce": 1
+        }
+      ]
+    },
+    {
+      "id": "GT-15",
+      "name": "allowed redirect pair 301/303",
+      "passed": true,
+      "expected": "final permitted sink reached once with browser-correct method/body",
+      "nonce": "006ae2d3-4bfc-4b75-96d0-b0c0b3a307e4",
+      "browserResult": "response:200",
+      "arrivals": [
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "006ae2d3-4bfc-4b75-96d0-b0c0b3a307e4",
+          "path": "/redirect",
+          "method": "POST",
+          "body": "synthetic=006ae2d3-4bfc-4b75-96d0-b0c0b3a307e4",
+          "origin": "https://fixture.test",
+          "activeForNonce": 1
+        },
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "006ae2d3-4bfc-4b75-96d0-b0c0b3a307e4",
+          "path": "/redirect",
+          "method": "GET",
+          "body": "",
+          "origin": null,
+          "activeForNonce": 1
+        },
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "006ae2d3-4bfc-4b75-96d0-b0c0b3a307e4",
+          "path": "/sink",
+          "method": "GET",
+          "body": "",
+          "origin": null,
+          "activeForNonce": 1
+        }
+      ]
+    },
+    {
+      "id": "GT-16",
+      "name": "allowed redirect pair 301/307",
+      "passed": true,
+      "expected": "final permitted sink reached once with browser-correct method/body",
+      "nonce": "cda3e96a-d791-4285-b15d-26bfb216e44c",
+      "browserResult": "response:200",
+      "arrivals": [
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "cda3e96a-d791-4285-b15d-26bfb216e44c",
+          "path": "/redirect",
+          "method": "POST",
+          "body": "synthetic=cda3e96a-d791-4285-b15d-26bfb216e44c",
+          "origin": "https://fixture.test",
+          "activeForNonce": 1
+        },
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "cda3e96a-d791-4285-b15d-26bfb216e44c",
+          "path": "/redirect",
+          "method": "GET",
+          "body": "",
+          "origin": null,
+          "activeForNonce": 1
+        },
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "cda3e96a-d791-4285-b15d-26bfb216e44c",
+          "path": "/sink",
+          "method": "GET",
+          "body": "",
+          "origin": null,
+          "activeForNonce": 1
+        }
+      ]
+    },
+    {
+      "id": "GT-17",
+      "name": "allowed redirect pair 301/308",
+      "passed": true,
+      "expected": "final permitted sink reached once with browser-correct method/body",
+      "nonce": "5ea27c21-8ff6-40c8-91fa-67a33d9e6afd",
+      "browserResult": "response:200",
+      "arrivals": [
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "5ea27c21-8ff6-40c8-91fa-67a33d9e6afd",
+          "path": "/redirect",
+          "method": "POST",
+          "body": "synthetic=5ea27c21-8ff6-40c8-91fa-67a33d9e6afd",
+          "origin": "https://fixture.test",
+          "activeForNonce": 1
+        },
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "5ea27c21-8ff6-40c8-91fa-67a33d9e6afd",
+          "path": "/redirect",
+          "method": "GET",
+          "body": "",
+          "origin": null,
+          "activeForNonce": 1
+        },
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "5ea27c21-8ff6-40c8-91fa-67a33d9e6afd",
+          "path": "/sink",
+          "method": "GET",
+          "body": "",
+          "origin": null,
+          "activeForNonce": 1
+        }
+      ]
+    },
+    {
+      "id": "GT-18",
+      "name": "allowed redirect pair 302/301",
+      "passed": true,
+      "expected": "final permitted sink reached once with browser-correct method/body",
+      "nonce": "fbf8e90d-cbf5-4a75-8340-6575ef695603",
+      "browserResult": "response:200",
+      "arrivals": [
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "fbf8e90d-cbf5-4a75-8340-6575ef695603",
+          "path": "/redirect",
+          "method": "POST",
+          "body": "synthetic=fbf8e90d-cbf5-4a75-8340-6575ef695603",
+          "origin": "https://fixture.test",
+          "activeForNonce": 1
+        },
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "fbf8e90d-cbf5-4a75-8340-6575ef695603",
+          "path": "/redirect",
+          "method": "GET",
+          "body": "",
+          "origin": null,
+          "activeForNonce": 1
+        },
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "fbf8e90d-cbf5-4a75-8340-6575ef695603",
+          "path": "/sink",
+          "method": "GET",
+          "body": "",
+          "origin": null,
+          "activeForNonce": 1
+        }
+      ]
+    },
+    {
+      "id": "GT-19",
+      "name": "allowed redirect pair 302/302",
+      "passed": true,
+      "expected": "final permitted sink reached once with browser-correct method/body",
+      "nonce": "e9707c1e-f7c8-4cc6-a272-f1f556927fbc",
+      "browserResult": "response:200",
+      "arrivals": [
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "e9707c1e-f7c8-4cc6-a272-f1f556927fbc",
+          "path": "/redirect",
+          "method": "POST",
+          "body": "synthetic=e9707c1e-f7c8-4cc6-a272-f1f556927fbc",
+          "origin": "https://fixture.test",
+          "activeForNonce": 1
+        },
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "e9707c1e-f7c8-4cc6-a272-f1f556927fbc",
+          "path": "/redirect",
+          "method": "GET",
+          "body": "",
+          "origin": null,
+          "activeForNonce": 1
+        },
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "e9707c1e-f7c8-4cc6-a272-f1f556927fbc",
+          "path": "/sink",
+          "method": "GET",
+          "body": "",
+          "origin": null,
+          "activeForNonce": 1
+        }
+      ]
+    },
+    {
+      "id": "GT-20",
+      "name": "allowed redirect pair 302/303",
+      "passed": true,
+      "expected": "final permitted sink reached once with browser-correct method/body",
+      "nonce": "6884ecce-27ba-40d1-9d1e-2b41d6081e79",
+      "browserResult": "response:200",
+      "arrivals": [
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "6884ecce-27ba-40d1-9d1e-2b41d6081e79",
+          "path": "/redirect",
+          "method": "POST",
+          "body": "synthetic=6884ecce-27ba-40d1-9d1e-2b41d6081e79",
+          "origin": "https://fixture.test",
+          "activeForNonce": 1
+        },
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "6884ecce-27ba-40d1-9d1e-2b41d6081e79",
+          "path": "/redirect",
+          "method": "GET",
+          "body": "",
+          "origin": null,
+          "activeForNonce": 1
+        },
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "6884ecce-27ba-40d1-9d1e-2b41d6081e79",
+          "path": "/sink",
+          "method": "GET",
+          "body": "",
+          "origin": null,
+          "activeForNonce": 1
+        }
+      ]
+    },
+    {
+      "id": "GT-21",
+      "name": "allowed redirect pair 302/307",
+      "passed": true,
+      "expected": "final permitted sink reached once with browser-correct method/body",
+      "nonce": "91972d21-8959-46a7-b3e9-89a50879e8a0",
+      "browserResult": "response:200",
+      "arrivals": [
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "91972d21-8959-46a7-b3e9-89a50879e8a0",
+          "path": "/redirect",
+          "method": "POST",
+          "body": "synthetic=91972d21-8959-46a7-b3e9-89a50879e8a0",
+          "origin": "https://fixture.test",
+          "activeForNonce": 1
+        },
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "91972d21-8959-46a7-b3e9-89a50879e8a0",
+          "path": "/redirect",
+          "method": "GET",
+          "body": "",
+          "origin": null,
+          "activeForNonce": 1
+        },
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "91972d21-8959-46a7-b3e9-89a50879e8a0",
+          "path": "/sink",
+          "method": "GET",
+          "body": "",
+          "origin": null,
+          "activeForNonce": 1
+        }
+      ]
+    },
+    {
+      "id": "GT-22",
+      "name": "allowed redirect pair 302/308",
+      "passed": true,
+      "expected": "final permitted sink reached once with browser-correct method/body",
+      "nonce": "347a9f25-6761-4aba-816e-bf8c0e9f9e42",
+      "browserResult": "response:200",
+      "arrivals": [
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "347a9f25-6761-4aba-816e-bf8c0e9f9e42",
+          "path": "/redirect",
+          "method": "POST",
+          "body": "synthetic=347a9f25-6761-4aba-816e-bf8c0e9f9e42",
+          "origin": "https://fixture.test",
+          "activeForNonce": 1
+        },
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "347a9f25-6761-4aba-816e-bf8c0e9f9e42",
+          "path": "/redirect",
+          "method": "GET",
+          "body": "",
+          "origin": null,
+          "activeForNonce": 1
+        },
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "347a9f25-6761-4aba-816e-bf8c0e9f9e42",
+          "path": "/sink",
+          "method": "GET",
+          "body": "",
+          "origin": null,
+          "activeForNonce": 1
+        }
+      ]
+    },
+    {
+      "id": "GT-23",
+      "name": "allowed redirect pair 303/301",
+      "passed": true,
+      "expected": "final permitted sink reached once with browser-correct method/body",
+      "nonce": "a82e85b4-0d3b-4530-be2e-624cec3968af",
+      "browserResult": "response:200",
+      "arrivals": [
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "a82e85b4-0d3b-4530-be2e-624cec3968af",
+          "path": "/redirect",
+          "method": "POST",
+          "body": "synthetic=a82e85b4-0d3b-4530-be2e-624cec3968af",
+          "origin": "https://fixture.test",
+          "activeForNonce": 1
+        },
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "a82e85b4-0d3b-4530-be2e-624cec3968af",
+          "path": "/redirect",
+          "method": "GET",
+          "body": "",
+          "origin": null,
+          "activeForNonce": 1
+        },
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "a82e85b4-0d3b-4530-be2e-624cec3968af",
+          "path": "/sink",
+          "method": "GET",
+          "body": "",
+          "origin": null,
+          "activeForNonce": 1
+        }
+      ]
+    },
+    {
+      "id": "GT-24",
+      "name": "allowed redirect pair 303/302",
+      "passed": true,
+      "expected": "final permitted sink reached once with browser-correct method/body",
+      "nonce": "6583f6f1-542d-4205-9171-a4305ed06b98",
+      "browserResult": "response:200",
+      "arrivals": [
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "6583f6f1-542d-4205-9171-a4305ed06b98",
+          "path": "/redirect",
+          "method": "POST",
+          "body": "synthetic=6583f6f1-542d-4205-9171-a4305ed06b98",
+          "origin": "https://fixture.test",
+          "activeForNonce": 1
+        },
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "6583f6f1-542d-4205-9171-a4305ed06b98",
+          "path": "/redirect",
+          "method": "GET",
+          "body": "",
+          "origin": null,
+          "activeForNonce": 1
+        },
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "6583f6f1-542d-4205-9171-a4305ed06b98",
+          "path": "/sink",
+          "method": "GET",
+          "body": "",
+          "origin": null,
+          "activeForNonce": 1
+        }
+      ]
+    },
+    {
+      "id": "GT-25",
+      "name": "allowed redirect pair 303/303",
+      "passed": true,
+      "expected": "final permitted sink reached once with browser-correct method/body",
+      "nonce": "278c3248-06a5-4011-8149-982d10c60bc5",
+      "browserResult": "response:200",
+      "arrivals": [
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "278c3248-06a5-4011-8149-982d10c60bc5",
+          "path": "/redirect",
+          "method": "POST",
+          "body": "synthetic=278c3248-06a5-4011-8149-982d10c60bc5",
+          "origin": "https://fixture.test",
+          "activeForNonce": 1
+        },
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "278c3248-06a5-4011-8149-982d10c60bc5",
+          "path": "/redirect",
+          "method": "GET",
+          "body": "",
+          "origin": null,
+          "activeForNonce": 1
+        },
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "278c3248-06a5-4011-8149-982d10c60bc5",
+          "path": "/sink",
+          "method": "GET",
+          "body": "",
+          "origin": null,
+          "activeForNonce": 1
+        }
+      ]
+    },
+    {
+      "id": "GT-26",
+      "name": "allowed redirect pair 303/307",
+      "passed": true,
+      "expected": "final permitted sink reached once with browser-correct method/body",
+      "nonce": "be53c71c-430c-4886-8a7c-6f48b063395d",
+      "browserResult": "response:200",
+      "arrivals": [
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "be53c71c-430c-4886-8a7c-6f48b063395d",
+          "path": "/redirect",
+          "method": "POST",
+          "body": "synthetic=be53c71c-430c-4886-8a7c-6f48b063395d",
+          "origin": "https://fixture.test",
+          "activeForNonce": 1
+        },
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "be53c71c-430c-4886-8a7c-6f48b063395d",
+          "path": "/redirect",
+          "method": "GET",
+          "body": "",
+          "origin": null,
+          "activeForNonce": 1
+        },
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "be53c71c-430c-4886-8a7c-6f48b063395d",
+          "path": "/sink",
+          "method": "GET",
+          "body": "",
+          "origin": null,
+          "activeForNonce": 1
+        }
+      ]
+    },
+    {
+      "id": "GT-27",
+      "name": "allowed redirect pair 303/308",
+      "passed": true,
+      "expected": "final permitted sink reached once with browser-correct method/body",
+      "nonce": "17478ecb-c91c-42fb-b86e-3b4bc3f8e439",
+      "browserResult": "response:200",
+      "arrivals": [
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "17478ecb-c91c-42fb-b86e-3b4bc3f8e439",
+          "path": "/redirect",
+          "method": "POST",
+          "body": "synthetic=17478ecb-c91c-42fb-b86e-3b4bc3f8e439",
+          "origin": "https://fixture.test",
+          "activeForNonce": 1
+        },
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "17478ecb-c91c-42fb-b86e-3b4bc3f8e439",
+          "path": "/redirect",
+          "method": "GET",
+          "body": "",
+          "origin": null,
+          "activeForNonce": 1
+        },
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "17478ecb-c91c-42fb-b86e-3b4bc3f8e439",
+          "path": "/sink",
+          "method": "GET",
+          "body": "",
+          "origin": null,
+          "activeForNonce": 1
+        }
+      ]
+    },
+    {
+      "id": "GT-28",
+      "name": "allowed redirect pair 307/301",
+      "passed": true,
+      "expected": "final permitted sink reached once with browser-correct method/body",
+      "nonce": "078cbc3b-200d-435b-ad7b-67e7d8a6471e",
+      "browserResult": "response:200",
+      "arrivals": [
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "078cbc3b-200d-435b-ad7b-67e7d8a6471e",
+          "path": "/redirect",
+          "method": "POST",
+          "body": "synthetic=078cbc3b-200d-435b-ad7b-67e7d8a6471e",
+          "origin": "https://fixture.test",
+          "activeForNonce": 1
+        },
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "078cbc3b-200d-435b-ad7b-67e7d8a6471e",
+          "path": "/redirect",
+          "method": "POST",
+          "body": "synthetic=078cbc3b-200d-435b-ad7b-67e7d8a6471e",
+          "origin": "https://fixture.test",
+          "activeForNonce": 1
+        },
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "078cbc3b-200d-435b-ad7b-67e7d8a6471e",
+          "path": "/sink",
+          "method": "GET",
+          "body": "",
+          "origin": null,
+          "activeForNonce": 1
+        }
+      ]
+    },
+    {
+      "id": "GT-29",
+      "name": "allowed redirect pair 307/302",
+      "passed": true,
+      "expected": "final permitted sink reached once with browser-correct method/body",
+      "nonce": "983640c0-be7a-49da-9bdc-5a3a1ee64377",
+      "browserResult": "response:200",
+      "arrivals": [
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "983640c0-be7a-49da-9bdc-5a3a1ee64377",
+          "path": "/redirect",
+          "method": "POST",
+          "body": "synthetic=983640c0-be7a-49da-9bdc-5a3a1ee64377",
+          "origin": "https://fixture.test",
+          "activeForNonce": 1
+        },
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "983640c0-be7a-49da-9bdc-5a3a1ee64377",
+          "path": "/redirect",
+          "method": "POST",
+          "body": "synthetic=983640c0-be7a-49da-9bdc-5a3a1ee64377",
+          "origin": "https://fixture.test",
+          "activeForNonce": 1
+        },
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "983640c0-be7a-49da-9bdc-5a3a1ee64377",
+          "path": "/sink",
+          "method": "GET",
+          "body": "",
+          "origin": null,
+          "activeForNonce": 1
+        }
+      ]
+    },
+    {
+      "id": "GT-30",
+      "name": "allowed redirect pair 307/303",
+      "passed": true,
+      "expected": "final permitted sink reached once with browser-correct method/body",
+      "nonce": "38cd2cdb-3bcd-4246-97c8-b304fcf9bc03",
+      "browserResult": "response:200",
+      "arrivals": [
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "38cd2cdb-3bcd-4246-97c8-b304fcf9bc03",
+          "path": "/redirect",
+          "method": "POST",
+          "body": "synthetic=38cd2cdb-3bcd-4246-97c8-b304fcf9bc03",
+          "origin": "https://fixture.test",
+          "activeForNonce": 1
+        },
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "38cd2cdb-3bcd-4246-97c8-b304fcf9bc03",
+          "path": "/redirect",
+          "method": "POST",
+          "body": "synthetic=38cd2cdb-3bcd-4246-97c8-b304fcf9bc03",
+          "origin": "https://fixture.test",
+          "activeForNonce": 1
+        },
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "38cd2cdb-3bcd-4246-97c8-b304fcf9bc03",
+          "path": "/sink",
+          "method": "GET",
+          "body": "",
+          "origin": null,
+          "activeForNonce": 1
+        }
+      ]
+    },
+    {
+      "id": "GT-31",
+      "name": "allowed redirect pair 307/307",
+      "passed": true,
+      "expected": "final permitted sink reached once with browser-correct method/body",
+      "nonce": "b51729d4-7dcb-41bb-a3f4-e26427248b6e",
+      "browserResult": "response:200",
+      "arrivals": [
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "b51729d4-7dcb-41bb-a3f4-e26427248b6e",
+          "path": "/redirect",
+          "method": "POST",
+          "body": "synthetic=b51729d4-7dcb-41bb-a3f4-e26427248b6e",
+          "origin": "https://fixture.test",
+          "activeForNonce": 1
+        },
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "b51729d4-7dcb-41bb-a3f4-e26427248b6e",
+          "path": "/redirect",
+          "method": "POST",
+          "body": "synthetic=b51729d4-7dcb-41bb-a3f4-e26427248b6e",
+          "origin": "https://fixture.test",
+          "activeForNonce": 1
+        },
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "b51729d4-7dcb-41bb-a3f4-e26427248b6e",
+          "path": "/sink",
+          "method": "POST",
+          "body": "synthetic=b51729d4-7dcb-41bb-a3f4-e26427248b6e",
+          "origin": "https://fixture.test",
+          "activeForNonce": 1
+        }
+      ]
+    },
+    {
+      "id": "GT-32",
+      "name": "allowed redirect pair 307/308",
+      "passed": true,
+      "expected": "final permitted sink reached once with browser-correct method/body",
+      "nonce": "81a1d992-e1ef-4b1b-9058-a48137cd6f8c",
+      "browserResult": "response:200",
+      "arrivals": [
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "81a1d992-e1ef-4b1b-9058-a48137cd6f8c",
+          "path": "/redirect",
+          "method": "POST",
+          "body": "synthetic=81a1d992-e1ef-4b1b-9058-a48137cd6f8c",
+          "origin": "https://fixture.test",
+          "activeForNonce": 1
+        },
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "81a1d992-e1ef-4b1b-9058-a48137cd6f8c",
+          "path": "/redirect",
+          "method": "POST",
+          "body": "synthetic=81a1d992-e1ef-4b1b-9058-a48137cd6f8c",
+          "origin": "https://fixture.test",
+          "activeForNonce": 1
+        },
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "81a1d992-e1ef-4b1b-9058-a48137cd6f8c",
+          "path": "/sink",
+          "method": "POST",
+          "body": "synthetic=81a1d992-e1ef-4b1b-9058-a48137cd6f8c",
+          "origin": "https://fixture.test",
+          "activeForNonce": 1
+        }
+      ]
+    },
+    {
+      "id": "GT-33",
+      "name": "allowed redirect pair 308/301",
+      "passed": true,
+      "expected": "final permitted sink reached once with browser-correct method/body",
+      "nonce": "f5dac8c6-5f92-4116-aedd-35770946049d",
+      "browserResult": "response:200",
+      "arrivals": [
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "f5dac8c6-5f92-4116-aedd-35770946049d",
+          "path": "/redirect",
+          "method": "POST",
+          "body": "synthetic=f5dac8c6-5f92-4116-aedd-35770946049d",
+          "origin": "https://fixture.test",
+          "activeForNonce": 1
+        },
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "f5dac8c6-5f92-4116-aedd-35770946049d",
+          "path": "/redirect",
+          "method": "POST",
+          "body": "synthetic=f5dac8c6-5f92-4116-aedd-35770946049d",
+          "origin": "https://fixture.test",
+          "activeForNonce": 1
+        },
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "f5dac8c6-5f92-4116-aedd-35770946049d",
+          "path": "/sink",
+          "method": "GET",
+          "body": "",
+          "origin": null,
+          "activeForNonce": 1
+        }
+      ]
+    },
+    {
+      "id": "GT-34",
+      "name": "allowed redirect pair 308/302",
+      "passed": true,
+      "expected": "final permitted sink reached once with browser-correct method/body",
+      "nonce": "cc133fc6-c80e-4ffc-af0a-2151cdfcdc91",
+      "browserResult": "response:200",
+      "arrivals": [
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "cc133fc6-c80e-4ffc-af0a-2151cdfcdc91",
+          "path": "/redirect",
+          "method": "POST",
+          "body": "synthetic=cc133fc6-c80e-4ffc-af0a-2151cdfcdc91",
+          "origin": "https://fixture.test",
+          "activeForNonce": 1
+        },
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "cc133fc6-c80e-4ffc-af0a-2151cdfcdc91",
+          "path": "/redirect",
+          "method": "POST",
+          "body": "synthetic=cc133fc6-c80e-4ffc-af0a-2151cdfcdc91",
+          "origin": "https://fixture.test",
+          "activeForNonce": 1
+        },
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "cc133fc6-c80e-4ffc-af0a-2151cdfcdc91",
+          "path": "/sink",
+          "method": "GET",
+          "body": "",
+          "origin": null,
+          "activeForNonce": 1
+        }
+      ]
+    },
+    {
+      "id": "GT-35",
+      "name": "allowed redirect pair 308/303",
+      "passed": true,
+      "expected": "final permitted sink reached once with browser-correct method/body",
+      "nonce": "a798b684-77e7-4162-a32f-ac8706c6a606",
+      "browserResult": "response:200",
+      "arrivals": [
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "a798b684-77e7-4162-a32f-ac8706c6a606",
+          "path": "/redirect",
+          "method": "POST",
+          "body": "synthetic=a798b684-77e7-4162-a32f-ac8706c6a606",
+          "origin": "https://fixture.test",
+          "activeForNonce": 1
+        },
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "a798b684-77e7-4162-a32f-ac8706c6a606",
+          "path": "/redirect",
+          "method": "POST",
+          "body": "synthetic=a798b684-77e7-4162-a32f-ac8706c6a606",
+          "origin": "https://fixture.test",
+          "activeForNonce": 1
+        },
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "a798b684-77e7-4162-a32f-ac8706c6a606",
+          "path": "/sink",
+          "method": "GET",
+          "body": "",
+          "origin": null,
+          "activeForNonce": 1
+        }
+      ]
+    },
+    {
+      "id": "GT-36",
+      "name": "allowed redirect pair 308/307",
+      "passed": true,
+      "expected": "final permitted sink reached once with browser-correct method/body",
+      "nonce": "a9146c92-2904-4f9c-8377-4baa66bb054a",
+      "browserResult": "response:200",
+      "arrivals": [
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "a9146c92-2904-4f9c-8377-4baa66bb054a",
+          "path": "/redirect",
+          "method": "POST",
+          "body": "synthetic=a9146c92-2904-4f9c-8377-4baa66bb054a",
+          "origin": "https://fixture.test",
+          "activeForNonce": 1
+        },
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "a9146c92-2904-4f9c-8377-4baa66bb054a",
+          "path": "/redirect",
+          "method": "POST",
+          "body": "synthetic=a9146c92-2904-4f9c-8377-4baa66bb054a",
+          "origin": "https://fixture.test",
+          "activeForNonce": 1
+        },
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "a9146c92-2904-4f9c-8377-4baa66bb054a",
+          "path": "/sink",
+          "method": "POST",
+          "body": "synthetic=a9146c92-2904-4f9c-8377-4baa66bb054a",
+          "origin": "https://fixture.test",
+          "activeForNonce": 1
+        }
+      ]
+    },
+    {
+      "id": "GT-37",
+      "name": "allowed redirect pair 308/308",
+      "passed": true,
+      "expected": "final permitted sink reached once with browser-correct method/body",
+      "nonce": "77873456-5e06-44a4-bb12-100dd115c8f5",
+      "browserResult": "response:200",
+      "arrivals": [
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "77873456-5e06-44a4-bb12-100dd115c8f5",
+          "path": "/redirect",
+          "method": "POST",
+          "body": "synthetic=77873456-5e06-44a4-bb12-100dd115c8f5",
+          "origin": "https://fixture.test",
+          "activeForNonce": 1
+        },
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "77873456-5e06-44a4-bb12-100dd115c8f5",
+          "path": "/redirect",
+          "method": "POST",
+          "body": "synthetic=77873456-5e06-44a4-bb12-100dd115c8f5",
+          "origin": "https://fixture.test",
+          "activeForNonce": 1
+        },
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "77873456-5e06-44a4-bb12-100dd115c8f5",
+          "path": "/sink",
+          "method": "POST",
+          "body": "synthetic=77873456-5e06-44a4-bb12-100dd115c8f5",
+          "origin": "https://fixture.test",
+          "activeForNonce": 1
+        }
+      ]
+    },
+    {
+      "id": "GT-38",
+      "name": "direct resource POST blocked",
+      "passed": true,
+      "expected": "no resource write, client denied",
+      "nonce": "7781aabf-685f-4f45-bb69-18b021a335a5",
+      "browserResult": "error:TypeError: Failed to fetch",
+      "arrivals": [],
+      "denials": [
+        {
+          "egress": "denied",
+          "host": "resource.test",
+          "port": 443,
+          "reason": "action_scope",
+          "canaryNonce": "7781aabf-685f-4f45-bb69-18b021a335a5"
+        }
+      ]
+    },
+    {
+      "id": "GT-39",
+      "name": "off-origin 307 body escape blocked",
+      "passed": true,
+      "expected": "no resource sink/body",
+      "nonce": "b6979c9a-dd51-47d0-bc33-f4f932d5be6f",
+      "browserResult": "error:TypeError: Failed to fetch",
+      "arrivals": [
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "b6979c9a-dd51-47d0-bc33-f4f932d5be6f",
+          "path": "/redirect",
+          "method": "POST",
+          "body": "synthetic=b6979c9a-dd51-47d0-bc33-f4f932d5be6f",
+          "origin": "https://fixture.test",
+          "activeForNonce": 1
+        }
+      ],
+      "denials": [
+        {
+          "egress": "denied",
+          "host": "resource.test",
+          "port": 443,
+          "reason": "action_scope",
+          "canaryNonce": "b6979c9a-dd51-47d0-bc33-f4f932d5be6f"
+        }
+      ]
+    },
+    {
+      "id": "GT-40",
+      "name": "off-origin 308 body escape blocked",
+      "passed": true,
+      "expected": "no resource sink/body",
+      "nonce": "f257aa9f-bd97-4074-9770-b65e1f0502d7",
+      "browserResult": "error:TypeError: Failed to fetch",
+      "arrivals": [
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "f257aa9f-bd97-4074-9770-b65e1f0502d7",
+          "path": "/redirect",
+          "method": "POST",
+          "body": "synthetic=f257aa9f-bd97-4074-9770-b65e1f0502d7",
+          "origin": "https://fixture.test",
+          "activeForNonce": 1
+        }
+      ],
+      "denials": [
+        {
+          "egress": "denied",
+          "host": "resource.test",
+          "port": 443,
+          "reason": "action_scope",
+          "canaryNonce": "f257aa9f-bd97-4074-9770-b65e1f0502d7"
+        }
+      ]
+    },
+    {
+      "id": "GT-41",
+      "name": "off-origin 301 navigation blocked",
+      "passed": true,
+      "expected": "no resource destination request",
+      "nonce": "132d8bcb-66c5-4f24-be0f-b8a72a36ea17",
+      "browserResult": "response:403",
+      "arrivals": [
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "132d8bcb-66c5-4f24-be0f-b8a72a36ea17",
+          "path": "/redirect",
+          "method": "GET",
+          "body": "",
+          "origin": null,
+          "activeForNonce": 1
+        }
+      ],
+      "denials": [
+        {
+          "egress": "denied",
+          "host": "resource.test",
+          "port": 443,
+          "reason": "action_scope",
+          "canaryNonce": "132d8bcb-66c5-4f24-be0f-b8a72a36ea17"
+        }
+      ]
+    },
+    {
+      "id": "GT-42",
+      "name": "off-origin 302 navigation blocked",
+      "passed": true,
+      "expected": "no resource destination request",
+      "nonce": "dbc7b8ec-6ab4-4d25-9c0d-60ffc3867f64",
+      "browserResult": "response:403",
+      "arrivals": [
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "dbc7b8ec-6ab4-4d25-9c0d-60ffc3867f64",
+          "path": "/redirect",
+          "method": "GET",
+          "body": "",
+          "origin": null,
+          "activeForNonce": 1
+        }
+      ],
+      "denials": [
+        {
+          "egress": "denied",
+          "host": "resource.test",
+          "port": 443,
+          "reason": "action_scope",
+          "canaryNonce": "dbc7b8ec-6ab4-4d25-9c0d-60ffc3867f64"
+        }
+      ]
+    },
+    {
+      "id": "GT-43",
+      "name": "off-origin 303 navigation blocked",
+      "passed": true,
+      "expected": "no resource destination request",
+      "nonce": "4df8a27f-413c-48fd-8db2-847c192fc451",
+      "browserResult": "response:403",
+      "arrivals": [
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "4df8a27f-413c-48fd-8db2-847c192fc451",
+          "path": "/redirect",
+          "method": "GET",
+          "body": "",
+          "origin": null,
+          "activeForNonce": 1
+        }
+      ],
+      "denials": [
+        {
+          "egress": "denied",
+          "host": "resource.test",
+          "port": 443,
+          "reason": "action_scope",
+          "canaryNonce": "4df8a27f-413c-48fd-8db2-847c192fc451"
+        }
+      ]
+    },
+    {
+      "id": "GT-44",
+      "name": "off-origin 307 navigation blocked",
+      "passed": true,
+      "expected": "no resource destination request",
+      "nonce": "6d06a5d2-0499-4987-982b-44b7328061d0",
+      "browserResult": "response:403",
+      "arrivals": [
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "6d06a5d2-0499-4987-982b-44b7328061d0",
+          "path": "/redirect",
+          "method": "GET",
+          "body": "",
+          "origin": null,
+          "activeForNonce": 1
+        }
+      ],
+      "denials": [
+        {
+          "egress": "denied",
+          "host": "resource.test",
+          "port": 443,
+          "reason": "action_scope",
+          "canaryNonce": "6d06a5d2-0499-4987-982b-44b7328061d0"
+        }
+      ]
+    },
+    {
+      "id": "GT-45",
+      "name": "off-origin 308 navigation blocked",
+      "passed": true,
+      "expected": "no resource destination request",
+      "nonce": "9c391df8-6213-475d-93d3-a1fb2d7f3f7a",
+      "browserResult": "response:403",
+      "arrivals": [
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "9c391df8-6213-475d-93d3-a1fb2d7f3f7a",
+          "path": "/redirect",
+          "method": "GET",
+          "body": "",
+          "origin": null,
+          "activeForNonce": 1
+        }
+      ],
+      "denials": [
+        {
+          "egress": "denied",
+          "host": "resource.test",
+          "port": 443,
+          "reason": "action_scope",
+          "canaryNonce": "9c391df8-6213-475d-93d3-a1fb2d7f3f7a"
+        }
+      ]
+    },
+    {
+      "id": "GT-46",
+      "name": "resource frame cannot write https://fixture.test",
+      "passed": true,
+      "expected": "resource frame loads; no borrowed primary/API write",
+      "nonce": "4f1dbff9-2bf4-4a73-b15c-53c70f6323a0",
+      "browserResult": "response:0",
+      "arrivals": [
+        {
+          "kind": "http",
+          "host": "resource.test",
+          "nonce": "4f1dbff9-2bf4-4a73-b15c-53c70f6323a0",
+          "path": "/frame",
+          "method": "GET",
+          "body": "",
+          "origin": null,
+          "activeForNonce": 1
+        }
+      ],
+      "denials": [
+        {
+          "egress": "denied",
+          "host": "fixture.test",
+          "port": 443,
+          "reason": "action_scope",
+          "canaryNonce": "4f1dbff9-2bf4-4a73-b15c-53c70f6323a0"
+        }
+      ]
+    },
+    {
+      "id": "GT-47",
+      "name": "resource frame cannot write https://api.test",
+      "passed": true,
+      "expected": "resource frame loads; no borrowed primary/API write",
+      "nonce": "d19b5164-a889-4142-b356-e135d1063639",
+      "browserResult": "response:0",
+      "arrivals": [
+        {
+          "kind": "http",
+          "host": "resource.test",
+          "nonce": "d19b5164-a889-4142-b356-e135d1063639",
+          "path": "/frame",
+          "method": "GET",
+          "body": "",
+          "origin": null,
+          "activeForNonce": 1
+        }
+      ],
+      "denials": [
+        {
+          "egress": "denied",
+          "host": "api.test",
+          "port": 443,
+          "reason": "action_scope",
+          "canaryNonce": "d19b5164-a889-4142-b356-e135d1063639"
+        }
+      ]
+    },
+    {
+      "id": "GT-48",
+      "name": "worker approved POST https://fixture.test",
+      "passed": true,
+      "expected": "verified worker POST reaches sink",
+      "nonce": "1095f16b-77e3-4859-98be-3557ba91e2d9",
+      "browserResult": "response:200",
+      "arrivals": [
+        {
+          "kind": "http",
+          "host": "fixture.test",
+          "nonce": "1095f16b-77e3-4859-98be-3557ba91e2d9",
+          "path": "/sink",
+          "method": "POST",
+          "body": "synthetic=1095f16b-77e3-4859-98be-3557ba91e2d9",
+          "origin": "https://fixture.test",
+          "activeForNonce": 1
+        }
+      ]
+    },
+    {
+      "id": "GT-49",
+      "name": "worker approved POST https://api.test",
+      "passed": true,
+      "expected": "verified worker POST reaches sink",
+      "nonce": "7ff26ec4-1419-411b-a859-180fcb8bec3f",
+      "browserResult": "response:0",
+      "arrivals": [
+        {
+          "kind": "http",
+          "host": "api.test",
+          "nonce": "7ff26ec4-1419-411b-a859-180fcb8bec3f",
+          "path": "/sink",
+          "method": "POST",
+          "body": "synthetic=7ff26ec4-1419-411b-a859-180fcb8bec3f",
+          "origin": "https://fixture.test",
+          "activeForNonce": 1
+        }
+      ]
+    },
+    {
+      "id": "GT-50",
+      "name": "worker denied POST https://resource.test",
+      "passed": true,
+      "expected": "no resource worker write",
+      "nonce": "b266e673-6c58-46fe-aae1-992f31efd50b",
+      "browserResult": "response:0",
+      "arrivals": [],
+      "denials": [
+        {
+          "egress": "denied",
+          "host": "resource.test",
+          "port": 443,
+          "reason": "action_scope",
+          "canaryNonce": "b266e673-6c58-46fe-aae1-992f31efd50b"
+        }
+      ]
+    },
+    {
+      "id": "GT-51",
+      "name": "socket listener positive control",
+      "expected": "owned listener accepts valid TLS WebSocket upgrade",
+      "passed": true,
+      "nonce": "815cc1af-75f8-45ad-a2be-624bbdf2f245",
+      "browserResult": "opened",
+      "arrivals": [
+        {
+          "kind": "websocket",
+          "host": "resource.test",
+          "nonce": "815cc1af-75f8-45ad-a2be-624bbdf2f245",
+          "path": "/socket",
+          "method": "GET",
+          "body": "",
+          "origin": null
+        }
+      ]
+    },
+    {
+      "id": "GT-52",
+      "name": "unsupported socket blocked https://fixture.test",
+      "passed": true,
+      "expected": "no destination WebSocket handshake",
+      "nonce": "85c26eb2-6dd0-420d-83f9-1d8ff15c8bf5",
+      "browserResult": "error",
+      "arrivals": [],
+      "denials": [
+        {
+          "egress": "denied",
+          "host": "fixture.test",
+          "port": 443,
+          "reason": "sockets_disabled",
+          "canaryNonce": "85c26eb2-6dd0-420d-83f9-1d8ff15c8bf5"
+        }
+      ]
+    },
+    {
+      "id": "GT-53",
+      "name": "unsupported socket blocked https://api.test",
+      "passed": true,
+      "expected": "no destination WebSocket handshake",
+      "nonce": "5f27cba0-ba3f-4d98-8bb9-e9339f2b1163",
+      "browserResult": "error",
+      "arrivals": [],
+      "denials": [
+        {
+          "egress": "denied",
+          "host": "api.test",
+          "port": 443,
+          "reason": "sockets_disabled",
+          "canaryNonce": "5f27cba0-ba3f-4d98-8bb9-e9339f2b1163"
+        }
+      ]
+    },
+    {
+      "id": "GT-54",
+      "name": "unsupported socket blocked https://resource.test",
+      "passed": true,
+      "expected": "no destination WebSocket handshake",
+      "nonce": "ad2eb8ae-fc99-4bec-a7df-4d134c2205e0",
+      "browserResult": "error",
+      "arrivals": [],
+      "denials": [
+        {
+          "egress": "denied",
+          "host": "resource.test",
+          "port": 443,
+          "reason": "sockets_disabled",
+          "canaryNonce": "ad2eb8ae-fc99-4bec-a7df-4d134c2205e0"
+        }
+      ]
+    },
+    {
+      "id": "GT-55",
+      "name": "untrusted-certificate listener positive control",
+      "expected": "listener works when trusted explicitly inside fixture only",
+      "passed": true,
+      "nonce": "14151043-da9d-4238-8830-76ea483d8e11",
+      "browserResult": "200",
+      "arrivals": [
+        {
+          "kind": "http",
+          "host": "badcert.test",
+          "nonce": "14151043-da9d-4238-8830-76ea483d8e11",
+          "path": "/sink",
+          "method": "GET",
+          "body": "",
+          "origin": null,
+          "activeForNonce": 1
+        }
+      ]
+    },
+    {
+      "id": "GT-56",
+      "name": "untrusted upstream certificate refused",
+      "passed": true,
+      "expected": "badcert origin receives no HTTP request; TLS fails",
+      "nonce": "7e6a7db6-3c0b-4b6b-a413-7cfe54819291",
+      "browserResult": "error",
+      "arrivals": [],
+      "denials": [
+        {
+          "egress": "denied",
+          "host": "badcert.test",
+          "port": 443,
+          "reason": "upstream_error",
+          "canaryNonce": "7e6a7db6-3c0b-4b6b-a413-7cfe54819291"
+        }
+      ]
+    }
+  ]
+}

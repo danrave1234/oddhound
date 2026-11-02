@@ -1,0 +1,55 @@
+PASS native http/1.1 transport error attributed
+FAIL native h2 transport error attributed
+PASS transport-failure sentinel attribution control
+PASS target-502 sentinel attribution control
+PASS target-502?spoof=1 sentinel attribution control
+PASS same-origin active POST
+PASS verified API POST
+PASS verified API PUT
+PASS verified API PATCH
+PASS verified API DELETE
+PASS resource CSS positive control
+PASS twelve parallel resources are queued and all load
+PASS allowed redirect pair 301/301
+PASS allowed redirect pair 301/302
+PASS allowed redirect pair 301/303
+PASS allowed redirect pair 301/307
+PASS allowed redirect pair 301/308
+PASS allowed redirect pair 302/301
+PASS allowed redirect pair 302/302
+PASS allowed redirect pair 302/303
+PASS allowed redirect pair 302/307
+PASS allowed redirect pair 302/308
+PASS allowed redirect pair 303/301
+PASS allowed redirect pair 303/302
+PASS allowed redirect pair 303/303
+PASS allowed redirect pair 303/307
+PASS allowed redirect pair 303/308
+PASS allowed redirect pair 307/301
+PASS allowed redirect pair 307/302
+PASS allowed redirect pair 307/303
+PASS allowed redirect pair 307/307
+PASS allowed redirect pair 307/308
+PASS allowed redirect pair 308/301
+PASS allowed redirect pair 308/302
+PASS allowed redirect pair 308/303
+PASS allowed redirect pair 308/307
+PASS allowed redirect pair 308/308
+PASS direct resource POST blocked
+PASS off-origin 307 body escape blocked
+PASS off-origin 308 body escape blocked
+PASS off-origin 301 navigation blocked
+PASS off-origin 302 navigation blocked
+PASS off-origin 303 navigation blocked
+PASS off-origin 307 navigation blocked
+PASS off-origin 308 navigation blocked
+PASS resource frame cannot write https://fixture.test
+PASS resource frame cannot write https://api.test
+PASS worker approved POST https://fixture.test
+PASS worker approved POST https://api.test
+PASS worker denied POST https://resource.test
+PASS unsupported socket blocked https://fixture.test
+PASS unsupported socket blocked https://api.test
+PASS unsupported socket blocked https://resource.test
+PASS untrusted upstream certificate refused
+{"result":"failed","passed":55,"failed":1,"sandbox":"sandbox_on","cleanup":{"gateway":true,"target":true,"network":true,"controlNetwork":true}}

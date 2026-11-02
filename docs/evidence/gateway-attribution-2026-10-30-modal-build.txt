@@ -1,0 +1,248 @@
+Building image im-btEeXlBlcPH95oVAId9OIc
+
+=> Step 0: FROM golang:1.27-bookworm@sha256:972b4110ba0f47539a975c31e52c64765e1ff19f2d74469ae4a595c6676e80a5 AS smokescreen-build
+Getting image source signatures
+Copying blob sha256:4f4fb700ef54461cfa02571ae0db9a0dc1e0cdb5577484a6d75e68dc38e8acc1
+Copying blob sha256:8a051559ff62acdfa1af9916c3c67673d946bb71f81cb8f30c565fa647cb6a77
+Copying blob sha256:55f3510f14ae1203443980e2b03e3c4adb950f89becd0189ad5032562ef49ea0
+Copying blob sha256:e0959ba39613fdd89ed3679cb0483740e954fcc9d3e68d882e6f27130ac124e0
+Copying blob sha256:68f2074ab7fd11f602b2218e3c94fb7870f11631e99647e34b8d6ab97ad04076
+Copying blob sha256:82e0bb27ae78502103ed383ed33346f88a83943fb7bd93977850d5890ee8fb3b
+Copying blob sha256:c42ec79d38f93118e728683ce7bb8ffbfa2b4406713e0c670e53ac974b2794cd
+Copying config sha256:e0774ebe198a660f05b03dbafdbe7c806e1dbee8ac7dbff38f8a1b9865a0442a
+Writing manifest to image destination
+Unpacking OCI image
+   � unpacking rootfs ...     
+   � ... done                 
+   � unpacked image rootfs: /tmp/task-data/ta-01M64J3DJQ2SF8DD54PAXT7MCB/registry-unpack7hNuDU
+Copied image in 3.20s
+
+=> Step 1: WORKDIR /source
+
+=> Step 2: RUN git init && git remote add origin https://github.com/stripe/smokescreen.git && git fetch --depth 1 origin 68e7b8218e226bc47d09ce705fdb8fed82145ceb && git checkout --detach FETCH_HEAD
+hint: Using 'master' as the name for the initial branch. This default branch name
+hint: is subject to change. To configure the initial branch name to use in all
+hint: of your new repositories, which will suppress this warning, call:
+hint: 
+hint:   git config --global init.defaultBranch <name>
+hint: 
+hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+hint: 'development'. The just-created branch can be renamed via this command:
+hint: 
+hint:   git branch -m <name>
+Initialized empty Git repository in /source/.git/
+From https://github.com/stripe/smokescreen
+ * branch            68e7b8218e226bc47d09ce705fdb8fed82145ceb -> FETCH_HEAD
+HEAD is now at 68e7b82 [ci] Restrict release workflow to protected tags and require release environment (#357)
+
+=> Step 3: COPY apps/browser/gateway/smokescreen-main.go ./main.go
+
+=> Step 4: RUN CGO_ENABLED=0 go build -mod=readonly -tags=smokescreen_no_prometheus -trimpath -o /oddhound-smokescreen .
+go: downloading github.com/urfave/cli/v3 v3.11.0
+go: downloading github.com/sirupsen/logrus v1.10.1
+go: downloading golang.org/x/net v0.59.0
+go: downloading github.com/patrickmn/go-cache v2.1.0+incompatible
+go: downloading github.com/pires/go-proxyproto v0.14.0
+go: downloading github.com/rs/xid v1.6.1-0.20260724084550-40a728ce78a4
+go: downloading github.com/stripe/goproxy v0.0.0-20260922184237-948457f542a3
+go: downloading go.yaml.in/yaml/v3 v3.0.5
+go: downloading github.com/DataDog/datadog-go/v5 v5.9.1
+go: downloading golang.org/x/sys v0.48.0
+go: downloading golang.org/x/text v0.42.0
+
+=> Step 0: FROM node:26-bookworm-slim@sha256:bc0a2afd3b74ce12222fc8bab99271e66257f021078f5f4a5d687a77d280c1d9 AS node26
+Getting image source signatures
+Copying blob sha256:573f2961a2501fe3a0b2e67a8548100315d34ee1e703e51066d09642e7ef55c8
+Copying blob sha256:9c8b0bc7224e3c865eb16077555ddd6f87d7af9822a8051c9a1501c5fa811228
+Copying blob sha256:15eca0010e49ecbbc3a36ec3d3063360c27a4d6d978852318805f3b735b5f4e8
+Copying blob sha256:3c5439d0ae62993af4cc4e21b8c777297e81bc40e200d4633c85a3e0f977a3bc
+Copying config sha256:08fc0796a2b9a31dd1e7a5be3dd2f583e2bba76a13b21a6b04c5e642fd352df5
+Writing manifest to image destination
+Unpacking OCI image
+   � unpacking rootfs ...     
+   � ... done                 
+   � unpacked image rootfs: /tmp/task-data/ta-01M64J3DJQ2SF8DD54PAXT7MCB/registry-unpack6N5lmM
+Copied image in 660.00ms
+
+=> Step 0: FROM mcr.microsoft.com/playwright:v1.64.1-noble@sha256:47b510dd9230bf0b9bfc9b20102241e577ea7a99334ab4c3ca19f19770e9b8ea
+Getting image source signatures
+Copying blob sha256:66d844110763e6b46b0b25ae89e2366a9ccd437f69b334eaf71df7dd3b587b5d
+Copying blob sha256:d044ba6b808041e4ed9d6e8b932c40742cf456fae347f463f08df53f81f572b5
+Copying blob sha256:29b10d50e0db1e46b747a63d92da5d3e49643a0bf84591937ec35254e34f20a7
+Copying blob sha256:ffd1ea1809430cfdb0801e0921474ec4a635ab0970becf46fb17960fca6bbd30
+Copying blob sha256:eb005fbb9cada4cd1b9476577a1eef0e000a2a0e9e319f84ecf4bfff1a4f28bb
+Copying blob sha256:f2b4ef06ff01a67d4bed7657a4ae379a7d07934b7c3e743454a22a0d5275fb2b
+Copying blob sha256:7a46c6fa11d20264f19eb470179e005df7330ab62c0edbcf979e39634ee9b039
+Copying config sha256:d8e19ba36e1441fcd3f8a6d3d84c1eeb713ed5f1f46476918b9c3c1c6e765ead
+Writing manifest to image destination
+Unpacking OCI image
+   � unpacking rootfs ...     
+   � ... done                 
+   � unpacked image rootfs: /tmp/task-data/ta-01M64J3DJQ2SF8DD54PAXT7MCB/registry-unpackdBc8xq
+Copied image in 4.80s
+
+=> Step 1: USER root
+
+=> Step 2: COPY --from=node26 /usr/local/bin/node /usr/local/bin/node26
+
+=> Step 3: COPY --from=smokescreen-build /oddhound-smokescreen /usr/local/bin/oddhound-smokescreen
+
+=> Step 4: COPY --from=smokescreen-build /source/LICENSE.txt /usr/share/doc/oddhound-smokescreen/LICENSE
+
+=> Step 5: RUN apt-get update && apt-get install -y --no-install-recommends nftables tini util-linux libnss3-tools python3 curl ca-certificates \
+ && rm -rf /var/lib/apt/lists/* \
+ && useradd --system --no-create-home --shell /usr/sbin/nologin oddproxy \
+ && useradd --system --no-create-home --shell /usr/sbin/nologin oddgateway
+Get:1 http://security.ubuntu.com/ubuntu noble-security InRelease [126 kB]
+Get:2 http://azure.archive.ubuntu.com/ubuntu noble InRelease [256 kB]
+Get:3 https://deb.nodesource.com/node_24.x nodistro InRelease [12.1 kB]
+Get:4 http://security.ubuntu.com/ubuntu noble-security/main amd64 Packages [1412 kB]
+Get:5 http://azure.archive.ubuntu.com/ubuntu noble-updates InRelease [126 kB]
+Get:6 http://security.ubuntu.com/ubuntu noble-security/restricted amd64 Packages [2122 kB]
+Get:7 http://azure.archive.ubuntu.com/ubuntu noble-backports InRelease [126 kB]
+Get:8 http://security.ubuntu.com/ubuntu noble-security/universe amd64 Packages [1550 kB]
+Get:9 http://security.ubuntu.com/ubuntu noble-security/multiverse amd64 Packages [55.6 kB]
+Get:10 https://deb.nodesource.com/node_24.x nodistro/main amd64 Packages [9993 B]
+Get:11 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 Packages [1808 kB]
+Get:12 http://azure.archive.ubuntu.com/ubuntu noble/multiverse amd64 Packages [331 kB]
+Get:13 http://azure.archive.ubuntu.com/ubuntu noble/restricted amd64 Packages [117 kB]
+Get:14 http://azure.archive.ubuntu.com/ubuntu noble/universe amd64 Packages [19.3 MB]
+Get:15 http://azure.archive.ubuntu.com/ubuntu noble-updates/restricted amd64 Packages [2235 kB]
+Get:16 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 Packages [1740 kB]
+Get:17 http://azure.archive.ubuntu.com/ubuntu noble-updates/universe amd64 Packages [2172 kB]
+Get:18 http://azure.archive.ubuntu.com/ubuntu noble-updates/multiverse amd64 Packages [61.7 kB]
+Get:19 http://azure.archive.ubuntu.com/ubuntu noble-backports/main amd64 Packages [49.0 kB]
+Get:20 http://azure.archive.ubuntu.com/ubuntu noble-backports/universe amd64 Packages [36.0 kB]
+Get:21 http://azure.archive.ubuntu.com/ubuntu noble-backports/multiverse amd64 Packages [669 B]
+Fetched 33.7 MB in 2s (16.0 MB/s)
+Reading package lists...
+Reading package lists...
+Building dependency tree...
+Reading state information...
+util-linux is already the newest version (2.39.3-9ubuntu6.6).
+python3 is already the newest version (3.12.3-0ubuntu2.1).
+python3 set to manually installed.
+curl is already the newest version (8.5.0-2ubuntu10.16).
+ca-certificates is already the newest version (20260816ubuntu0.24.04.1).
+The following additional packages will be installed:
+  libjansson4 libmnl0 libnftables1 libnftnl11 libxtables12
+Suggested packages:
+  firewalld
+The following NEW packages will be installed:
+  libjansson4 libmnl0 libnftables1 libnftnl11 libnss3-tools libxtables12
+  nftables tini
+0 upgraded, 8 newly installed, 0 to remove and 4 not upgraded.
+Need to get 1466 kB of archives.
+After this operation, 4738 kB of additional disk space will be used.
+Get:1 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 libmnl0 amd64 1.0.5-2build1 [12.3 kB]
+Get:2 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 libxtables12 amd64 1.8.10-3ubuntu2 [35.7 kB]
+Get:3 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 libjansson4 amd64 2.14-2build2 [32.8 kB]
+Get:4 http://azure.archive.ubuntu.com/ubuntu noble/main amd64 libnftnl11 amd64 1.2.6-2build1 [66.0 kB]
+Get:5 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 libnftables1 amd64 1.0.9-1ubuntu0.1 [359 kB]
+Get:6 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 nftables amd64 1.0.9-1ubuntu0.1 [69.8 kB]
+Get:7 http://azure.archive.ubuntu.com/ubuntu noble-updates/main amd64 libnss3-tools amd64 2:3.98-1ubuntu0.3 [615 kB]
+Get:8 http://azure.archive.ubuntu.com/ubuntu noble/universe amd64 tini amd64 0.19.0-1 [276 kB]
+debconf: delaying package configuration, since apt-utils is not installed
+Fetched 1466 kB in 0s (3297 kB/s)
+Selecting previously unselected package libmnl0:amd64.
+(Reading database ... 
+[1A(Reading database ... 5%
+[1A(Reading database ... 10%
+[1A(Reading database ... 15%
+[1A(Reading database ... 20%
+[1A(Reading database ... 25%
+[1A(Reading database ... 30%
+[1A(Reading database ... 35%
+[1A(Reading database ... 40%
+[1A(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%
+[1A(Reading database ... 100%(Reading database ... 34954 files and directories currently installed.)
+Preparing to unpack .../0-libmnl0_1.0.5-2build1_amd64.deb ...
+Unpacking libmnl0:amd64 (1.0.5-2build1) ...
+Selecting previously unselected package libxtables12:amd64.
+Preparing to unpack .../1-libxtables12_1.8.10-3ubuntu2_amd64.deb ...
+Unpacking libxtables12:amd64 (1.8.10-3ubuntu2) ...
+Selecting previously unselected package libjansson4:amd64.
+Preparing to unpack .../2-libjansson4_2.14-2build2_amd64.deb ...
+Unpacking libjansson4:amd64 (2.14-2build2) ...
+Selecting previously unselected package libnftnl11:amd64.
+Preparing to unpack .../3-libnftnl11_1.2.6-2build1_amd64.deb ...
+Unpacking libnftnl11:amd64 (1.2.6-2build1) ...
+Selecting previously unselected package libnftables1:amd64.
+Preparing to unpack .../4-libnftables1_1.0.9-1ubuntu0.1_amd64.deb ...
+Unpacking libnftables1:amd64 (1.0.9-1ubuntu0.1) ...
+Selecting previously unselected package nftables.
+Preparing to unpack .../5-nftables_1.0.9-1ubuntu0.1_amd64.deb ...
+Unpacking nftables (1.0.9-1ubuntu0.1) ...
+Selecting previously unselected package libnss3-tools.
+Preparing to unpack .../6-libnss3-tools_2%3a3.98-1ubuntu0.3_amd64.deb ...
+Unpacking libnss3-tools (2:3.98-1ubuntu0.3) ...
+Selecting previously unselected package tini.
+Preparing to unpack .../7-tini_0.19.0-1_amd64.deb ...
+Unpacking tini (0.19.0-1) ...
+Setting up libjansson4:amd64 (2.14-2build2) ...
+Setting up libmnl0:amd64 (1.0.5-2build1) ...
+Setting up tini (0.19.0-1) ...
+Setting up libxtables12:amd64 (1.8.10-3ubuntu2) ...
+Setting up libnss3-tools (2:3.98-1ubuntu0.3) ...
+Setting up libnftnl11:amd64 (1.2.6-2build1) ...
+Setting up libnftables1:amd64 (1.0.9-1ubuntu0.1) ...
+Setting up nftables (1.0.9-1ubuntu0.1) ...
+Processing triggers for libc-bin (2.39-0ubuntu8.9) ...
+
+=> Step 6: RUN curl -fsSL https://downloads.mitmproxy.org/12.3.1/mitmproxy-12.3.1-linux-x86_64.tar.gz -o /tmp/mitmproxy.tar.gz \
+ && python3 -c "import hashlib; assert hashlib.sha256(open('/tmp/mitmproxy.tar.gz','rb').read()).hexdigest() == 'f7b4237f5702f6cd21357fe6e4680a7e905f8f9b816b872230d018ea696c34d5'" \
+ && mkdir -p /opt/mitmproxy && tar -xzf /tmp/mitmproxy.tar.gz -C /opt/mitmproxy && rm /tmp/mitmproxy.tar.gz
+
+=> Step 7: WORKDIR /opt/oddhound
+
+=> Step 8: RUN printf '{"name":"oddhound-evaluation-browser","private":true,"type":"module"}' > package.json \
+ && npm install --no-audit --no-fund --omit=dev playwright@1.64.1
+
+added 2 packages in 2s
+npm notice
+npm notice New major version of npm available! 11.19.1 -> 12.2.1
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.1
+npm notice To update run: npm install -g npm@12.2.1
+npm notice
+
+=> Step 9: COPY apps/browser/gateway/ /opt/oddhound/gateway/
+
+=> Step 10: COPY apps/browser/gateway/entrypoint.sh /usr/local/bin/oddhound-entrypoint
+
+=> Step 11: RUN sed -i 's/\r$//' /usr/local/bin/oddhound-entrypoint \
+ && chmod 0755 /usr/local/bin/oddhound-entrypoint \
+ && chown -R root:root /opt/oddhound /opt/mitmproxy && chmod -R a-w /opt/oddhound /opt/mitmproxy
+
+=> Step 12: ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+
+=> Step 13: EXPOSE 3000
+Skipping EXPOSE instruction, it is unsupported by Modal container images.
+
+=> Step 14: ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/oddhound-entrypoint"]
+Saving image...
+Image saved, took 4.44s
+
+Built image im-btEeXlBlcPH95oVAId9OIc in 82.26s
+
+
+Building image im-0qGAtC8Wjv7ExAXQtgxTZi
+
+=> Step 0: FROM base
+Saving image...
+Image saved, took 966.02ms
+
+Built image im-0qGAtC8Wjv7ExAXQtgxTZi in 1.43s
+
+
+Building image im-VFVycsDf9x78A5ZYAg47E0
+
+=> Step 0: FROM base
+
+=> Step 1: ENTRYPOINT []
+Saving image...
+Image saved, took 620.16ms
+
+Built image im-VFVycsDf9x78A5ZYAg47E0 in 1.10s
+
+
+ODDHOUND_EVALUATION_IMAGE_ID=im-VFVycsDf9x78A5ZYAg47E0

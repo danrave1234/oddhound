@@ -1,0 +1,7 @@
+{"check":"frozen policy hash attested before authenticated browser connection","pass":true,"detail":"Runtime required the exact SHA256 policy hash before connecting"}
+{"check":"Chromium sandbox","pass":true,"detail":"sandbox_on"}
+{"check":"browser version","pass":true,"detail":"156.0.8078.4"}
+{"check":"blank context only","pass":true,"detail":"about:blank"}
+{"check":"sandbox termination confirmed","pass":true,"detail":"sandbox sb-01M64J6Q12HM6PWHM2243BJST6 terminated (exit 137)"}
+{"check":"independent cleanup of this run tag","pass":true,"detail":{"unconfirmed":[]}}
+{"evidence":"docs/evidence/modal-gateway-preflight-2026-10-30-e92bfb63-b950-4861-bf9d-3e1ae38d14ca.json","pass":true}

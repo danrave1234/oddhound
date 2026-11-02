@@ -1,0 +1,27 @@
+{
+  "at": "2026-10-29T18:22:49.164Z",
+  "imageId": "im-obOx9c4zyznfRn4lwG6bGy",
+  "appName": "oddhound-browser-preflight",
+  "runId": "20d0d6d6-93ec-4fe8-a129-960cd49bf9fc",
+  "policyHash": "3f2fb608f056d17f97d517f96464907701bd11ce5062f7dd4e61a86fb962213f",
+  "runtime": "vm",
+  "control": "token",
+  "outbound": "canonical public IPv4",
+  "node": "v26.12.1",
+  "limitations": "Startup/control/sandbox/teardown only. No target navigation, target credentials, model call, resource/authority canary or public-launch clearance.",
+  "checks": [
+    {
+      "check": "startup and authenticated browser connection",
+      "pass": false,
+      "detail": "browser Sandbox failed to start: {\"error\":\"evaluation_gateway_startup_failed\"}\n{\"egress\":\"exhausted\",\"reason\":\"gateway_startup_failed\"}\n"
+    },
+    {
+      "check": "independent cleanup of this run tag",
+      "pass": true,
+      "detail": {
+        "unconfirmed": []
+      }
+    }
+  ],
+  "pass": false
+}

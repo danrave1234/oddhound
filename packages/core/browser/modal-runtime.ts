@@ -14,12 +14,13 @@
 //   * terminate at run end and confirm the Sandbox has exited; tags let the independent reaper find
 //     orphans even after a worker crash.
 
-import { randomBytes } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import { chromium, type Browser } from 'playwright';
 import { ModalClient, type Sandbox, type SandboxCreateParams } from 'modal';
 import { checkChromiumSandbox, type BrowserRuntime, type ProvisionOptions, type ProvisionedBrowser } from './runtime.ts';
 import { LIMITS } from '../contracts/limits.ts';
 import { HANDOFF_LIMIT_MS } from '../agent/handoff.ts';
+import type { GatewayEvaluationPolicy } from './gateway-evaluation.ts';
 
 export const MODAL_RUN_TAG = 'oddhound-run';
 export const MODAL_ROLE_TAG = 'oddhound-role';
@@ -41,6 +42,8 @@ export type ModalRuntimeOptions = {
   timeoutMs?: number;
   readyTimeoutMs?: number;
   client?: ModalClient;         // injectable for tests
+  /** Programmatic opt-in only; use a separately built pinned gateway image. Never selected by env. */
+  evaluationPolicy?: GatewayEvaluationPolicy;
 };
 
 type Line = Record<string, unknown>;
@@ -99,9 +102,15 @@ export class ModalSandboxRuntime implements BrowserRuntime {
   /** Sandbox creation parameters. Exported shape is tested: it must never carry secrets. */
   createParams(runId: string, wsPath: string): SandboxCreateParams {
     const o = this.#o;
+    if (o.evaluationPolicy && (o.evaluationPolicy.runId !== runId || o.evaluationPolicy.expiresAt <= Date.now())) throw new Error('Gateway evaluation policy does not match this active run');
+    if (o.evaluationPolicy) {
+      const expected = publicIpv4Cidrs();
+      const actual = new Set(o.outboundCidrAllowlist ?? []);
+      if (o.sandboxRuntime !== 'vm' || (o.connect ?? 'token') !== 'token' || actual.size !== expected.length || !expected.every((cidr) => actual.has(cidr))) throw new Error('Gateway evaluation requires vm, token control and the canonical public outbound allowlist');
+    }
     const p: SandboxCreateParams = {
       command: ['/usr/bin/tini', '--', '/usr/local/bin/oddhound-entrypoint'],
-      env: { RUN_WS_PATH: wsPath }, // the only runtime input; never platform secrets
+      env: { RUN_WS_PATH: wsPath, ...(o.evaluationPolicy ? { ODDHOUND_EVALUATION_POLICY: JSON.stringify(o.evaluationPolicy) } : {}) }, // no platform secrets
       cpu: o.cpu ?? 1,
       memoryMiB: o.memoryMiB ?? 2048,
       timeoutMs: o.timeoutMs ?? MODAL_SANDBOX_TIMEOUT_MS,
@@ -128,7 +137,10 @@ export class ModalSandboxRuntime implements BrowserRuntime {
     const sb = await this.#client.sandboxes.create(app, image, this.createParams(opts.runId, wsPath));
 
     let denied = 0;
+    let evaluationReady = false;
+    const expectedPolicyHash = this.#o.evaluationPolicy ? createHash('sha256').update(JSON.stringify(this.#o.evaluationPolicy)).digest('hex') : null;
     const watch = watchStdout(sb, (j) => {
+      if (j.gatewayEvaluation === 'ready' && j.policyHash === expectedPolicyHash) evaluationReady = true;
       if (j.egress === 'denied') { denied++; opts.onEgress?.({ at: new Date().toISOString(), kind: 'connect', host: String(j.host ?? ''), port: Number(j.port ?? 0), allowed: false, reason: String(j.reason ?? '') }); }
       if (j.egress === 'exhausted') opts.onEgressExhausted?.(String(j.reason ?? 'exhausted'));
     });
@@ -146,14 +158,14 @@ export class ModalSandboxRuntime implements BrowserRuntime {
         watch.ready,
         new Promise((_, rej) => setTimeout(() => rej(new Error('browser Sandbox did not become ready in time')), readyTimeout)),
       ]);
+      if (this.#o.evaluationPolicy && !evaluationReady) throw new Error('Pinned image did not attest the frozen evaluation gateway policy');
       const { url, headers } = await this.#controlEndpoint(sb, wsPath);
       const deadline = Date.now() + 60_000;
-      let lastErr: unknown;
       while (!browser && Date.now() < deadline) {
-        browser = await chromium.connect(url, { timeout: 15_000, headers }).catch((e) => { lastErr = e; return null; });
+        browser = await chromium.connect(url, { timeout: 15_000, headers }).catch(() => null);
         if (!browser) await new Promise((r) => setTimeout(r, 1_000));
       }
-      if (!browser) throw new Error(`could not connect to the browser Sandbox: ${(lastErr as Error)?.message?.slice(0, 160) ?? 'timeout'}`);
+      if (!browser) throw new Error('could not connect to the browser Sandbox before the deadline');
       const sandboxVerdict = await checkChromiumSandbox(browser);
       const connected = browser;
       const provisioned: ProvisionedBrowser = {
