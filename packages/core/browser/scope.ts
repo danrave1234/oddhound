@@ -84,11 +84,12 @@ export function decide(policy: ScopePolicy, req: { url: string; method: string; 
   return { ...base, allowed: true, reason: isPrimary ? 'verified_origin' : isApi ? 'verified_api_origin' : 'public_resource' };
 }
 
-export async function attachScope(context: BrowserContext, policy: ScopePolicy, onDecision: (d: ScopeDecision) => void): Promise<void> {
+export async function attachScope(context: BrowserContext, policy: ScopePolicy, onDecision: (d: ScopeDecision) => void, options: { allowPrimaryPopups?: boolean } = {}): Promise<void> {
   await context.route('**/*', async (route: Route, request: Request) => {
-    const frame = request.frame();
-    let isMainFrame = false;
-    try { isMainFrame = frame.parentFrame() === null; } catch { isMainFrame = false; }
+    // A popup's first request can arrive before Playwright has a Frame object.
+    // Classify unknown navigation conservatively as main-frame: it cannot borrow resource scope.
+    let isMainFrame = request.isNavigationRequest();
+    try { isMainFrame = request.frame().parentFrame() === null; } catch { /* pre-frame popup or worker */ }
     const d = decide(policy, {
       url: request.url(), method: request.method(), isNavigation: request.isNavigationRequest(),
       isMainFrame, resourceType: request.resourceType(),
@@ -97,8 +98,17 @@ export async function attachScope(context: BrowserContext, policy: ScopePolicy, 
     if (d.allowed) await route.continue();
     else await route.abort('blockedbyclient');
   });
-  // Popups and new tabs carry no authority: close any page not opened by Oddhound itself.
+  // A popup never expands authority. The exploratory session may adopt a primary-origin popup;
+  // the context request policy is already attached before its first request. Other callers stay closed.
   context.on('page', (page) => {
-    void page.opener().then((opener) => { if (opener) return page.close(); }).catch(() => {});
+    void page.opener().then(async (opener) => {
+      if (!opener) return;
+      if (options.allowPrimaryPopups) {
+        if (page.url() === 'about:blank') await page.waitForURL(u => u.origin === policy.primaryOrigin, { waitUntil: 'domcontentloaded', timeout: 5_000 }).catch(() => {});
+        await page.waitForLoadState('domcontentloaded', { timeout: 5_000 }).catch(() => {});
+        try { if (new URL(page.url()).origin === policy.primaryOrigin) return; } catch { /* blank/invalid */ }
+      }
+      await page.close();
+    }).catch(() => {});
   });
 }

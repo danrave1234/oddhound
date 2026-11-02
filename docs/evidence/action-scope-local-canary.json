@@ -1,0 +1,225 @@
+{
+  "at": "2026-10-29T18:14:59.322Z",
+  "node": "v26.12.1",
+  "playwright": "1.64.1",
+  "chromium": "156.0.8078.4",
+  "sandbox": "sandbox_on",
+  "profile": "local win32 Chromium; two owned loopback HTTP origins; action scope only",
+  "provider": "none",
+  "mocked": "synthetic canary HTML/endpoints only; real Chromium, HTTP listeners and attachScope",
+  "result": "failed",
+  "passed": 5,
+  "failed": 4,
+  "checks": [
+    {
+      "id": "AS-01",
+      "name": "allowed same-origin POST",
+      "expected": "one primary POST",
+      "passed": true,
+      "nonce": "83e5022a-1402-48e8-b3e9-b7885c162b5e",
+      "arrivals": [
+        {
+          "origin": "primary",
+          "nonce": "83e5022a-1402-48e8-b3e9-b7885c162b5e",
+          "kind": "http",
+          "method": "POST",
+          "path": "/sink",
+          "body": "synthetic=83e5022a-1402-48e8-b3e9-b7885c162b5e"
+        }
+      ],
+      "decisions": [],
+      "browserResult": "response:200:basic"
+    },
+    {
+      "id": "AS-02",
+      "name": "off-origin listener positive control (no scope)",
+      "expected": "one resource POST",
+      "passed": true,
+      "nonce": "ebb31988-f77f-4e97-8ce5-c8d58e5075d2",
+      "arrivals": [
+        {
+          "origin": "resource",
+          "nonce": "ebb31988-f77f-4e97-8ce5-c8d58e5075d2",
+          "kind": "http",
+          "method": "POST",
+          "path": "/sink",
+          "body": "synthetic=ebb31988-f77f-4e97-8ce5-c8d58e5075d2"
+        }
+      ],
+      "decisions": [],
+      "browserResult": "response:0:opaque"
+    },
+    {
+      "id": "AS-03",
+      "name": "direct off-origin POST denied",
+      "expected": "no resource POST",
+      "passed": true,
+      "nonce": "6b125790-61cb-4aaf-9d84-15b3c000928b",
+      "arrivals": [],
+      "decisions": [
+        {
+          "method": "POST",
+          "url": "http://127.0.0.1:59167/sink?nonce=6b125790-61cb-4aaf-9d84-15b3c000928b",
+          "resourceType": "fetch",
+          "allowed": false,
+          "reason": "write_to_unverified_origin"
+        }
+      ],
+      "browserResult": "error:TypeError: Failed to fetch"
+    },
+    {
+      "id": "AS-04",
+      "name": "allowed same-origin 307 POST redirect",
+      "expected": "one primary POST with original body",
+      "passed": true,
+      "nonce": "1b6393c3-249b-4808-ab1e-315242e692e2",
+      "arrivals": [
+        {
+          "origin": "primary",
+          "nonce": "1b6393c3-249b-4808-ab1e-315242e692e2",
+          "kind": "http",
+          "method": "POST",
+          "path": "/redirect307",
+          "body": "synthetic=1b6393c3-249b-4808-ab1e-315242e692e2"
+        },
+        {
+          "origin": "primary",
+          "nonce": "1b6393c3-249b-4808-ab1e-315242e692e2",
+          "kind": "http",
+          "method": "POST",
+          "path": "/sink",
+          "body": "synthetic=1b6393c3-249b-4808-ab1e-315242e692e2"
+        }
+      ],
+      "decisions": [],
+      "browserResult": "response:200:basic"
+    },
+    {
+      "id": "AS-05",
+      "name": "off-origin 307 POST redirect denied",
+      "expected": "no resource POST/body",
+      "passed": false,
+      "nonce": "e52e5e31-a50e-462f-92ea-ab9aba0fc928",
+      "arrivals": [
+        {
+          "origin": "primary",
+          "nonce": "e52e5e31-a50e-462f-92ea-ab9aba0fc928",
+          "kind": "http",
+          "method": "POST",
+          "path": "/redirect307",
+          "body": "synthetic=e52e5e31-a50e-462f-92ea-ab9aba0fc928"
+        },
+        {
+          "origin": "resource",
+          "nonce": "e52e5e31-a50e-462f-92ea-ab9aba0fc928",
+          "kind": "http",
+          "method": "POST",
+          "path": "/sink",
+          "body": "synthetic=e52e5e31-a50e-462f-92ea-ab9aba0fc928"
+        }
+      ],
+      "decisions": [],
+      "browserResult": "response:0:opaque"
+    },
+    {
+      "id": "AS-06",
+      "name": "off-origin 308 POST redirect denied",
+      "expected": "no resource POST/body",
+      "passed": false,
+      "nonce": "212088e4-ef6f-4a06-b180-6c5c0ea41d9d",
+      "arrivals": [
+        {
+          "origin": "primary",
+          "nonce": "212088e4-ef6f-4a06-b180-6c5c0ea41d9d",
+          "kind": "http",
+          "method": "POST",
+          "path": "/redirect308",
+          "body": "synthetic=212088e4-ef6f-4a06-b180-6c5c0ea41d9d"
+        },
+        {
+          "origin": "resource",
+          "nonce": "212088e4-ef6f-4a06-b180-6c5c0ea41d9d",
+          "kind": "http",
+          "method": "POST",
+          "path": "/sink",
+          "body": "synthetic=212088e4-ef6f-4a06-b180-6c5c0ea41d9d"
+        }
+      ],
+      "decisions": [],
+      "browserResult": "response:0:opaque"
+    },
+    {
+      "id": "AS-07",
+      "name": "resource frame cannot borrow primary write authority",
+      "expected": "resource frame loaded, no primary POST",
+      "passed": false,
+      "nonce": "a606d384-274a-425b-a900-1eda3df3e31f",
+      "arrivals": [
+        {
+          "origin": "resource",
+          "nonce": "a606d384-274a-425b-a900-1eda3df3e31f",
+          "kind": "http",
+          "method": "GET",
+          "path": "/frame",
+          "body": ""
+        },
+        {
+          "origin": "primary",
+          "nonce": "a606d384-274a-425b-a900-1eda3df3e31f",
+          "kind": "http",
+          "method": "POST",
+          "path": "/sink",
+          "body": "synthetic=a606d384-274a-425b-a900-1eda3df3e31f"
+        }
+      ],
+      "decisions": [
+        {
+          "method": "GET",
+          "url": "http://127.0.0.1:59167/frame?nonce=a606d384-274a-425b-a900-1eda3df3e31f",
+          "resourceType": "document",
+          "allowed": true,
+          "reason": "public_resource"
+        }
+      ],
+      "browserResult": "response:0:opaque"
+    },
+    {
+      "id": "AS-08",
+      "name": "socket listener positive control (no scope)",
+      "expected": "one resource socket handshake",
+      "passed": true,
+      "nonce": "1e18ad95-715f-44a4-b939-042bf0bea8ab",
+      "arrivals": [
+        {
+          "origin": "resource",
+          "nonce": "1e18ad95-715f-44a4-b939-042bf0bea8ab",
+          "kind": "websocket",
+          "method": "GET",
+          "path": "/socket",
+          "body": ""
+        }
+      ],
+      "decisions": [],
+      "browserResult": "opened"
+    },
+    {
+      "id": "AS-09",
+      "name": "off-origin socket denied",
+      "expected": "no resource socket handshake",
+      "passed": false,
+      "nonce": "7914d534-6bc7-49c1-8bdd-350051d1a5d7",
+      "arrivals": [
+        {
+          "origin": "resource",
+          "nonce": "7914d534-6bc7-49c1-8bdd-350051d1a5d7",
+          "kind": "websocket",
+          "method": "GET",
+          "path": "/socket",
+          "body": ""
+        }
+      ],
+      "decisions": [],
+      "browserResult": "opened"
+    }
+  ]
+}
