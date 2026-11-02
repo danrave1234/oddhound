@@ -20,43 +20,43 @@ export function ResultsDashboard({ status, reason, findings, rules, states, cove
   const grouped = RESULT_DOMAINS.map(domain => ({ ...domain, findings: findings.filter(f => resultDomain(f, rules) === domain.key) }));
   const visible = filter === 'all' ? findings : grouped.find(d => d.key === filter)!.findings;
   const mobile = states.some(s => s.device === 'mobile');
-  return <section className="results-dashboard" aria-label="Results dashboard">
-    <div className="card">
-      <div className="card-header"><h1 className="h2"><Icon name="report" /> Run results</h1><StatusBadge value={status} /></div>
-      <div className="results-intro">
-        <p>{status === 'completed' ? 'Results from the tested scope.' : 'Partial results. This run did not complete its exploration.'}{reason ? ` Reason: ${reason.replace(/_/g, ' ')}.` : ''}</p>
-        <div className="results-totals">
-          <div><strong>{totals.verified}</strong><span>Verified issues</span></div>
-          <div><strong>{totals.review}</strong><span>Needs review</span></div>
-          <div><strong>{totals.observations}</strong><span>Configuration observations</span></div>
-          <div><strong>{totals.suggestions}</strong><span>Suggestions</span></div>
-        </div>
-        <p className="muted">Categories organize saved findings. Zero findings is not a pass; no overall or category score is calculated.</p>
-      </div>
+  const current = filter === 'all' ? null : grouped.find(d => d.key === filter)!;
+  return <section className="results-dashboard rs" aria-label="Results dashboard">
+    <header className="rs-head">
+      <div className="row" style={{ gap: 10, alignItems: 'center' }}><h1 className="h1">Run results</h1><StatusBadge value={status} /></div>
+      <p className="text-2" style={{ margin: 0 }}>{status === 'completed' ? 'Results from the tested scope.' : 'Partial results. This run did not complete its exploration.'}{reason ? ` Reason: ${reason.replace(/_/g, ' ')}.` : ''}</p>
+    </header>
+    <dl className="instruments rs-totals">
+      <div className={totals.verified ? 'is-hot' : undefined}><dt>Verified issues</dt><dd className="tabular">{totals.verified}</dd></div>
+      <div><dt>Needs review</dt><dd className="tabular">{totals.review}</dd></div>
+      <div><dt>Configuration observations</dt><dd className="tabular">{totals.observations}</dd></div>
+      <div><dt>Suggestions</dt><dd className="tabular">{totals.suggestions}</dd></div>
+    </dl>
+    <p className="muted rs-note">Categories organize saved findings. Zero findings is not a pass; no overall or category score is calculated.</p>
+
+    <div className="segmented rs-filter" role="group" aria-label="Result categories">
+      <button aria-pressed={filter === 'all'} aria-label="All categories" onClick={() => setFilter('all')}>All <span className="rs-count">{findings.length}</span></button>
+      {grouped.map(domain => <button key={domain.key} aria-pressed={filter === domain.key} onClick={() => setFilter(domain.key)}>
+        <Icon name={ICONS[domain.key]} />{domain.label} <span className="rs-count">{domain.findings.length}</span></button>)}
     </div>
-    <div className="results-categories" role="group" aria-label="Result categories">
-      {grouped.map(domain => {
-        const counts = resultCounts(domain.findings);
-        return <button key={domain.key} className="card result-category" aria-pressed={filter === domain.key} onClick={() => setFilter(domain.key)}>
-          <span className="result-category-title"><Icon name={ICONS[domain.key]} />{domain.label}<strong>{domain.findings.length}</strong></span>
-          <span className="muted">{domain.description}</span>
-          <span>{domain.findings.length ? `${counts.verified} verified · ${counts.review} review · ${counts.observations} observations · ${counts.suggestions} suggestions` : 'No findings recorded. Category coverage is not established.'}</span>
-        </button>;
-      })}
+    <div className="rs-list-head">
+      <h2 className="h3">{current ? current.label : 'All findings'}</h2>
+      {current && <p className="muted">{current.description}{current.findings.length ? '' : ' No findings recorded. Category coverage is not established.'}</p>}
     </div>
-    <div className="card">
-      <div className="card-header"><h2 className="h3">{filter === 'all' ? 'All findings' : grouped.find(d => d.key === filter)!.label}</h2><span className="count">{visible.length}</span><button className="btn btn-ghost btn-sm" onClick={() => setFilter('all')} aria-pressed={filter === 'all'}>All categories</button></div>
-      {visible.length ? <ul className="results-findings">{visible.map(f => <li key={f.id}><button onClick={() => onSelectFinding(f.id)}><span><strong>{f.title}</strong><span className="muted">{RESULT_DOMAINS.find(d => d.key === resultDomain(f, rules))!.label}{f.impact ? ` · ${f.impact} impact` : ''}</span></span><StatusBadge value={findingStatus({ ...f, lifecycle: f.lifecycle ?? null })} /><Icon name="chevron" /></button></li>)}</ul>
-        : <p className="results-intro muted">No findings recorded here. This does not establish that the category was tested or passed.</p>}
-    </div>
-    <div className="card">
-      <div className="card-header"><h2 className="h3"><Icon name="pointer" /> Coverage and gaps</h2><button className="btn btn-sm" onClick={onOpenCoverage}>View coverage</button></div>
-      <div className="results-intro">
-        <p><strong>{new Set(states.map(s => s.route)).size} paths reached</strong> · {states.length} saved states · {mobile ? 'Mobile states recorded' : 'No mobile states recorded'}</p>
-        {coverage ? <p>{coverage.exercised} of {coverage.total} observed controls exercised · {coverage.outcomeChecked ?? 0} outcome checks · {coverage.blocked} controls blocked by policy.</p> : <p>No control coverage recorded.</p>}
-        {discovery ? <p>{discovery.pendingRoutes} discovered routes and {discovery.pendingControls} controls still pending · {discovery.excluded} entries excluded by contract.</p> : <p>No discovery backlog recorded.</p>}
-        <p className="muted">Reached pages and successful clicks do not establish correct behavior. SEO and UI/UX need their own recorded checks; this dashboard does not run additional audits.</p>
-      </div>
-    </div>
+    {visible.length ? <ul className="rs-findings">{visible.map(f => <li key={f.id}><button onClick={() => onSelectFinding(f.id)}>
+        <StatusBadge value={findingStatus({ ...f, lifecycle: f.lifecycle ?? null })} />
+        <span className="rs-title"><strong>{f.title}</strong><span className="muted">{RESULT_DOMAINS.find(d => d.key === resultDomain(f, rules))!.label}{f.impact ? `, ${f.impact} impact` : ''}</span></span>
+        <Icon name="chevron" /></button></li>)}</ul>
+      : <p className="muted">No findings recorded here. This does not establish that the category was tested or passed.</p>}
+
+    <section className="rs-coverage" aria-labelledby="rs-coverage-title">
+      <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', gap: 10 }}><h2 id="rs-coverage-title" className="h3">Coverage and gaps</h2><button className="btn btn-sm" onClick={onOpenCoverage}>View coverage</button></div>
+      <dl className="rs-cov">
+        <div><dt>Paths reached</dt><dd>{new Set(states.map(s => s.route)).size} paths, {states.length} saved states. {mobile ? 'Mobile states recorded.' : 'No mobile states recorded.'}</dd></div>
+        <div><dt>Controls</dt><dd>{coverage ? `${coverage.exercised} of ${coverage.total} observed controls exercised, ${coverage.outcomeChecked ?? 0} outcome checks, ${coverage.blocked} blocked by policy.` : 'No control coverage recorded.'}</dd></div>
+        <div><dt>Still pending</dt><dd>{discovery ? `${discovery.pendingRoutes} discovered routes and ${discovery.pendingControls} controls not yet tried; ${discovery.excluded} entries excluded by the run contract.` : 'No discovery backlog recorded.'}</dd></div>
+      </dl>
+      <p className="muted rs-note">Reached pages and successful clicks do not establish correct behavior. SEO and UI/UX need their own recorded checks; this page does not run additional audits.</p>
+    </section>
   </section>;
 }

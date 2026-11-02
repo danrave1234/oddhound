@@ -711,3 +711,29 @@ details.disclosure > .disclosure-body { padding: 4px 14px 16px; display: grid; g
 .instruments dd button { all: unset; cursor: pointer; border-radius: 4px; }
 .instruments dd button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 .instruments .is-hot dd { color: var(--bad); }
+
+/* ── Results: one list, filtered by category; no card grid, no score ──────────── */
+.rs { display: grid; gap: 16px; padding: 4px 2px 24px; }
+.rs-head { display: grid; gap: 6px; }
+.rs-totals { border-top: 0; padding-top: 4px; }
+.rs-note { margin: 0; font-size: 12.5px; }
+.rs-filter { flex-wrap: wrap; justify-self: start; }
+.rs-filter button { display: inline-flex; align-items: center; gap: 6px; }
+.rs-count { font-variant-numeric: tabular-nums; color: var(--text-3); font-weight: 600; }
+.rs-list-head { display: grid; gap: 2px; padding-top: 6px; }
+.rs-list-head p { margin: 0; font-size: 13px; }
+.rs-findings { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--separator); }
+.rs-findings li { border-bottom: 1px solid var(--separator); }
+.rs-findings button { display: grid; grid-template-columns: 112px minmax(0, 1fr) 16px; align-items: center; gap: 12px; width: 100%; padding: 11px 6px; border: 0; background: transparent; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+.rs-findings button:hover { background: var(--overlay-hover); }
+.rs-title { display: grid; gap: 1px; min-width: 0; }
+.rs-title strong { font-weight: 600; }
+.rs-title .muted { font-size: 12.5px; }
+.rs-coverage { display: grid; gap: 10px; padding-top: 14px; border-top: 1px solid var(--separator); }
+.rs-cov { display: grid; gap: 8px; margin: 0; }
+.rs-cov div { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 12px; font-size: 13.5px; }
+.rs-cov dt { color: var(--text-3); }
+.rs-cov dd { margin: 0; }
+@media (max-width: 560px) { .rs-findings button { grid-template-columns: minmax(0, 1fr) 16px; } .rs-findings button > :first-child { grid-column: 1 / -1; justify-self: start; } .rs-cov div { grid-template-columns: minmax(0, 1fr); gap: 0; } }
+.rs-findings .badge { white-space: nowrap; justify-self: start; }
+.rs-findings button { grid-template-columns: 120px minmax(0, 1fr) 16px; }
