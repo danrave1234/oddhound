@@ -38,6 +38,7 @@ import { readSiteMap } from '../browser/site-map.ts';
 import { runHandoff, HandoffEnded } from './handoff.ts';
 import { CLICK_ROLES, controlFor, fieldValue, fillAndSubmit, saveField, submitWithInterruption, newReplaySessions, recordIdsInUrl, replayScenario, scenarioDefect, scenarioHash, type Setup, type AuthRecipe, type Oracle, type ReplayEnv, type Scenario, type TraceStep } from '../verifier/scenario.ts';
 import { CLAIM_RETRY_DELAYS_MS, CLAIM_WINDOW_MS, NUMBER_ASSUMPTIONS, claimVisible, distinctiveValues, judgeCrossActor, judgeDifferential, judgeInterruption, judgeInvariant, occurrences, judgePersistence, judgeTwoTabs, readTables, readView, swapId, type ContextControls, type Family, type Interruption, type Invariant, type InvariantVerdict, type PageView } from '../verifier/behavior.ts';
+import { computeReportVerdict, type ReportRunCounts, type ReportVerificationResult } from './report-verdict.ts';
 
 export type ExecuteDeps = {
   db: Db;
@@ -57,6 +58,7 @@ export type ExecuteDeps = {
 type Candidate = {
   title: string; ruleId: string; impact: 'high' | 'medium' | 'low'; observed: string;
   scenario: Scenario; controlValues?: Record<string, string>; actor: string; device: string;
+  reportMatch?: boolean;
   /** 'detector' = raised by Oddhound's own sentinels; 'agent' = reported by the model. */
   source?: 'detector' | 'agent';
   /** Page-stated rules the reproduction's boundary values came from (e.g. 'maxlength=50 on "Notes"'). */
@@ -143,6 +145,8 @@ export async function executeRun(deps: ExecuteDeps, runId: string): Promise<RunS
   let session: RunSession | null = null;
   let finalStatus: RunStatus = 'completed';
   let stopReason: string | undefined;
+  let verificationRan = false;
+  const reportVerificationResults: ReportVerificationResult[] = [];
 
   const finish = async (status: RunStatus, reason?: string) => {
     finalStatus = status; stopReason = reason;
@@ -195,6 +199,7 @@ export async function executeRun(deps: ExecuteDeps, runId: string): Promise<RunS
 
     if (run.mode === 'retest') {
       const started = performance.now(); timings.verificationPhases++;
+      verificationRan = true;
       try { await executeRetest(deps, run, contract, generation, ev, (b) => { browser = b; }); }
       finally { timings.verificationMs += performance.now() - started; }
       return await done();
@@ -255,7 +260,8 @@ export async function executeRun(deps: ExecuteDeps, runId: string): Promise<RunS
     await ev('run.phase', { phase: 'verifying', candidates: candidates.length });
     const expiry = (await db.query<{ expires_at: Date | null }>('SELECT expires_at FROM runs WHERE id = $1', [runId])).rows[0]?.expires_at?.getTime() ?? Date.now() + 5 * 60_000;
     const verificationStarted = performance.now(); timings.verificationPhases++;
-    try { await verifyCandidates({ db, runId, generation, run, contract, candidates, browser, ev, handoffState, deadline: expiry - 60_000 }); }
+    verificationRan = true;
+    try { await verifyCandidates({ db, runId, generation, run, contract, candidates, browser, ev, results: reportVerificationResults, handoffState, deadline: expiry - 60_000 }); }
     finally { timings.verificationMs += performance.now() - verificationStarted; }
 
     // Truthful status: a model provider failure is a failed run, not a completed one.
@@ -293,6 +299,17 @@ export async function executeRun(deps: ExecuteDeps, runId: string): Promise<RunS
       const d = await browser.destroy();
       await setRunStatus(db, runId, generation, 'finalizing', { browserState: d.confirmed ? 'terminated' : 'terminating' });
       await ev(d.confirmed ? 'browser.terminated' : 'browser.destroy_unconfirmed', { detail: d.detail, egress: browser.egressStats() });
+    }
+    // A retest reuses the parent contract (and its report) but verifies no new candidates, so it has no verdict.
+    if (contract.report && run.mode !== 'retest') {
+      const existing = await db.query('SELECT 1 FROM run_events WHERE run_id = $1 AND type = $2 LIMIT 1', [runId, 'report.verdict']);
+      if (!existing.rowCount) {
+        const counts = (await db.query<ReportRunCounts>(`SELECT
+          (SELECT count(*)::int FROM actions WHERE run_id = $1) AS actions,
+          (SELECT count(DISTINCT route)::int FROM graph_states WHERE run_id = $1) AS pages,
+          (SELECT count(*)::int FROM run_events WHERE run_id = $1 AND type = 'finding.candidate') AS candidates`, [runId])).rows[0]!;
+        await ev('report.verdict', computeReportVerdict(reportVerificationResults, counts, verificationRan));
+      }
     }
     await setRunStatus(db, runId, generation, finalStatus, { stopReason });
     await ev('run.timings', {
@@ -1419,7 +1436,7 @@ async function agentLoop(a: LoopArgs): Promise<{ stopReason?: string; summary?: 
           const scenario: Scenario = { kind: 'batch', device: logs[0]!.device, ...(auth ? { auth } : {}), ...(rp.setup ? { setup: rp.setup } : {}), start: rp.start, steps: rp.steps, oracleStep };
           const stated = [...new Set(rec.steps.slice(0, k).map((x) => x.stated).filter(Boolean))].join(', ') || undefined;
           const knownRule = contract.rules.some((r) => r.id === args.rule_id) || BASELINE_RULES.some((r) => r.id === args.rule_id);
-          candidates.push({ title: args.title, ruleId: args.rule_id, impact: args.impact, observed: args.observed, scenario, actor: logs[0]!.actor, device: logs[0]!.device, source: 'agent', ...(stated ? { stated } : {}) });
+          candidates.push({ title: args.title, ruleId: args.rule_id, impact: args.impact, observed: args.observed, reportMatch: args.report_match, scenario, actor: logs[0]!.actor, device: logs[0]!.device, source: 'agent', ...(stated ? { stated } : {}) });
           await ev('finding.candidate', { title: args.title, ruleId: args.rule_id, kind: 'batch', source: 'agent', steps: steps.length, batch: rec.no });
           return { text: knownRule ? `Candidate recorded (batch ${rec.no}, ${steps.length} replay steps from ${start}, step ${oracleStep} is the check). Oddhound will replay it in a fresh session.` : `Recorded as needs-review: "${args.rule_id}" is not an owner or baseline rule.` };
         }
@@ -1433,17 +1450,20 @@ async function agentLoop(a: LoopArgs): Promise<{ stopReason?: string; summary?: 
           const rp = withRecordSetup(t.start, t.steps.map((step) => ({ step })), recorded);
           const scenario: Scenario = { kind: 'trace', device: t.device, ...(auth ? { auth } : {}), ...(rp.setup ? { setup: rp.setup } : {}), start: rp.start, steps: rp.steps.map((x) => x.step), oracle: args.scenario.oracle };
           const knownRule = contract.rules.some((r) => r.id === args.rule_id) || BASELINE_RULES.some((r) => r.id === args.rule_id);
-          candidates.push({ title: args.title, ruleId: args.rule_id, impact: args.impact, observed: args.observed, scenario, actor: t.actor, device: t.device, source: 'agent' });
+          candidates.push({ title: args.title, ruleId: args.rule_id, impact: args.impact, observed: args.observed, reportMatch: args.report_match, scenario, actor: t.actor, device: t.device, source: 'agent' });
           await ev('finding.candidate', { title: args.title, ruleId: args.rule_id, kind: 'trace', source: 'agent', steps: t.steps.length });
           return { text: knownRule ? `Candidate recorded (${t.steps.length} replay steps from ${t.start}). Oddhound will replay it in a fresh session.` : `Recorded as needs-review: "${args.rule_id}" is not an owner or baseline rule.` };
         }
         const known = contract.rules.some((r) => r.id === args.rule_id) || BASELINE_RULES.some((r) => r.id === args.rule_id);
         // One verified reproduction per rule and scenario kind is enough; repeated reports only cost turns.
         const same = candidates.find((c) => c.source === 'agent' && c.ruleId === args.rule_id && c.scenario.kind === args.scenario.kind);
-        if (same) return { text: `Already recorded: "${same.title}" (${same.ruleId}, ${same.scenario.kind}). Oddhound will verify it; move on to the next charter.` };
+        if (same) {
+          if (args.report_match === true) same.reportMatch = true;
+          return { text: `Already recorded: "${same.title}" (${same.ruleId}, ${same.scenario.kind}). Oddhound will verify it; move on to the next charter.` };
+        }
         // Ground the scenario in what Oddhound actually observed, then reject anything still unknown,
         // telling the model the real labels so it can correct the report in its next turn.
-        const grounded = groundCandidate({ title: args.title, ruleId: args.rule_id, impact: args.impact, observed: args.observed, scenario: args.scenario, controlValues: args.control_values, actor: session.actor, device: session.device }, recorded);
+        const grounded = groundCandidate({ title: args.title, ruleId: args.rule_id, impact: args.impact, observed: args.observed, reportMatch: args.report_match, scenario: args.scenario, controlValues: args.control_values, actor: session.actor, device: session.device }, recorded);
         const problems = scenarioProblems(grounded, recorded);
         if (problems.length) {
           await ev('finding.candidate_rejected', { title: args.title, problems });
@@ -1947,7 +1967,7 @@ async function recordExecution(db: Db, scenarioId: string, runId: string, kind: 
     [scenarioId, runId, kind, hash, outcome, JSON.stringify(observed), evidence]);
 }
 
-async function verifyCandidates(v: { db: Db; runId: string; generation: number; run: RunRow; contract: RunContract; candidates: Candidate[]; browser: ProvisionedBrowser; ev: (t: string, p?: Record<string, unknown>) => Promise<number>; handoffState?: StorageState; deadline?: number }) {
+async function verifyCandidates(v: { db: Db; runId: string; generation: number; run: RunRow; contract: RunContract; candidates: Candidate[]; browser: ProvisionedBrowser; ev: (t: string, p?: Record<string, unknown>) => Promise<number>; results: ReportVerificationResult[]; handoffState?: StorageState; deadline?: number }) {
   const { db, runId, run, contract, candidates, browser, ev } = v;
   const env = replayEnvFor(db, runId, browser, contract, contract.target.origin, ev, v.handoffState);
   const seen = new Set<string>();
@@ -1964,16 +1984,18 @@ async function verifyCandidates(v: { db: Db; runId: string; generation: number; 
     // A family check without an explicit rule is still replayed for evidence, against its stated hypothesis.
     const rule = known ?? (c.hypothesis ? { id: c.ruleId, text: c.hypothesis, source: 'hypothesis' as const } : undefined);
     if (v.deadline && Date.now() > v.deadline) {
-      await db.query(`INSERT INTO findings (project_id, run_id, title, category, verification, impact, confidence, rule_id, rule_source, expected, observed, device, actor, limitations, fingerprint)
-        VALUES ($1,$2,$3,'needs_review','candidate',$4,'low',$5,$6,$7,$8,$9,$10,'Not verified: the run ran out of time before Oddhound could replay it.',$11)`,
+      const f = await db.query<{ id: string }>(`INSERT INTO findings (project_id, run_id, title, category, verification, impact, confidence, rule_id, rule_source, expected, observed, device, actor, limitations, fingerprint)
+        VALUES ($1,$2,$3,'needs_review','candidate',$4,'low',$5,$6,$7,$8,$9,$10,'Not verified: the run ran out of time before Oddhound could replay it.',$11) RETURNING id`,
         [run.project_id, runId, c.title, c.impact, c.ruleId, rule?.source ?? 'agent hypothesis', rule?.text ?? 'No owner rule covers this behaviour.', c.observed, c.device, c.actor, fingerprint]);
+      v.results.push({ candidateIndex: candidates.indexOf(c), reportMatch: c.reportMatch, findingId: f.rows[0]!.id, title: c.title, impact: c.impact, verification: 'candidate', category: 'needs_review' });
       await ev('finding.not_verified', { title: c.title, reason: 'time' });
       continue;
     }
     if (!rule) {
-      await db.query(`INSERT INTO findings (project_id, run_id, title, category, verification, impact, confidence, rule_id, rule_source, expected, observed, device, actor, limitations, fingerprint)
-        VALUES ($1,$2,$3,'needs_review','candidate',$4,'low',$5,'agent hypothesis','No owner rule covers this behaviour.',$6,$7,$8,'Not verified: no owner rule to judge against.',$9)`,
+      const f = await db.query<{ id: string }>(`INSERT INTO findings (project_id, run_id, title, category, verification, impact, confidence, rule_id, rule_source, expected, observed, device, actor, limitations, fingerprint)
+        VALUES ($1,$2,$3,'needs_review','candidate',$4,'low',$5,'agent hypothesis','No owner rule covers this behaviour.',$6,$7,$8,'Not verified: no owner rule to judge against.',$9) RETURNING id`,
         [run.project_id, runId, c.title, c.impact, c.ruleId, c.observed, c.device, c.actor, fingerprint]);
+      v.results.push({ candidateIndex: candidates.indexOf(c), reportMatch: c.reportMatch, findingId: f.rows[0]!.id, title: c.title, impact: c.impact, verification: 'candidate', category: 'needs_review' });
       continue;
     }
     await ev('finding.verifying', { title: c.title, ruleId: c.ruleId });
@@ -2032,6 +2054,7 @@ async function verifyCandidates(v: { db: Db; runId: string; generation: number; 
       [run.project_id, runId, scenarioId, controlScenarioId, c.title, category, verification, verification === 'verified' ? 'open' : null, c.impact,
         verification === 'verified' ? 'reproduced 2/2' : 'low', known ? c.ruleId : null, ruleSource.slice(0, 300),
         rule.text, observed, c.scenario.device, c.actor, fullLimitations, fingerprint, evidence, c.family ?? null]);
+    v.results.push({ candidateIndex: candidates.indexOf(c), reportMatch: c.reportMatch, findingId: f.rows[0]!.id, title: c.title, impact: c.impact, verification, category });
     await ev(verification === 'verified' ? 'finding.verified' : verification === 'dismissed' ? 'finding.dismissed' : 'finding.inconclusive',
       { findingId: f.rows[0]!.id, title: c.title, ruleId: c.ruleId, outcomes });
   }
