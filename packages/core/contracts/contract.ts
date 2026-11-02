@@ -74,6 +74,7 @@ export const RunContractSchema = z.object({
   testMode: z.enum(['active', 'observation_only']),
   productionWritesAcknowledged: z.boolean(),
   description: z.string().max(1000),
+  report: z.string().trim().min(10).max(4000).optional(),
   // Optional focus areas. They set priorities; they never limit what the agent may test.
   goals: z.array(z.string().min(3).max(300)).max(8),
   rules: z.array(RuleSchema).max(30),

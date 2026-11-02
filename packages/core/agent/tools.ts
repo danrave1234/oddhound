@@ -99,6 +99,7 @@ export const ToolArgs = {
     rule_id: z.string().max(32),
     impact: z.enum(['high', 'medium', 'low']),
     observed: z.string().min(5).max(500),
+    report_match: z.boolean().optional(),
     // A trace is referenced by action numbers; Oddhound builds its steps from its own ledger.
     scenario: z.union([ScenarioSchema, TraceRefSchema, BatchRefSchema]),
     // Numbers are accepted and kept as the text a user would type.
@@ -233,6 +234,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
       parameters: s({
         title: { type: 'string' }, rule_id: { type: 'string', description: 'An owner rule (R1, R2...) or a baseline rule (B1-B10)' },
         impact: { type: 'string', enum: ['high', 'medium', 'low'] }, observed: { type: 'string', description: 'What you saw, factually' },
+        report_match: { type: 'boolean', description: 'True only when this candidate accounts for the supplied bug report.' },
         scenario: {
           oneOf: [
             s({ kind: { const: 'form_rule' }, device: { type: 'string', enum: ['desktop', 'mobile'] }, auth: authRecipe, form, testedField: { type: 'string', description: 'Label of the field whose value breaks the rule. Never put {marker} in this field.' }, expectation: { type: 'string', enum: ['rejected', 'accepted'] }, listPath: { type: 'string' } }, ['kind', 'device', 'form', 'testedField', 'expectation', 'listPath']),
