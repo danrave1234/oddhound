@@ -120,7 +120,9 @@ class ScriptedPlanner implements ChatProvider {
       call('check_interruption', { kind: 'offline_submit', submit: 'Book table', field: 'Guest name', list_path: '/bookings', rule_id: 'R9' }),
       call('finish_run', { summary: 'Checked two save claims and cross-account access to a booking.' }),
     ];
-    const next = steps[this.#turn++] ?? call('finish_run', { summary: 'done' });
+    // The recorded family checks are complete; account for the live discovery backlog before finishing.
+    const next = steps[this.#turn++] ?? (/^Not yet:|Finish refused\./.test(last)
+      ? call('explore_next', { count: 8 }) : call('finish_run', { summary: 'Family assertions completed; remaining discovered navigation visited, with untested controls reported as gaps.' }));
     return {
       message: { role: 'assistant', content: null, tool_calls: [{ id: `call_${randomUUID().slice(0, 8)}`, type: 'function', function: { name: next.name, arguments: JSON.stringify(next.args) } }] },
       usage: { inputTokens: 0, cachedInputTokens: 0, outputTokens: 0 }, finishReason: 'tool_calls', requestId: null, model: this.model,
@@ -161,7 +163,9 @@ describe('behavioral families 1-5 on the Harbor demo target', () => {
     expect(finished).toEqual(['invariant:failed', 'invariant:passed', 'claim_vs_truth:passed', 'claim_vs_truth:failed', 'two_actors:failed', 'two_actors:passed', 'two_actors:failed', 'two_actors:failed', 'two_actors:failed', 'differential:failed', 'differential:passed', 'interruption:failed', 'interruption:passed']);
     // (The conversation may be compacted into Oddhound's notebook around here, so read the recorded event.)
     expect(events.find((e) => e.type === 'scenario.finished' && e.payload.kind === 'double_submit')!.payload).toMatchObject({ outcome: 'failed', before: 0, afterInterruption: 2, created: 2 });
-    expect(reply(/^Interruption check passed/)).toMatch(/submitting while offline, then coming back online and one normal retry created exactly one record/);
+    // The immediately following request can rebase conversation history; the authoritative ledger
+    // retains the result even when the test planner no longer receives that old tool response.
+    expect(events.find(e => e.type === 'scenario.finished' && e.payload.kind === 'offline_submit')?.payload).toMatchObject({ outcome: 'passed', created: 1, claimedWhileOffline: false });
     expect(reply(/^Differential check FAILED/)).toMatch(/link "Edit booking" is missing in a 390x844 phone but usable in desktop/);
     expect(reply(/^Differential check passed/)).toMatch(/the 1 control\(s\) usable in desktop are usable in a 390x844 phone too/);
     expect(reply(/^Invariant BROKEN/)).toMatch(/"Total guests" shows 0, but the 1 "Party" value\(s\) \(2\) add up to 2/);

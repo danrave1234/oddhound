@@ -1,0 +1,11 @@
+
+ RUN  v5.0.5 C:/Users/Danrave/Desktop/Project/Oddhound/claude
+
+ ✓ tests/integration/families.test.ts > behavioral families 1-5 on the Harbor demo target > finds the lying save toast, the cross-account gap, the lost update, the broken total, the double submit and the phone-only gap, leaves the controls alone, and retests them unchanged 172191ms
+ ✓ tests/integration/batch-runner.test.ts > scenario batches in the worker pipeline > runs batches, stops on a surprise, verifies the page-stated rule and replays it unchanged on retest 25347ms
+
+ Test Files  2 passed (2)
+      Tests  2 passed (2)
+   Start at  23:26:59
+   Duration  202.19s (tests 99%, import 1%)
+

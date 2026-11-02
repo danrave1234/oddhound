@@ -1,0 +1,10 @@
+
+ RUN  v5.0.5 C:/Users/Danrave/Desktop/Project/Oddhound/claude
+
+ ✓ tests/integration/exploration-fairness.test.ts > reaches unrelated branches before repeated shell controls and retains late and onclick-only navigation 75525ms
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  23:22:27
+   Duration  77.24s (tests 99%, import 1%)
+

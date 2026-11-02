@@ -1,0 +1,27 @@
+
+ RUN  v5.0.5 C:/Users/Danrave/Desktop/Project/Oddhound/claude
+
+ ❯ tests/integration/navigation-session.test.ts (4 tests | 1 failed) 6245ms
+   ❯ navigation discovery in the scoped session (4)
+     × keeps owned cookie and storage tokens out of observations and model pixels 774ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/integration/navigation-session.test.ts > navigation discovery in the scoped session > keeps owned cookie and storage tokens out of observations and model pixels
+AssertionError: the given combination of arguments (undefined and string) is invalid for this assertion. You can use an array, a map, an object, a set, a string, or a weakset instead of a string
+ ❯ tests/integration/navigation-session.test.ts:55:22
+     53|         expect(s.redact(`historical reflection: ${marker}`)).not.toCon…
+     54|       }
+     55|       expect(o.text).toContain('[redacted]');
+       |                      ^
+     56|       expect(s.screenshotsWithheld).toBe(true);
+     57|       await expect(s.screenshot()).rejects.toThrow('Model screenshots …
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 5 passed (6)
+      Tests  1 failed | 22 passed (23)
+   Start at  03:36:42
+   Duration  27.15s (tests 93%, import 5%, transform 1%)
+

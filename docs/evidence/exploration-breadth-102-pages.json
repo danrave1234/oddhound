@@ -1,0 +1,52 @@
+{
+  "recordedAt": "2026-10-29T19:39:27.781Z",
+  "provenance": "Captured Vitest terminal result plus independent post-test local SQL read; no rerun.",
+  "command": ".tools/node26/node.exe node_modules/vitest/vitest.mjs run tests/unit/frontier-pagination.test.ts tests/unit/frontier-auth.test.ts tests/unit/exploration-continuity.test.ts tests/integration/exploration-breadth.test.ts",
+  "result": {
+    "filesPassed": 4,
+    "testsPassed": 13,
+    "testsFailed": 0,
+    "durationSeconds": 47.7,
+    "exitCode": 0
+  },
+  "terminalOutput": "Test Files  4 passed (4)\nTests  13 passed (13)\nStart at  03:32:48\nDuration  47.70s (tests 98%, import 1%)",
+  "additionalCommand": ".tools/node26/node.exe node_modules/vitest/vitest.mjs run tests/unit/frontier-pagination.test.ts",
+  "additionalResult": {
+    "testsPassed": 5,
+    "testsFailed": 0,
+    "exitCode": 0
+  },
+  "assertions": "All 102 distinct destination arrivals, full frontier delta reconstruction, 101 navigation actions, three premature finish refusals, no deferred routes, and 18 scripted provider turns were asserted by the passing integration test.",
+  "run": {
+    "id": "16c65b62-b028-48e7-8eef-bec574270ae5",
+    "status": "completed",
+    "sandbox_verdict": "sandbox_on",
+    "browser_state": "terminated",
+    "started_at": "2026-10-29T19:32:49.653Z",
+    "finished_at": "2026-10-29T19:33:35.818Z",
+    "provider": "test-double",
+    "model": "heuristic-planner"
+  },
+  "summary": {
+    "next": [],
+    "blocked": 0,
+    "visited": 102,
+    "excluded": 0,
+    "revision": 204,
+    "discovered": 102,
+    "pendingRoutes": 0,
+    "outcomeChecked": 0,
+    "pendingControls": 0,
+    "sampledVariants": 0
+  },
+  "sqlCounts": {
+    "routes": 102,
+    "actionsFinished": 101,
+    "finishRefused": 3
+  },
+  "mocked": "Scripted zero-price test provider, synthetic local HTTP target and local test database. Real Chromium/runner/ledger. No Meta inference, external target or deployment.",
+  "versions": {
+    "node": "v26.12.1",
+    "playwright": "1.64.1"
+  }
+}

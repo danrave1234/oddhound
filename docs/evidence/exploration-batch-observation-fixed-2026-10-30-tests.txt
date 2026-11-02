@@ -1,0 +1,10 @@
+
+ RUN  v5.0.5 C:/Users/Danrave/Desktop/Project/Oddhound/claude
+
+ ✓ tests/integration/exploration-coverage.test.ts > continuing exploration across navigation and history boundaries > keeps late/header/sidebar/redirect discoveries, refuses repeated premature finish and distinguishes visits from checked outcomes 115619ms
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  03:56:55
+   Duration  117.14s (tests 99%, import 1%)
+

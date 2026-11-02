@@ -1,0 +1,11 @@
+
+ RUN  v5.0.5 C:/Users/Danrave/Desktop/Project/Oddhound/claude
+
+ ✓ tests/integration/exploration-breadth.test.ts > refuses repeated premature finishes and discovers 102 real pages in 13 model batches 46208ms
+ ✓ tests/integration/discovery-signals.test.ts > retains and independently replays distinct detector candidates beyond ten 27097ms
+
+ Test Files  2 passed (2)
+      Tests  2 passed (2)
+   Start at  23:36:10
+   Duration  75.93s (tests 98%, import 2%)
+

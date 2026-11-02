@@ -1,0 +1,11 @@
+Command: pinned Node26 Vitest tests/integration/exploration-coverage.test.ts tests/unit/exploration-continuity.test.ts; isolated oddhound_exploration_test, scripted zero-price provider, no real-site requests.
+
+ RUN  v5.0.5 C:/Users/Danrave/Desktop/Project/Oddhound/claude
+
+
+ Test Files  2 passed (2)
+      Tests  4 passed (4)
+   Start at  03:11:59
+   Duration  119.44s (tests 99%, import 1%)
+
+Exit code: 0

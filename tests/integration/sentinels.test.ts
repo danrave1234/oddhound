@@ -5,6 +5,7 @@ import { createServer, type Server } from 'node:http';
 import { chromium, type Browser } from 'playwright';
 import { attachSentinels, checkPage, internalErrorIn, routeOf, MARKUP_PROBE, type Signal } from '../../packages/core/browser/sentinels.ts';
 import { replayScenario, newReplaySessions, type ReplayEnv, type Scenario } from '../../packages/core/verifier/scenario.ts';
+import { RunSession } from '../../packages/core/agent/session.ts';
 
 let server: Server; let origin = ''; let browser: Browser;
 const notes: string[] = [];
@@ -21,6 +22,8 @@ beforeAll(async () => {
       return;
     }
     if (req.method === 'POST' && url.pathname === '/api/crash') return void send(500, 'boom');
+    // Simulated gateway responses exercise attribution; this is not a proxy-containment test.
+    if (url.pathname === '/gateway-denied') return void res.writeHead(502, { 'content-type': 'text/plain', 'x-oddhound-blocked': 'unsupported_encoding' }).end('Blocked by Oddhound evaluation scope');
     switch (url.pathname) {
       case '/': return void send(200, html('<h1>Home</h1><a href="/missing-page">Old link</a> <a href="/notes">Notes</a> <button onclick="fetch(\'/api/crash\',{method:\'POST\'})">Crash</button>'));
       case '/notes': return void send(200, html(`<form method="post" action="/notes"><label>Note <input name="note"></label><button>Save</button></form><ul>${notes.map((n) => `<li>${n}</li>`).join('')}</ul>`));
@@ -30,6 +33,7 @@ beforeAll(async () => {
       case '/wide': return void send(200, html('<div style="width:1200px">wide table</div>'));
       case '/narrow': return void send(200, html('<div style="max-width:100%">fits</div>'));
       case '/throw': return void send(200, html('<p>x</p>', '<script>window.addEventListener("load", () => { null.boom(); });</script>'));
+      case '/gateway-action': return void send(200, html('<button onclick="fetch(\'/gateway-denied\').then(r => { if (!r.ok) throw new Error(\'Gateway refusal caused this error\'); })">Trigger refusal</button>'));
       default: return void send(404, html('<h1>Not found</h1>'));
     }
   });
@@ -90,6 +94,31 @@ describe('detectors in a real browser', () => {
     expect(await kinds('/narrow')).not.toContain('mobile_overflow');
     await ctx.close();
   });
+  it('does not attribute a gateway 502 to the target server', async () => {
+    const ctx = await browser.newContext();
+    const page = await ctx.newPage();
+    const got: Signal[] = [];
+    attachSentinels(page, (o) => o === origin, (s) => got.push(s));
+    await page.goto(`${origin}/gateway-denied`);
+    expect(got).toEqual([]);
+    await ctx.close();
+  });
+  it('marks gateway refusals in the exploration scope window so their page errors are suppressed', async () => {
+    const decisions: string[] = [];
+    const session = new RunSession(browser, { primaryOrigin: origin, apiOrigins: new Set(), writes: true, deniedPathPrefixes: [], deniedPathKeywords: [], handoffActive: false }, (d) => { if (!d.allowed) decisions.push(d.reason); });
+    const page = await session.page();
+    await page.goto(`${origin}/gateway-action`);
+    await session.drainSignals();
+    await page.getByRole('button', { name: 'Trigger refusal' }).click();
+    await page.waitForLoadState('networkidle');
+    const drained = await session.drainSignals();
+    expect(drained.scopeBlocked).toBe(true);
+    expect(drained.ownScopeBlocked).toBe(true);
+    expect(drained.signals.some((s) => s.kind === 'http_5xx')).toBe(false);
+    expect(drained.signals.some((s) => s.kind === 'page_error')).toBe(true);
+    expect(decisions).toContain('gateway:unsupported_encoding');
+    await session.close();
+  });
 });
 
 describe('trace replay in a fresh session', () => {
@@ -108,6 +137,18 @@ describe('trace replay in a fresh session', () => {
   it('reproduces a server error from a button press (B1)', async () => {
     const s: Scenario = { kind: 'trace', device: 'desktop', start: '/', steps: [{ op: 'click', target: 'Crash', role: 'button' }], oracle: { type: 'http_status', min: 500, max: 599, method: 'POST', route: '/api/crash' } };
     expect((await replayScenario(s, env())).outcome).toBe('failed');
+  });
+  it('reports a gateway 502 replay as blocked, never as a passed or verified server-error check', async () => {
+    const s: Scenario = { kind: 'trace', device: 'desktop', start: '/gateway-denied', steps: [], oracle: { type: 'http_status', min: 500, max: 599, route: '/gateway-denied' } };
+    const result = await replayScenario(s, env());
+    expect(result.outcome).toBe('blocked');
+    expect(result.details.gatewayBlocks).toEqual([{ reason: 'unsupported_encoding', route: '/gateway-denied', resourceType: 'document' }]);
+  });
+  it('does not verify the page error caused by a gateway refusal', async () => {
+    const s: Scenario = { kind: 'trace', device: 'desktop', start: '/gateway-action', steps: [{ op: 'click', target: 'Trigger refusal', role: 'button' }], oracle: { type: 'page_error', contains: 'Gateway refusal caused this error' } };
+    const result = await replayScenario(s, env());
+    expect(result.outcome).toBe('blocked');
+    expect(result.observed).toMatch(/no site defect was verified/);
   });
   it('reports a step it cannot perform as blocked, never as passed', async () => {
     const s: Scenario = { kind: 'trace', device: 'desktop', start: '/', steps: [{ op: 'click', target: 'No such button', role: 'button' }], oracle: { type: 'page_error' } };

@@ -1,0 +1,12 @@
+
+ RUN  v5.0.5 C:/Users/Danrave/Desktop/Project/Oddhound/claude
+
+ ✓ tests/integration/exploration-coverage.test.ts > continuing exploration across navigation and history boundaries > keeps late/header/sidebar/redirect discoveries, refuses repeated premature finish and distinguishes visits from checked outcomes 118294ms
+ ✓ tests/integration/exploration-fairness.test.ts > reaches unrelated branches before repeated shell controls and retains late and onclick-only navigation 73005ms
+ ✓ tests/unit/frontier-fairness.test.ts > does not let a growing root pagination stream starve independent branches 9ms
+
+ Test Files  3 passed (3)
+      Tests  3 passed (3)
+   Start at  23:32:17
+   Duration  194.55s (tests 99%, import 1%)
+

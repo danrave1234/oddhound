@@ -1,0 +1,36 @@
+
+ RUN  v5.0.5 C:/Users/Danrave/Desktop/Project/Oddhound/claude
+
+ × tests/integration/exploration-coverage.test.ts > continuing exploration across navigation and history boundaries > keeps late/header/sidebar/redirect discoveries, refuses repeated premature finish and distinguishes visits from checked outcomes 130205ms
+   → planner received /header/deep: expected false to be true // Object.is equality
+ ✓ tests/integration/exploration-fairness.test.ts > reaches unrelated branches before repeated shell controls and retains late and onclick-only navigation 74889ms
+ ✓ tests/integration/exploration-breadth.test.ts > refuses repeated premature finishes and discovers 102 real pages in 13 model batches 47871ms
+ ✓ tests/integration/discovery-signals.test.ts > retains and independently replays distinct detector candidates beyond ten 31808ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/integration/exploration-coverage.test.ts > continuing exploration across navigation and history boundaries > keeps late/header/sidebar/redirect discoveries, refuses repeated premature finish and distinguishes visits from checked outcomes
+AssertionError: planner received /header/deep: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/integration/exploration-coverage.test.ts:152:69
+    150|     expect(planner.finishResponses.slice(0, 3).every((text) => text !=…
+    151|     for (const path of expectedPaths) {
+    152|       expect(planner.visited.has(path), `planner received ${path}`).to…
+       |                                                                     ^
+    153|       expect(routes.find(route => route.path === path), `frontier visi…
+    154|       expect(site.arrivals.some(arrival => arrival.method === 'GET' &&…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 3 passed (4)
+      Tests  1 failed | 3 passed (4)
+   Start at  23:26:59
+   Duration  291.19s (tests 98%, import 1%)
+

@@ -1,0 +1,63 @@
+
+ RUN  v5.0.5 C:/Users/Danrave/Desktop/Project/Oddhound/claude
+
+ ❯ tests/integration/navigation-session.test.ts (2 tests | 1 failed) 13602ms
+   ❯ navigation discovery in the scoped session (2)
+     × adopts a primary-origin popup, keeps scope attached, and refuses an off-origin popup 10849ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/integration/navigation-session.test.ts > navigation discovery in the scoped session > adopts a primary-origin popup, keeps scope attached, and refuses an off-origin popup
+TimeoutError: page.waitForEvent: Timeout 10000ms exceeded while waiting for event "popup"
+=========================== logs ===========================
+waiting for event "popup"
+============================================================
+ ❯ tests/integration/navigation-session.test.ts:52:33
+     50|       await s.observe();
+     51|       const opener = await s.page();
+     52|       await Promise.all([opener.waitForEvent('popup'), opener.getByRol…
+       |                                 ^
+     53|       const observed = await s.observe();
+     54|       expect(observed.path).toBe('/popup');
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+⎯⎯⎯⎯⎯⎯ Unhandled Errors ⎯⎯⎯⎯⎯⎯
+
+Vitest caught 1 unhandled error during the test run.
+This might cause false positive tests. Resolve unhandled errors to make sure your tests are not affected.
+
+⎯⎯⎯⎯ Unhandled Rejection ⎯⎯⎯⎯⎯
+Error: Frame for this navigation request is not available, because the request
+was issued before the frame is created. You can check whether the request
+is a navigation request by calling isNavigationRequest() method.
+ ❯ _Request.frame node_modules/.pnpm/playwright-core@1.64.1/node_modules/playwright-core/lib/coreBundle.js:61139:17
+ ❯ packages/core/browser/scope.ts:89:27
+     87| export async function attachScope(context: BrowserContext, policy: Sco…
+     88|   await context.route('**/*', async (route: Route, request: Request) =…
+     89|     const frame = request.frame();
+       |                           ^
+     90|     let isMainFrame = false;
+     91|     try { isMainFrame = frame.parentFrame() === null; } catch { isMain…
+ ❯ RouteHandler._handleInternal node_modules/.pnpm/playwright-core@1.64.1/node_modules/playwright-core/lib/coreBundle.js:61687:11
+ ❯ RouteHandler._handleImpl node_modules/.pnpm/playwright-core@1.64.1/node_modules/playwright-core/lib/coreBundle.js:61654:29
+ ❯ node_modules/.pnpm/playwright-core@1.64.1/node_modules/playwright-core/lib/coreBundle.js:61648:59
+ ❯ AsyncLocalStorage.run node:internal/async_local_storage/async_context_frame:66:14
+ ❯ _Zone.run node_modules/.pnpm/playwright-core@1.64.1/node_modules/playwright-core/lib/coreBundle.js:11049:40
+ ❯ RouteHandler.handle node_modules/.pnpm/playwright-core@1.64.1/node_modules/playwright-core/lib/coreBundle.js:61648:38
+ ❯ _BrowserContext._onRoute node_modules/.pnpm/playwright-core@1.64.1/node_modules/playwright-core/lib/coreBundle.js:63919:46
+ ❯ Proxy.<anonymous> node_modules/.pnpm/playwright-core@1.64.1/node_modules/playwright-core/lib/coreBundle.js:63779:63
+
+This error originated in "tests/integration/navigation-session.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The last test to run before this error was "adopts a primary-origin popup, keeps scope attached, and refuses an off-origin popup". This means either:
+- the error was thrown while Vitest was running this test, or
+- the error was thrown after the test completed, and this was the most recent test at that point.
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+
+
+ Test Files  1 failed | 1 passed (2)
+      Tests  1 failed | 4 passed (5)
+     Errors  1 error
+   Start at  03:12:46
+   Duration  14.51s (tests 96%, import 3%)
+

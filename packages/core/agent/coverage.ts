@@ -8,11 +8,12 @@
 
 import { routePattern, type Observation, type ObservedElement } from '../browser/snapshot.ts';
 
-type Entry = { route: string; kind: string; label: string; exercised: boolean; blocked: string | null; enabled: boolean };
+type Entry = { route: string; kind: string; label: string; exercised: boolean; outcomeChecked: boolean; blocked: string | null; enabled: boolean };
 
 export type CoverageSummary = {
   total: number;
   exercised: number;
+  outcomeChecked: number;
   blocked: number;
   /** Distinct page routes the controls were seen on. */
   pages: number;
@@ -37,7 +38,8 @@ export class CoverageTracker {
       const same = o.elements.filter((e) => e.kind === el.kind && !(e.label || e.name || e.href));
       id = `#${same.indexOf(el) + 1}`;
     }
-    return `${route}|${el.kind}|${id}`;
+    // Same-label navigation targets are separate controls (e.g. two "View" links).
+    return `${route}|${el.kind}|${id}|${el.href ?? ''}`;
   }
 
   /** Add every control in an observed state. */
@@ -46,7 +48,7 @@ export class CoverageTracker {
     this.#routes.add(route);
     for (const el of o.elements) {
       const key = this.#key(route, o, el);
-      const entry = this.#entries.get(key) ?? { route, kind: el.kind, label: el.label || el.name || el.href || `(unlabelled ${el.kind})`, exercised: false, blocked: null, enabled: false };
+      const entry = this.#entries.get(key) ?? { route, kind: el.kind, label: el.label || el.name || el.href || `(unlabelled ${el.kind})`, exercised: false, outcomeChecked: false, blocked: null, enabled: false };
       if (!el.disabled) entry.enabled = true;
       if (!entry.exercised && !entry.blocked) entry.blocked = this.#blockedReason(el, o.url);
       this.#entries.set(key, entry);
@@ -63,6 +65,13 @@ export class CoverageTracker {
     return true;
   }
 
+  checkOutcome(o: Observation, ref: string): void {
+    const el = o.elements.find(e => e.ref === ref);
+    if (!el) return;
+    const entry = this.#entries.get(this.#key(routePattern(o.url), o, el));
+    if (entry?.exercised) entry.outcomeChecked = true;
+  }
+
   summary(sample = 12): CoverageSummary {
     const counted = [...this.#entries.values()].filter((e) => e.enabled);
     const byRoute = new Map<string, { route: string; total: number; exercised: number; blocked: number }>();
@@ -74,6 +83,7 @@ export class CoverageTracker {
     return {
       total: counted.length,
       exercised: counted.filter((e) => e.exercised).length,
+      outcomeChecked: counted.filter(e => e.outcomeChecked).length,
       blocked: counted.filter((e) => !e.exercised && e.blocked).length,
       pages: this.#routes.size,
       routes: [...byRoute.values()].sort((a, b) => b.total - a.total).slice(0, 30),

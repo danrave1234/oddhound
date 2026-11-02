@@ -1,0 +1,33 @@
+
+ RUN  v5.0.5 C:/Users/Danrave/Desktop/Project/Oddhound/claude
+
+ × tests/integration/exploration-coverage.test.ts > continuing exploration across navigation and history boundaries > keeps late/header/sidebar/redirect discoveries, refuses repeated premature finish and distinguishes visits from checked outcomes 109450ms
+   → expected false to be true // Object.is equality
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/integration/exploration-coverage.test.ts > continuing exploration across navigation and history boundaries > keeps late/header/sidebar/redirect discoveries, refuses repeated premature finish and distinguishes visits from checked outcomes
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/integration/exploration-coverage.test.ts:122:131
+    120|     expect(planner.finishResponses.slice(0, 3)).toHaveLength(3);
+    121|     expect(planner.finishResponses.slice(0, 3).every((text) => text !=…
+    122|     for (let n = 1; n <= EXPLORATION_ROUTE_COUNT; n++) expect(planner.…
+       |                                                                                                                                   ^
+    123|     for (const path of ['/header/deep', '/late-discovery', '/redirect-…
+    124|     expect(site.arrivals.some((a) => a.path.startsWith('/denied'))).to…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed (1)
+   Start at  03:52:59
+   Duration  110.57s (tests 99%, import 1%)
+

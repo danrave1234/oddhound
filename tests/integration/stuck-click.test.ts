@@ -64,9 +64,12 @@ class ScriptedPlanner implements ChatProvider {
       call('run_scenario_batch', pin),
       call('run_scenario_batch', pin), // third try, page unchanged: the click is not run
       call('run_scenario_batch', { goal: 'save under the dialog', steps: [{ tool: 'click', label: 'Save' }] }),
+      call('plan_tests', { charters: [{ id: 'C1', area: 'Home page', risk: 'low', technique: 'look around', status: 'completed', note: 'Observed home navigation and the blocked notes controls; functional saves remain untested under the modal.' }] }),
+      call('explore_next', { count: 8 }),
       call('finish_run', { summary: 'Tried the notes controls.' }),
     ];
-    const next = steps[this.#turn++] ?? call('finish_run', { summary: 'done' });
+    const next = steps[this.#turn++] ?? (/^Not yet:|Finish refused\./.test(lastTool(req.messages))
+      ? call('explore_next', { count: 8 }) : call('finish_run', { summary: 'Blocked clicks inspected; discovered navigation visited, functional saves remain untested.' }));
     return {
       message: { role: 'assistant', content: null, tool_calls: [{ id: `call_${randomUUID().slice(0, 8)}`, type: 'function', function: { name: next.name, arguments: JSON.stringify(next.args) } }] },
       usage: { inputTokens: 0, cachedInputTokens: 0, outputTokens: 0 }, finishReason: 'tool_calls', requestId: null, model: this.model,
@@ -104,6 +107,8 @@ describe('clicks that cannot happen', () => {
     expect(events.find((e) => e.type === 'site.mapped')?.payload).toMatchObject({ fromSitemap: 2 });
     expect(events.filter((e) => e.type === 'batch.refused')).toHaveLength(1);
     const actions = (await db.query<{ tool: string; state: string }>('SELECT tool, state FROM actions WHERE run_id = $1 ORDER BY seq', [admitted.runId])).rows;
-    expect(actions.map((a) => `${a.tool}:${a.state}`)).toEqual(['navigate:succeeded', 'fill:succeeded', 'click:failed', 'fill:succeeded', 'click:failed', 'fill:succeeded', 'click:failed']);
+    expect(actions.slice(0, 7).map((a) => `${a.tool}:${a.state}`)).toEqual(['navigate:succeeded', 'fill:succeeded', 'click:failed', 'fill:succeeded', 'click:failed', 'fill:succeeded', 'click:failed']);
+    expect(actions.slice(7).map(a => `${a.tool}:${a.state}`)).toEqual(['navigate:succeeded', 'navigate:succeeded']);
+    expect(events.filter(e => e.type === 'exploration.updated').at(-1)?.payload.summary).toMatchObject({ pendingRoutes: 0, pendingControls: 0, outcomeChecked: 0 });
   }, 120_000);
 });

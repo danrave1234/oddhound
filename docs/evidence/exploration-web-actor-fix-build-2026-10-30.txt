@@ -1,0 +1,28 @@
+▲ Next.js 16.4.3 (Turbopack)
+✓ Running next.config.ts took 158ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 1094ms
+  Running TypeScript ...
+  Finished TypeScript in 5.8s ...
+  Collecting page data using 15 workers ...
+Error: Failed to collect configuration for /api/projects/[id]/api-origins
+    at ignore-listed frames {
+  [cause]: Error: DATABASE_URL is not set
+      at n (..\..\packages\core\db\pool.ts:10:19)
+      at <unknown> (..\..\packages\core\db\pool.ts:14:31)
+      at <unknown> (lib\auth.ts:14:13)
+     8 | export function databaseUrl(env: NodeJS.ProcessEnv = process.env): string {
+     9 |   const url = env.DATABASE_URL;
+  > 10 |   if (!url) throw new Error('DATABASE_URL is not set');
+       |                   ^
+    11 |   return url;
+    12 | }
+    13 |
+}
+
+> Build error occurred
+Error: Failed to collect page data for /api/projects/[id]/api-origins
+    at ignore-listed frames {
+  type: 'Error'
+}

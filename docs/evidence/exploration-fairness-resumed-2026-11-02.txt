@@ -1,0 +1,29 @@
+
+ RUN  v5.0.5 C:/Users/Danrave/Desktop/Project/Oddhound/claude
+
+ ↓ tests/integration/exploration-fairness.test.ts > reaches unrelated branches before repeated shell controls and retains late and onclick-only navigation
+
+⎯⎯⎯⎯⎯⎯ Failed Suites 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/integration/exploration-fairness.test.ts [ tests/integration/exploration-fairness.test.ts ]
+error: database "oddhound_fairness_1102" does not exist
+ ❯ node_modules/.pnpm/pg-pool@3.14.0_pg@8.23.1/node_modules/pg-pool/index.js:45:11
+ ❯ migrate packages/core/db/migrate.ts:12:18
+     10|
+     11| export async function migrate(db: Db): Promise<string[]> {
+     12|   const client = await db.connect();
+       |                  ^
+     13|   const applied: string[] = [];
+     14|   try {
+ ❯ tests/integration/exploration-fairness.test.ts:21:3
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+Serialized Error: { length: 108, severity: 'FATAL', code: '3D000', detail: undefined, hint: undefined, position: undefined, internalPosition: undefined, internalQuery: undefined, where: undefined, schema: undefined, table: undefined, dataType: undefined, constraint: undefined, file: 'postinit.c', routine: 'InitPostgres' }
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 skipped (1)
+   Start at  23:22:02
+   Duration  10.01s (import 91%, transform 8%, tests 1%)
+

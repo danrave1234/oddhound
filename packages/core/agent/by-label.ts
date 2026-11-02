@@ -5,6 +5,7 @@ import type { ElementKind, ObservedElement } from '../browser/snapshot.ts';
 /** Which element kinds each tool can act on. */
 const KINDS: Record<string, ElementKind[]> = {
   click: ['button', 'link', 'checkbox', 'widget', 'clickable', 'draggable'],
+  hover: ['button', 'link', 'widget', 'clickable'],
   fill: ['input', 'textarea', 'editable', 'widget'],
   fill_credential: ['input'],
   select_option: ['select', 'widget'],

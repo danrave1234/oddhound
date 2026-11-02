@@ -1,0 +1,25 @@
+
+ RUN  v5.0.5 C:/Users/Danrave/Desktop/Project/Oddhound/claude
+
+ ✓ tests/unit/frontier-pagination.test.ts > pagination is discovery, not proof of equivalent records > keeps numeric paths beyond the old three-representative cutoff, including hash routes 18ms
+ ✓ tests/unit/frontier-pagination.test.ts > pagination is discovery, not proof of equivalent records > retains page and offset destinations and numeric enum states in ordinary and hash queries 16ms
+ ✓ tests/unit/frontier-pagination.test.ts > pagination is discovery, not proof of equivalent records > still samples explicit opaque record identifiers without counting omitted records as visited 2ms
+ ✓ tests/unit/frontier-pagination.test.ts > pagination is discovery, not proof of equivalent records > keeps cursor, search and date sampling visible without erasing distinct workflows 1ms
+ ✓ tests/unit/frontier-pagination.test.ts > pagination is discovery, not proof of equivalent records > records actual navigation and assertions even when a record was omitted from suggestions 1ms
+ ✓ tests/unit/frontier-auth.test.ts > requires advertised-link provenance from the same actor, device and session generation 4ms
+ ✓ tests/unit/frontier-auth.test.ts > retains an authentication prerequisite and retries it after observed sign-in 1ms
+ ✓ tests/unit/frontier-auth.test.ts > keeps excluded destinations as gaps without allowing an action or leaking secret query strings 2ms
+ ✓ tests/unit/frontier-auth.test.ts > bounds repeated ordinary and hash-router calendar variants while preserving distinct feature tabs 4ms
+ ✓ tests/unit/frontier-auth.test.ts > preserves visit evidence after a blocked disposition and keeps numeric pagination discoverable 1ms
+ ✓ tests/unit/exploration-continuity.test.ts > navigation continuity beyond a prompt sample > retains named pages beyond 80/200 and surfaces later pending entries as earlier ones are visited 12ms
+ ✓ tests/unit/exploration-continuity.test.ts > navigation continuity beyond a prompt sample > does not sample distinct long human-readable page slugs as if they were record identifiers 0ms
+ ✓ tests/unit/exploration-continuity.test.ts > navigation continuity beyond a prompt sample > keeps query navigation distinct and excludes denied origins, paths and token-bearing URLs 2ms
+
+ Test Files  3 passed (3)
+      Tests  13 passed (13)
+   Start at  23:21:34
+   Duration  2.68s (transform 62%, import 18%, tests 12%, worker 9%)
+
+    Isolate  3 workers spawned · ~686ms startup each (spawn + environment, per file)
+             at least ~1.37s faster with isolate: false — reuses workers across files instead of one per file
+

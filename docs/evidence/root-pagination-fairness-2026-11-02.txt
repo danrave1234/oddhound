@@ -1,0 +1,10 @@
+
+ RUN  v5.0.5 C:/Users/Danrave/Desktop/Project/Oddhound/claude
+
+ ✓ tests/unit/frontier-fairness.test.ts > does not let a growing root pagination stream starve independent branches 10ms
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  23:26:07
+   Duration  413ms (transform 54%, import 36%, tests 6%, worker 4%)
+

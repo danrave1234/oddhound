@@ -12,6 +12,19 @@
 
 import type { Page, Response } from 'playwright';
 
+/** A gateway-generated response is an instrumentation limit, not evidence of a target defect. */
+export function gatewayBlockReason(response: Response): string | null {
+  const headers = response.headers();
+  const reason = headers['x-oddhound-blocked'];
+  if (!reason) {
+    // Pinned mitmproxy's native protocol errors bypass addon response hooks. The evaluation
+    // gateway reserves this Server marker and removes it from every genuine upstream response.
+    return headers.server?.trim().toLowerCase() === 'oddhound-evaluation-gateway/12.3.1'
+      ? (response.status() === 502 ? 'upstream_error' : 'gateway_protocol_error') : null;
+  }
+  return /^[a-z0-9_:-]{1,100}$/.test(reason) ? reason : 'gateway_denial';
+}
+
 /** Harmless markup typed into text fields. If it is ever rendered as an element, input is not escaped. */
 export const MARKUP_PROBE = '<i data-oh-probe="1">OHPROBE</i>';
 export const MARKUP_PROBE_SELECTOR = '[data-oh-probe]';
@@ -71,6 +84,7 @@ export function signalKey(s: Signal): string {
  */
 export function attachSentinels(page: Page, inScope: (origin: string) => boolean, onSignal: (s: Signal) => void): void {
   page.on('response', (r: Response) => {
+    if (gatewayBlockReason(r)) return;
     let u: URL;
     try { u = new URL(r.url()); } catch { return; }
     if (!inScope(u.origin)) return;

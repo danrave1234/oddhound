@@ -45,6 +45,8 @@ export type ObservedElement = {
   form?: number;
   /** Owning landmark when it is not the main content (nav, header, footer, aside, dialog). */
   region?: string;
+  hasPopup?: boolean;
+  expanded?: boolean;
   inViewport: boolean;
   coveredBy?: string;
   hasAccessibleName: boolean;
@@ -67,6 +69,8 @@ export type Observation = {
   statedLimits: string[];
   forms: { index: number; action: string; method: string; noValidate: boolean }[];
   elements: ObservedElement[];
+  /** Navigation destinations can be known even while their menu is collapsed. Not clickable refs. */
+  navigationLinks?: { href: string; label: string; region?: string; hidden: boolean }[];
   tables: string[][];
   text: string;
   viewport: { width: number; height: number };
@@ -191,6 +195,8 @@ function instrument(version: number) {
       value: (kind === 'input' || kind === 'textarea') && type !== 'password' ? clean(input.value).slice(0, 60) || undefined
         : role === 'slider' || role === 'spinbutton' ? el.getAttribute('aria-valuenow') ?? undefined : undefined,
       href: t === 'a' ? el.getAttribute('href') ?? undefined : undefined,
+      hasPopup: el.hasAttribute('aria-haspopup') && el.getAttribute('aria-haspopup') !== 'false' || undefined,
+      expanded: el.hasAttribute('aria-expanded') ? el.getAttribute('aria-expanded') === 'true' : undefined,
       form: formIndex !== undefined && formIndex >= 0 ? formIndex : undefined,
     });
   });
@@ -240,6 +246,10 @@ function instrument(version: number) {
     statedLimits: [...limits],
     forms: forms.map((f, index) => ({ index, action: f.getAttribute('action') ?? '', method: (f.getAttribute('method') ?? 'get').toLowerCase(), noValidate: f.noValidate })),
     elements: out,
+    navigationLinks: Array.from(document.querySelectorAll('a[href]')).map((el) => ({
+      href: (el as HTMLAnchorElement).href, label: clean(el.getAttribute('aria-label') || el.textContent),
+      region: regionOf(el), hidden: !visible(el as HTMLElement),
+    })),
     tables,
     // Page text gets its own cap: clean() cuts labels at 120 characters, which hid most of the page.
     text: mainText.replace(/\s+/g, ' ').trim().slice(0, 1200),
@@ -311,6 +321,7 @@ export function formatObservation(o: Observation): string {
       e.disabled && 'disabled', e.checked !== undefined && (e.checked ? 'checked' : 'unchecked'), e.draggable && 'draggable',
       e.value && `value=${JSON.stringify(e.value)}`, e.href && `href=${e.href}`, e.form !== undefined && `form#${e.form}`,
       e.region && `in=${e.region}`, !e.inViewport && 'offscreen',
+      e.hasPopup && 'opens-menu', e.expanded !== undefined && (e.expanded ? 'expanded' : 'collapsed'),
       e.coveredBy && `COVERED_BY=${JSON.stringify(e.coveredBy)}`, !e.hasAccessibleName && 'NO_ACCESSIBLE_NAME',
     ].filter(Boolean).join(' ');
     lines.push(`[${e.ref}] ${e.kind} ${JSON.stringify(e.label)} ${attrs}`.trim());

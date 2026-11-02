@@ -1,0 +1,15 @@
+
+ RUN  v5.0.5 C:/Users/Danrave/Desktop/Project/Oddhound/claude
+
+ ❯ tests/integration/exploration-coverage.test.ts (1 test | 1 failed) 108580ms
+   ❯ continuing exploration across navigation and history boundaries (1)
+     × keeps late/header/sidebar/redirect discoveries, refuses repeated premature finish and distinguishes visits from checked outcomes 108509ms
+ ❯ tests/integration/stuck-click.test.ts (1 test | 1 failed) 120108ms
+   ❯ clicks that cannot happen (1)
+     × says why, refuses a third identical try, and starts from the sitemap 120023ms
+
+ Test Files  2 failed | 34 passed (36)
+      Tests  2 failed | 273 passed (275)
+   Start at  03:45:53
+   Duration  614.01s (tests 98%, import 2%)
+

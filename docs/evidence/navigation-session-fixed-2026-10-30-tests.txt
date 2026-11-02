@@ -1,0 +1,12 @@
+
+ RUN  v5.0.5 C:/Users/Danrave/Desktop/Project/Oddhound/claude
+
+
+ Test Files  3 passed (3)
+      Tests  20 passed (20)
+   Start at  03:14:22
+   Duration  5.06s (tests 86%, import 11%, transform 2%)
+
+    Isolate  3 workers spawned · ~149ms startup each (spawn + environment, per file)
+             at least ~299ms faster with isolate: false — reuses workers across files instead of one per file
+

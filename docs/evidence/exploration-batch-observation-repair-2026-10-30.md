@@ -1,0 +1,9 @@
+# Exploration fixture batch-observation repair
+
+Only `tests/integration/exploration-coverage.test.ts` changed. The scripted planner previously read the last `PAGE` observation in a tool result. Automatic discovery recovery now returns a batch, so earlier stops disappeared from the fixture's private tracker. The [initial focused failure](exploration-batch-observation-initial-2026-10-30-tests.txt) is retained, together with its [actual worker trail](exploration-batch-observation-initial-2026-10-30-trail.json): all 88 section routes were visited, but no explicit redirect outcome had been checked.
+
+The fixture now remembers every reported batch observation while using only the final observation for current control refs. It revisits the observed redirect destination to run the original `check_state`. Each of the 88 sections and six special paths must independently appear in the planner history, the authoritative frontier's visited records, and destination GET arrivals. Existing denial, zero-write, delayed discovery, compaction and visited-versus-checked assertions remain.
+
+The [fresh focused test](exploration-batch-observation-fixed-2026-10-30-tests.txt) passed **1/1**, test 115.619 seconds / suite 117.14 seconds. Typecheck passed afterward. [Final raw evidence](exploration-batch-observation-fixed-4315ce69-fef8-497e-b741-f9cc0e813371.json) records 97 visited routes, one excluded/blocked route, zero pending routes/controls, 16 context rebases, three refused finish attempts and one discovery-recovery batch. The redirect assertion held; the visited-only form remains unchecked; no writes occurred.
+
+Runtime: pinned Node 26.12.1, Playwright 1.64.1, Chromium 156.0.8078.4, PostgreSQL 17.11. The actual run row and test assert `sandbox_on`. The provider is the explicit zero-price `test-double/heuristic-planner`: 192 scripted provider calls and 99 browser actions, no Meta calls or external target requests. No production source or readiness gate changed.

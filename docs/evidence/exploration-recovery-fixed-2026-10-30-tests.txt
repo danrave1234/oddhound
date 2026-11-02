@@ -1,0 +1,34 @@
+
+ RUN  v5.0.5 C:/Users/Danrave/Desktop/Project/Oddhound/claude
+
+ ❯ tests/integration/families.test.ts (1 test | 1 failed) 113661ms
+   ❯ behavioral families 1-5 on the Harbor demo target (1)
+     × finds the lying save toast, the cross-account gap, the lost update, the broken total, the double submit and the phone-only gap, leaves the controls alone, and retests them unchanged 112923ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/integration/families.test.ts > behavioral families 1-5 on the Harbor demo target > finds the lying save toast, the cross-account gap, the lost update, the broken total, the double submit and the phone-only gap, leaves the controls alone, and retests them unchanged
+AssertionError: expected '' to match /submitting while offline, then coming…/
+
+- Expected:
+/submitting while offline, then coming back online and one normal retry created exactly one record/
+
++ Received:
+""
+
+ ❯ tests/integration/families.test.ts:166:49
+    164|     // (The conversation may be compacted into Oddhound's notebook aro…
+    165|     expect(events.find((e) => e.type === 'scenario.finished' && e.payl…
+    166|     expect(reply(/^Interruption check passed/)).toMatch(/submitting wh…
+       |                                                 ^
+    167|     expect(reply(/^Differential check FAILED/)).toMatch(/link "Edit bo…
+    168|     expect(reply(/^Differential check passed/)).toMatch(/the 1 control…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 4 passed (5)
+      Tests  1 failed | 13 passed (14)
+   Start at  03:28:44
+   Duration  133.22s (tests 97%, import 2%, transform 1%)
+

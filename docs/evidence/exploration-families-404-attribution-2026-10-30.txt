@@ -1,0 +1,5 @@
+                          detail                           | seq | actor | device  |   tool   |       path       
+-----------------------------------------------------------+-----+-------+---------+----------+------------------
+ in-site page /bookings/:id/edit does not exist (HTTP 404) | 37  | B     | desktop | navigate | /bookings/1/edit
+(1 row)
+

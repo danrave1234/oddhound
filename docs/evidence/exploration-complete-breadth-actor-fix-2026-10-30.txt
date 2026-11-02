@@ -1,0 +1,12 @@
+
+ RUN  v5.0.5 C:/Users/Danrave/Desktop/Project/Oddhound/claude
+
+ ✓ tests/integration/exploration-coverage.test.ts > continuing exploration across navigation and history boundaries > keeps late/header/sidebar/redirect discoveries, refuses repeated premature finish and distinguishes visits from checked outcomes 122637ms
+ ✓ tests/integration/exploration-breadth.test.ts > refuses repeated premature finishes and discovers 102 real pages in 13 model batches 48260ms
+ ✓ tests/integration/discovery-signals.test.ts > retains and independently replays distinct detector candidates beyond ten 28444ms
+
+ Test Files  3 passed (3)
+      Tests  3 passed (3)
+   Start at  04:15:30
+   Duration  202.70s (tests 99%, import 1%)
+
