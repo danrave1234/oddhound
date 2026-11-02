@@ -1,0 +1,15 @@
+✔ recovers the beginning, phases and historical action totals beyond a recent 300-event window (10.7524ms)
+✔ preserves access/load failures instead of accepting incomplete playback (0.7728ms)
+✔ refuses a non-advancing history cursor rather than looping (0.1904ms)
+✔ cancels without requesting another page (0.2388ms)
+✔ a verified header observation is not a verified functional issue or security exploit (1.6318ms)
+✔ an owner rule reusing B5 cannot inherit baseline mobile semantics (0.2549ms)
+✔ empty or unverified findings cannot become a pass or inflate verified issues (0.1526ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 182.1301

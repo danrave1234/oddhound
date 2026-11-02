@@ -1,0 +1,80 @@
+{
+  "at": "2026-10-29T19:17:02.455Z",
+  "node": "v26.12.1",
+  "playwright": "1.64.1",
+  "mocked": "Synthetic saved run/states/events/actions only; real local Next/React/PostgreSQL/Chromium. No provider or external target.",
+  "checks": [
+    {
+      "name": "local Next server ready with dedicated synthetic database",
+      "passed": true
+    },
+    {
+      "name": "snapshot retains all650 discoveries and explicit older-history cursors",
+      "passed": true
+    },
+    {
+      "name": "history page is bounded to100 (0 already read)",
+      "passed": true
+    },
+    {
+      "name": "history page is bounded to100 (100 already read)",
+      "passed": true
+    },
+    {
+      "name": "history page is bounded to100 (200 already read)",
+      "passed": true
+    },
+    {
+      "name": "history page is bounded to100 (300 already read)",
+      "passed": true
+    },
+    {
+      "name": "history page is bounded to100 (400 already read)",
+      "passed": true
+    },
+    {
+      "name": "history page is bounded to100 (500 already read)",
+      "passed": true
+    },
+    {
+      "name": "history page is bounded to100 (600 already read)",
+      "passed": true
+    },
+    {
+      "name": "keyset pages reach event1 without gaps or duplicates",
+      "passed": true
+    },
+    {
+      "name": "history API refuses anonymous access to a private run",
+      "passed": true
+    },
+    {
+      "name": "history API rejects unbounded page request",
+      "passed": true
+    },
+    {
+      "name": "compact trail explicitly renders latest24 stops",
+      "passed": true
+    },
+    {
+      "name": "expansion renders48 bounded stops including earlier discoveries",
+      "passed": true
+    },
+    {
+      "name": "all105 grouped states are individually inspectable",
+      "passed": true
+    },
+    {
+      "name": "search reaches a state far beyond original24-stop cap",
+      "passed": true
+    },
+    {
+      "name": "last recorded state can be selected and inspected",
+      "passed": true
+    }
+  ],
+  "fatal": "locator.selectOption: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByLabel('Actor', { exact: true })\u001b[22m\n\n    at C:\\Users\\Danrave\\Desktop\\Project\\Oddhound\\claude\\tests\\e2e\\trail-history-ui.ts:77:51",
+  "errors": [],
+  "diagnostic": "▲ Next.js 16.4.3 (Turbopack)\n- Local:         http://127.0.0.1:3312\n- Network:       http://127.0.0.1:3312\n✓ Ready in 489ms\n✓ Running next.config.ts took 90ms\n\n GET /api/runs/a2e0b82b-8487-46c1-8c69-4aa89b40ce26 200 in 2.5s (next.js: 1539ms, application-code: 999ms)\n GET /api/runs/a2e0b82b-8487-46c1-8c69-4aa89b40ce26 200 in 128ms (next.js: 23ms, application-code: 105ms)\n GET /api/runs/a2e0b82b-8487-46c1-8c69-4aa89b40ce26 200 in 43ms (next.js: 1.0ms, application-code: 42ms)\n GET /api/runs/a2e0b82b-8487-46c1-8c69-4aa89b40ce26/history?kind=events 200 in 1242ms (next.js: 1208ms, application-code: 35ms)\n GET /api/runs/a2e0b82b-8487-46c1-8c69-4aa89b40ce26/history?kind=events&before=551 200 in 64ms (next.js: 30ms, application-code: 34ms)\n GET /api/runs/a2e0b82b-8487-46c1-8c69-4aa89b40ce26/history?kind=events&before=451 200 in 41ms (next.js: 2ms, application-code: 38ms)\n GET /api/runs/a2e0b82b-8487-46c1-8c69-4aa89b40ce26/history?kind=events&before=351 200 in 38ms (next.js: 1.2ms, application-code: 37ms)\n GET /api/runs/a2e0b82b-8487-46c1-8c69-4aa89b40ce26/history?kind=events&before=251 200 in 38ms (next.js: 1.7ms, application-code: 36ms)\n GET /api/runs/a2e0b82b-8487-46c1-8c69-4aa89b40ce26/history?kind=events&before=151 200 in 38ms (next.js: 1.5ms, application-code: 37ms)\n GET /api/runs/a2e0b82b-8487-46c1-8c69-4aa89b40ce26/history?kind=events&before=51 200 in 30ms (next.js: 1.2ms, application-code: 29ms)\n GET /api/runs/c929ec5d-d5da-476d-bc06-73c5e14bc433/history?kind=events 404 in 35ms (next.js: 1.1ms, application-code: 34ms)\n GET /api/runs/a2e0b82b-8487-46c1-8c69-4aa89b40ce26/history?limit=100000 400 in 25ms (next.js: 1.1ms, application-code: 24ms)\n GET /runs/a2e0b82b-8487-46c1-8c69-4aa89b40ce26 200 in 1565ms (next.js: 1113ms, application-code: 453ms)\n GET /api/runs/a2e0b82b-8487-46c1-8c69-4aa89b40ce26/events?after=650 200 in 3.6s (next.js: 1379ms, application-code: 2.2s)\n GET /api/runs/a2e0b82b-8487-46c1-8c69-4aa89b40ce26 200 in 57ms (next.js: 27ms, application-code: 30ms)\n",
+  "cleanup": "Dedicated database dropped; local server/browser stopped"
+}

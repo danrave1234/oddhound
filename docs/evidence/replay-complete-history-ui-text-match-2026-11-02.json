@@ -1,0 +1,27 @@
+{
+  "checkedAt": "2026-11-02T15:52:03.657Z",
+  "runId": "aeb4dd1d-c239-4e24-81cc-7712857cd38d",
+  "recording": "actual sanitized partial stopped Meta run",
+  "chromium": "156.0.8078.4",
+  "expectedEarlyActions": 11,
+  "checks": [
+    {
+      "label": "actual Chromium sandbox enabled",
+      "passed": true
+    },
+    {
+      "label": "recorded early actions exist outside the recent 300-event window",
+      "passed": true
+    },
+    {
+      "label": "playback becomes available after complete history loads",
+      "passed": true
+    },
+    {
+      "label": "native range input selected 20 percent of the recording",
+      "passed": true
+    }
+  ],
+  "error": "locator.waitFor: Timeout 5000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('iframe').contentFrame().getByRole('region', { name: 'Run overview' }).filter({ hasText: /\\b11\\s+actions \\(no limit\\)/ }) to be visible\u001b[22m\n",
+  "browserClosed": true
+}

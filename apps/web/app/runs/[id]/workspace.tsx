@@ -5,20 +5,31 @@ import { HoundMark, Icon, type IconName } from '@/ui/icons';
 import { StatusBadge, statusLabel, findingStatus } from '@/ui/status';
 import { WorkflowMap } from './workflow-map';
 import { LiveDeck } from './live-deck';
+import { RunHistory } from './run-history';
+import { ResultsDashboard } from './results-dashboard';
+import type { ResultFinding } from './results-data';
+import { OwnerPreview, type PreviewState } from './owner-preview';
+import type { NavigationFrontier } from '@core/agent/frontier.ts';
+type DiscoverySummary = ReturnType<NavigationFrontier['summary']>;
 
 type Snapshot = {
   run: Record<string, any>;
   workflows: { name: string; status: string; summary: string; updated_at: string }[];
   graph: { states: { id: string; route: string; title: string; actor: string; device: string }[]; transitions: { id: string; from_state: string | null; to_state: string; label: string }[] };
-  findings: Record<string, any>[];
+  findings: (ResultFinding & Record<string, any>)[];
   events: { seq: number; at: string; type: string; payload: Record<string, any> }[];
   actions: Record<string, any>[];
+  history?: { eventsHasMore: boolean; actionsHasMore: boolean };
   latestScreenshot: { id: string; label: string; created_at: string } | null;
+  preview?: PreviewState;
+  exploration?: { summary?: DiscoverySummary } | null;
   spend: { settled: number; outstanding: number };
+  allowance: { configuredCapMicros: number; availableMicros: number };
   retests: { id: string; status: string; created_at: string }[];
   plan?: { id: string; area: string; risk: string; technique: string; status: string; note: string | null }[];
   detectedSignals?: number;
-  coverage?: { total: number; exercised: number; blocked: number; pages: number; routes: { route: string; total: number; exercised: number; blocked: number }[] } | null;
+  candidateCount?: number;
+  coverage?: { total: number; exercised: number; outcomeChecked?: number; blocked: number; pages: number; routes: { route: string; total: number; exercised: number; blocked: number }[] } | null;
   agentMode?: string | null;
 };
 
@@ -50,6 +61,7 @@ function CoverageCard({ coverage: c, active }: { coverage: NonNullable<Snapshot[
         </div>
         <div className="row muted tabular" style={{ gap: 14, fontSize: 12.5, marginTop: 6 }}>
           <span><i className="cov-key cov-done" aria-hidden /> Exercised {c.exercised}</span>
+          <span>Outcome checked {c.outcomeChecked ?? 0}</span>
           <span><i className="cov-key cov-blocked" aria-hidden /> Blocked by policy {c.blocked}</span>
           <span><i className="cov-key" aria-hidden /> Not exercised {c.total - c.exercised - c.blocked}</span>
         </div>
@@ -65,6 +77,18 @@ function CoverageCard({ coverage: c, active }: { coverage: NonNullable<Snapshot[
 }
 
 const RISK_ORDER: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 };
+
+function DiscoveryCard({ discovery: d }: { discovery: DiscoverySummary }) {
+  return <div className="card fade-in">
+    <div className="card-header"><h2 className="h3"><Icon name="browser" /> Site exploration</h2><span className="tabular muted">{d.visited} routes visited · {d.outcomeChecked} outcomes checked · {d.discovered} routes discovered</span></div>
+    <div className="card-footer"><span>{d.pendingRoutes} routes and {d.pendingControls} controls pending · {d.blocked} blocked{d.excluded > 0 ? ` (including ${d.excluded} excluded by contract)` : ''} · {d.sampledVariants} additional variants omitted by sampling. Visiting or clicking does not prove an outcome. These counts describe discovered items, not the whole site.</span></div>
+    <details style={{ padding: '8px 16px' }}><summary>Next discovered items ({d.next.length} shown)</summary>
+      <div className="table-wrap"><table className="grid"><thead><tr><th>Page / control</th><th>Status</th><th>Reason</th></tr></thead><tbody>
+        {d.next.map(e => <tr key={e.id}><td className="break"><strong>{e.label}</strong><br /><span className="mono">{e.path}</span></td><td>{e.kind} · {e.status}{e.checked ? ' · outcome checked' : ''}</td><td>{e.reason ?? 'Not yet exercised'}</td></tr>)}
+      </tbody></table></div>
+    </details>
+  </div>;
+}
 
 /** The agent's own risk-ranked test plan, as it last saved it. */
 function TestPlan({ plan, active }: { plan: NonNullable<Snapshot['plan']>; active: boolean }) {
@@ -155,7 +179,7 @@ function describe(e: Snapshot['events'][number]): string | null {
 
 export function RunWorkspace({ initial, controllable, replay, signedIn }: { initial: Snapshot; controllable: boolean; replay: boolean; signedIn: boolean }) {
   const [snap, setSnap] = useState<Snapshot>(initial);
-  const [view, setView] = useState<'workflows' | 'browser' | 'findings' | 'activity'>(initial.findings.length && !ACTIVE.has(initial.run.status) ? 'findings' : 'workflows');
+  const [view, setView] = useState<'results' | 'workflows' | 'browser' | 'findings' | 'activity'>(!ACTIVE.has(initial.run.status) ? 'results' : 'workflows');
   const [wfMode, setWfMode] = useState<'list' | 'map'>('list');
   const [selected, setSelected] = useState<string | null>(initial.findings.find((f) => f.category === 'verified_issue')?.id ?? null);
   const [conn, setConn] = useState<'live' | 'reconnecting' | 'stale'>('live');
@@ -221,7 +245,6 @@ export function RunWorkspace({ initial, controllable, replay, signedIn }: { init
 
   const verifiedCount = snap.findings.filter((f) => f.category === 'verified_issue' && f.verification === 'verified').length;
   const selectedFinding = snap.findings.find((f) => f.id === selected) ?? null;
-  const log = snap.events.map((e) => ({ e, text: describe(e) })).filter((x) => x.text);
   const inspectorRef = useRef<HTMLElement>(null);
   const viewsRef = useRef<HTMLElement>(null);
   function selectFinding(id: string) {
@@ -232,6 +255,7 @@ export function RunWorkspace({ initial, controllable, replay, signedIn }: { init
     }
   }
   const VIEWS: { key: typeof view; label: string; icon: IconName }[] = [
+    ...(!active ? [{ key: 'results' as const, label: 'Results', icon: 'report' as const }] : []),
     { key: 'workflows', label: 'Workflows', icon: 'trail' }, { key: 'browser', label: 'Browser', icon: 'browser' },
     { key: 'findings', label: 'Findings', icon: 'bug' }, { key: 'activity', label: 'Activity', icon: 'pulse' },
   ];
@@ -285,6 +309,9 @@ export function RunWorkspace({ initial, controllable, replay, signedIn }: { init
           </div>
 
           <div className="pane-body">
+            {!active && view !== 'results' && <div className="banner banner-info"><Icon name="report" /><span>This run has ended. Its results and coverage gaps are ready.</span><button className="btn btn-sm" onClick={() => setView('results')}>View results</button></div>}
+            {view === 'results' && !active && <ResultsDashboard status={run.status} reason={run.stop_reason} findings={snap.findings} rules={run.rules ?? []} states={snap.graph.states} coverage={snap.coverage} discovery={snap.exploration?.summary}
+              onSelectFinding={id => { setView('findings'); selectFinding(id); }} onOpenCoverage={() => { setWfMode('list'); setView('workflows'); }} />}
             {controllable && run.status === 'waiting_for_input' && run.handoff_enabled && <HandoffPanel runId={runId} onStop={stop} />}
             <LiveDeck snap={snap} active={active} replay={replay} onOpenBrowser={() => setView('browser')} onOpenFindings={() => setView('findings')} />
             {run.mode === 'retest' && (
@@ -302,6 +329,7 @@ export function RunWorkspace({ initial, controllable, replay, signedIn }: { init
             {view === 'workflows' && (wfMode === 'list' ? (
               <>
                 {(snap.plan?.length || run.mode !== 'retest') && <TestPlan plan={snap.plan ?? []} active={active} />}
+                {snap.exploration?.summary && <DiscoveryCard discovery={snap.exploration.summary} />}
                 {run.mode !== 'retest' && <CoverageCard coverage={snap.coverage} active={active} />}
                 <div className="card fade-in">
                   <div className="card-header"><h2 className="h3"><Icon name="trail" /> Workflows</h2><span className="muted tabular" style={{ marginLeft: 'auto', fontSize: 12.5 }}>{snap.workflows.length}</span></div>
@@ -331,23 +359,14 @@ export function RunWorkspace({ initial, controllable, replay, signedIn }: { init
                     <span className="frame-addr"><span>{snap.latestScreenshot ? snap.latestScreenshot.label : 'No frame yet'}</span></span>
                     {snap.latestScreenshot && <span className="muted tabular" style={{ fontSize: 12 }}>{new Date(snap.latestScreenshot.created_at).toLocaleTimeString()}</span>}
                   </div>
-                  {snap.latestScreenshot
+                  {run.mode !== 'demo_target' ? <OwnerPreview runId={run.id} preview={snap.preview ?? null} active={active} /> : snap.latestScreenshot
                     ? <div className="frame-body"><img src={`/api/artifacts/${snap.latestScreenshot.id}`} alt={`Latest browser frame: ${snap.latestScreenshot.label}`} /></div>
                     : <Empty icon="browser" text="No browser frame captured yet." />}
                 </div>
                 {snap.latestScreenshot && <p className="muted" style={{ margin: '-6px 0 0', fontSize: 12.5 }}>A sampled still frame, not live video.</p>}
                 <div className="card">
-                  <div className="card-header"><h2 className="h3"><Icon name="list" /> Recent actions</h2></div>
-                  {snap.actions.length ? (
-                    <ol className="list" style={{ margin: 0, padding: 0, listStyle: 'none' }}>
-                      {snap.actions.slice(0, 15).map((a) => (
-                        <li key={a.seq} className="list-row" style={{ gridTemplateColumns: 'auto minmax(0,1fr)', padding: '10px 16px' }}>
-                          <span className="chip tabular">#{a.seq}</span>
-                          <span style={{ minWidth: 0 }}><span className="mono" style={{ fontWeight: 600 }}>{a.tool}</span>
-                            <span className="meta" style={{ marginTop: 2 }}>actor {a.actor} · {a.device} · {a.state}</span></span>
-                        </li>))}
-                    </ol>
-                  ) : <Empty icon="list" text="No actions recorded yet." />}
+                  <div className="card-header"><h2 className="h3"><Icon name="list" /> Action history</h2></div>
+                  <RunHistory runId={runId} kind="actions" initial={snap.actions} initialHasMore={snap.history?.actionsHasMore ?? snap.actions.length >= 60} />
                 </div>
               </>
             )}
@@ -376,11 +395,7 @@ export function RunWorkspace({ initial, controllable, replay, signedIn }: { init
 
             {view === 'activity' && (
               <div className="card fade-in" style={{ padding: '10px 16px' }}>
-                {log.length ? (
-                  <ol className="timeline" aria-live="off">
-                    {log.map(({ e, text }) => <li key={e.seq} className={`k-${kindOf(e.type)}`}><span className="t">{new Date(e.at).toLocaleTimeString()}</span><span className="d" aria-hidden /><span className="break">{text}</span></li>)}
-                  </ol>
-                ) : <Empty icon="pulse" text="No activity recorded yet." />}
+                <RunHistory runId={runId} kind="events" initial={snap.events} initialHasMore={snap.history?.eventsHasMore ?? snap.events.length >= 300} describe={describe} />
               </div>
             )}
           </div>

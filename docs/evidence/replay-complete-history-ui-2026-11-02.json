@@ -1,0 +1,38 @@
+{
+  "checkedAt": "2026-11-02T15:53:03.342Z",
+  "runId": "aeb4dd1d-c239-4e24-81cc-7712857cd38d",
+  "recording": "actual sanitized partial stopped Meta run",
+  "chromium": "156.0.8078.4",
+  "expectedEarlyActions": 11,
+  "checks": [
+    {
+      "label": "actual Chromium sandbox enabled",
+      "passed": true
+    },
+    {
+      "label": "recorded early actions exist outside the recent 300-event window",
+      "passed": true
+    },
+    {
+      "label": "playback becomes available after complete history loads",
+      "passed": true
+    },
+    {
+      "label": "native range input selected 20 percent of the recording",
+      "passed": true
+    },
+    {
+      "label": "early playback shows all 11 recorded completed actions",
+      "passed": true
+    },
+    {
+      "label": "terminal playback keeps the complete 67-action ledger total",
+      "passed": true
+    },
+    {
+      "label": "no client runtime errors",
+      "passed": true
+    }
+  ],
+  "browserClosed": true
+}

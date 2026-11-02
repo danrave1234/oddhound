@@ -1,0 +1,12 @@
+✔ recovers the beginning, phases and historical action totals beyond a recent 300-event window (12.2245ms)
+✔ preserves access/load failures instead of accepting incomplete playback (1.2232ms)
+✔ refuses a non-advancing history cursor rather than looping (0.3449ms)
+✔ cancels without requesting another page (0.4524ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 253.8556

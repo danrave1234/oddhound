@@ -1,0 +1,68 @@
+{
+  "at": "2026-10-29T19:22:47.147Z",
+  "node": "v26.12.1",
+  "playwright": "1.64.1",
+  "chromium": "156.0.8078.4",
+  "sandbox": "sandbox_on",
+  "mocked": "Synthetic saved run/states/events/actions only; real local Next/React/PostgreSQL/Chromium. No provider or external target.",
+  "checks": [
+    {
+      "name": "local Next server ready with dedicated synthetic database",
+      "passed": true
+    },
+    {
+      "name": "snapshot retains all650 discoveries and explicit older-history cursors",
+      "passed": true
+    },
+    {
+      "name": "history page is bounded to100 (0 already read)",
+      "passed": true
+    },
+    {
+      "name": "history page is bounded to100 (100 already read)",
+      "passed": true
+    },
+    {
+      "name": "history page is bounded to100 (200 already read)",
+      "passed": true
+    },
+    {
+      "name": "history page is bounded to100 (300 already read)",
+      "passed": true
+    },
+    {
+      "name": "history page is bounded to100 (400 already read)",
+      "passed": true
+    },
+    {
+      "name": "history page is bounded to100 (500 already read)",
+      "passed": true
+    },
+    {
+      "name": "history page is bounded to100 (600 already read)",
+      "passed": true
+    },
+    {
+      "name": "keyset pages reach event1 without gaps or duplicates",
+      "passed": true
+    },
+    {
+      "name": "history API refuses anonymous access to a private run",
+      "passed": true
+    },
+    {
+      "name": "history API rejects unbounded page request",
+      "passed": true
+    },
+    {
+      "name": "UI test Chromium sandbox is enabled",
+      "passed": true
+    }
+  ],
+  "fatal": "locator.innerText: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('.card').filter({ has: getByRole('heading', { name: 'Site exploration' }) })\u001b[22m\n\n    at C:\\Users\\Danrave\\Desktop\\Project\\Oddhound\\claude\\tests\\e2e\\trail-history-ui.ts:77:25",
+  "errors": [
+    "LIMITS is not defined"
+  ],
+  "diagnostic": "▲ Next.js 16.4.3 (Turbopack)\n- Local:         http://127.0.0.1:3312\n- Network:       http://127.0.0.1:3312\n✓ Ready in 616ms\n✓ Running next.config.ts took 251ms\n\n GET /api/runs/7bffe294-df74-4e4e-8134-8405f3689287 200 in 2.6s (next.js: 1514ms, application-code: 1051ms)\n GET /api/runs/7bffe294-df74-4e4e-8134-8405f3689287 200 in 125ms (next.js: 23ms, application-code: 102ms)\n GET /api/runs/7bffe294-df74-4e4e-8134-8405f3689287 200 in 52ms (next.js: 1.4ms, application-code: 50ms)\n GET /api/runs/7bffe294-df74-4e4e-8134-8405f3689287/history?kind=events 200 in 1264ms (next.js: 1233ms, application-code: 31ms)\n GET /api/runs/7bffe294-df74-4e4e-8134-8405f3689287/history?kind=events&before=551 200 in 116ms (next.js: 80ms, application-code: 37ms)\n GET /api/runs/7bffe294-df74-4e4e-8134-8405f3689287/history?kind=events&before=451 200 in 41ms (next.js: 1.5ms, application-code: 40ms)\n GET /api/runs/7bffe294-df74-4e4e-8134-8405f3689287/history?kind=events&before=351 200 in 21ms (next.js: 2.0ms, application-code: 19ms)\n GET /api/runs/7bffe294-df74-4e4e-8134-8405f3689287/history?kind=events&before=251 200 in 27ms (next.js: 0.9ms, application-code: 26ms)\n GET /api/runs/7bffe294-df74-4e4e-8134-8405f3689287/history?kind=events&before=151 200 in 11ms (next.js: 1.6ms, application-code: 10ms)\n GET /api/runs/7bffe294-df74-4e4e-8134-8405f3689287/history?kind=events&before=51 200 in 26ms (next.js: 1.8ms, application-code: 24ms)\n GET /api/runs/b7a3a288-1c7d-4602-b1a9-77b77ef2443d/history?kind=events 404 in 9ms (next.js: 1.0ms, application-code: 8ms)\n GET /api/runs/7bffe294-df74-4e4e-8134-8405f3689287/history?limit=100000 400 in 28ms (next.js: 2ms, application-code: 26ms)\n⨯ ReferenceError: LIMITS is not defined\n    at LiveDeck (app\\runs\\[id]\\live-deck.tsx:204:41)\n  202 |           <div className=\"gauges\">\n  203 |             <Ring label=\"actions (no limit)\" value={model.actionsUsed} max={Math.max(50, model.actionsUsed * 1.25)} display={<CountUp value={model.actionsUsed} />} spoken={String(model.actionsUsed)} />\n> 204 |             <Ring label={`of ${fmtClock(LIMITS.runWallClockMs)} time`} value={elapsedMs} max={LIMITS.runWallClockMs} display={fmtClock(elapsedMs)} spoken={fmtClock(elapsedMs)} tone=\"info\" />\n      |                                         ^\n  205 |             <Ring label={model.charters.length ? `of ${model.charters.length} plan items` : 'no plan yet'} value={planDone} max={Math.max(1, model.charters.length)} display={<CountUp value={planDone} />} spoken={String(planDone)}...\n  206 |             <Ring label={`of $${(snap.allowance.configuredCapMicros / 1e6).toFixed(2)} run maximum${active ? ` · $${(snap.allowance.availableMicros / 1e6).toFixed(2)} available` : ''}`} value={replay && !atEnd ? 0 : spendMicros} ...\n  207 |               display={replay && !atEnd ? '—' : `$${(spendMicros / 1e6).toFixed(2)}`} spoken={replay && !atEnd ? 'not shown during playback,' : `$${(spendMicros / 1e6).toFixed(2)}`} tone=\"warn\" /> {\n  digest: '2887486158'\n}\n GET /runs/7bffe294-df74-4e4e-8134-8405f3689287 500 in 1781ms (next.js: 1290ms, application-code: 490ms)\n[browser] Uncaught ReferenceError: LIMITS is not defined\n    at LiveDeck (app/runs/[id]/live-deck.tsx:204:41)\n    at RunPage (app\\runs\\[id]\\page.tsx:18:10)\n  202 |           <div className=\"gauges\">\n  203 |             <Ring label=\"actions (no limit)\" value={model.actionsUsed} max={Math.max(50, model.actionsUsed * 1.25)} display={<CountUp value={model.actionsUsed} />} spoken={String(model.actionsUsed)} />\n> 204 |             <Ring label={`of ${fmtClock(LIMITS.runWallClockMs)} time`} value={elapsedMs} max={LIMITS.runWallClockMs} display={fmtClock(elapsedMs)} spoken={fmtClock(elapsedMs)} tone=\"info\" />\n      |                                         ^\n  205 |             <Ring label={model.charters.length ? `of ${model.charters.length} plan items` : 'no plan yet'} value={planDone} max={Math.max(1, model.charters.length)} display={<CountUp value={planDone} />} spoken={String(planDone)}...\n  206 |             <Ring label={`of $${(snap.allowance.configuredCapMicros / 1e6).toFixed(2)} run maximum${active ? ` · $${(snap.allowance.availableMicros / 1e6).toFixed(2)} available` : ''}`} value={replay && !atEnd ? 0 : spendMicros} ...\n  207 |               display={replay && !atEnd ? '—' : `$${(spendMicros / 1e6).toFixed(2)}`} spoken={replay && !atEnd ? 'not shown during playback,' : `$${(spendMicros / 1e6).toFixed(2)}`} tone=\"warn\" />\n",
+  "cleanup": "Dedicated database dropped; local server/browser stopped"
+}

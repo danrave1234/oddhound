@@ -1,0 +1,128 @@
+{
+  "at": "2026-10-29T19:29:27.602Z",
+  "node": "v26.12.1",
+  "playwright": "1.64.1",
+  "chromium": "156.0.8078.4",
+  "sandbox": "sandbox_on",
+  "mocked": "Synthetic saved run/states/events/actions only; real local Next/React/PostgreSQL/Chromium. No provider or external target.",
+  "checks": [
+    {
+      "name": "local Next server ready with dedicated synthetic database",
+      "passed": true
+    },
+    {
+      "name": "snapshot retains all650 discoveries and explicit older-history cursors",
+      "passed": true
+    },
+    {
+      "name": "history page is bounded to100 (0 already read)",
+      "passed": true
+    },
+    {
+      "name": "history page is bounded to100 (100 already read)",
+      "passed": true
+    },
+    {
+      "name": "history page is bounded to100 (200 already read)",
+      "passed": true
+    },
+    {
+      "name": "history page is bounded to100 (300 already read)",
+      "passed": true
+    },
+    {
+      "name": "history page is bounded to100 (400 already read)",
+      "passed": true
+    },
+    {
+      "name": "history page is bounded to100 (500 already read)",
+      "passed": true
+    },
+    {
+      "name": "history page is bounded to100 (600 already read)",
+      "passed": true
+    },
+    {
+      "name": "keyset pages reach event1 without gaps or duplicates",
+      "passed": true
+    },
+    {
+      "name": "history API refuses anonymous access to a private run",
+      "passed": true
+    },
+    {
+      "name": "history API rejects unbounded page request",
+      "passed": true
+    },
+    {
+      "name": "UI test Chromium sandbox is enabled",
+      "passed": true
+    },
+    {
+      "name": "discovery summary separates visits, checked outcomes and pending gaps",
+      "passed": true
+    },
+    {
+      "name": "compact trail explicitly renders latest24 stops",
+      "passed": true
+    },
+    {
+      "name": "expansion renders48 bounded stops including earlier discoveries",
+      "passed": true
+    },
+    {
+      "name": "all105 grouped states are individually inspectable",
+      "passed": true
+    },
+    {
+      "name": "search reaches a state far beyond original24-stop cap",
+      "passed": true
+    },
+    {
+      "name": "last recorded state can be selected and inspected",
+      "passed": true
+    },
+    {
+      "name": "actor/device filters preserve session distinctions",
+      "passed": true
+    },
+    {
+      "name": "keyboard-accessible list offers equivalent stop selection",
+      "passed": true
+    },
+    {
+      "name": "keyboard selection opens matching state details",
+      "passed": true
+    },
+    {
+      "name": "closing state details restores focus to selected stop",
+      "passed": true
+    },
+    {
+      "name": "pagination reaches final discovery",
+      "passed": true
+    },
+    {
+      "name": "activity older-page loading stays bounded to100 rendered records",
+      "passed": true
+    },
+    {
+      "name": "activity reaches first saved event and reports history exhausted",
+      "passed": true
+    },
+    {
+      "name": "all240 actions accessible beyond previous15/60 limits",
+      "passed": true
+    },
+    {
+      "name": "expanded trail controls remain accessible on narrow dark/reduced-motion view",
+      "passed": true
+    },
+    {
+      "name": "no client runtime errors (0)",
+      "passed": true
+    }
+  ],
+  "errors": [],
+  "cleanup": "Dedicated database dropped; local server/browser stopped"
+}

@@ -12,10 +12,14 @@ export function WorkflowMap({ states, transitions }: { states: State[]; transiti
   const { nodes, edges } = useMemo(() => {
     const depth = new Map<string, number>();
     if (states[0]) depth.set(states[0].id, 0);
-    for (let pass = 0; pass < states.length; pass++) {
-      for (const t of transitions) {
-        if (t.from_state && depth.has(t.from_state) && !depth.has(t.to_state)) depth.set(t.to_state, depth.get(t.from_state)! + 1);
-      }
+    const outgoing = new Map<string, string[]>();
+    for (const t of transitions) if (t.from_state) {
+      const list = outgoing.get(t.from_state) ?? []; list.push(t.to_state); outgoing.set(t.from_state, list);
+    }
+    const queue = states[0] ? [states[0].id] : [];
+    for (let i = 0; i < queue.length; i++) {
+      const from = queue[i]!;
+      for (const to of outgoing.get(from) ?? []) if (!depth.has(to)) { depth.set(to, depth.get(from)! + 1); queue.push(to); }
     }
     const perLevel = new Map<number, number>();
     const nodes: Node[] = states.map((s, i) => {
@@ -37,7 +41,7 @@ export function WorkflowMap({ states, transitions }: { states: State[]; transiti
   return (
     <div style={{ height: 'min(560px, 70vh)' }} className="card flow-card fade-in" aria-label="Workflow map (the List view has the same information)">
       {states.length ? (
-        <ReactFlow nodes={nodes} edges={edges} fitView nodesDraggable={false} colorMode="system" proOptions={{ hideAttribution: false }} style={{ borderRadius: 'var(--radius)' }}>
+        <ReactFlow nodes={nodes} edges={edges} fitView onlyRenderVisibleElements nodesDraggable={false} colorMode="system" proOptions={{ hideAttribution: false }} style={{ borderRadius: 'var(--radius)' }}>
           <Background variant={BackgroundVariant.Dots} gap={18} size={1.2} /><Controls showInteractive={false} />
         </ReactFlow>
       ) : <div className="empty" style={{ height: '100%', alignContent: 'center' }}><p>No page states recorded yet. The map fills in as the agent explores.</p></div>}

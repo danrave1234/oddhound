@@ -1,0 +1,132 @@
+{
+  "at": "2026-10-29T19:23:53.397Z",
+  "node": "v26.12.1",
+  "playwright": "1.64.1",
+  "chromium": "156.0.8078.4",
+  "sandbox": "sandbox_on",
+  "mocked": "Synthetic saved run/states/events/actions only; real local Next/React/PostgreSQL/Chromium. No provider or external target.",
+  "checks": [
+    {
+      "name": "local Next server ready with dedicated synthetic database",
+      "passed": true
+    },
+    {
+      "name": "snapshot retains all650 discoveries and explicit older-history cursors",
+      "passed": true
+    },
+    {
+      "name": "history page is bounded to100 (0 already read)",
+      "passed": true
+    },
+    {
+      "name": "history page is bounded to100 (100 already read)",
+      "passed": true
+    },
+    {
+      "name": "history page is bounded to100 (200 already read)",
+      "passed": true
+    },
+    {
+      "name": "history page is bounded to100 (300 already read)",
+      "passed": true
+    },
+    {
+      "name": "history page is bounded to100 (400 already read)",
+      "passed": true
+    },
+    {
+      "name": "history page is bounded to100 (500 already read)",
+      "passed": true
+    },
+    {
+      "name": "history page is bounded to100 (600 already read)",
+      "passed": true
+    },
+    {
+      "name": "keyset pages reach event1 without gaps or duplicates",
+      "passed": true
+    },
+    {
+      "name": "history API refuses anonymous access to a private run",
+      "passed": true
+    },
+    {
+      "name": "history API rejects unbounded page request",
+      "passed": true
+    },
+    {
+      "name": "UI test Chromium sandbox is enabled",
+      "passed": true
+    },
+    {
+      "name": "discovery summary separates visits, checked outcomes and pending gaps",
+      "passed": true
+    },
+    {
+      "name": "compact trail explicitly renders latest24 stops",
+      "passed": true
+    },
+    {
+      "name": "expansion renders48 bounded stops including earlier discoveries",
+      "passed": true
+    },
+    {
+      "name": "all105 grouped states are individually inspectable",
+      "passed": true
+    },
+    {
+      "name": "search reaches a state far beyond original24-stop cap",
+      "passed": true
+    },
+    {
+      "name": "last recorded state can be selected and inspected",
+      "passed": true
+    },
+    {
+      "name": "actor/device filters preserve session distinctions",
+      "passed": true
+    },
+    {
+      "name": "keyboard-accessible list offers equivalent stop selection",
+      "passed": true
+    },
+    {
+      "name": "keyboard selection opens matching state details",
+      "passed": true
+    },
+    {
+      "name": "closing state details restores focus to selected stop",
+      "passed": true
+    },
+    {
+      "name": "pagination reaches final discovery",
+      "passed": true
+    },
+    {
+      "name": "activity older-page loading stays bounded to100 rendered records",
+      "passed": true
+    },
+    {
+      "name": "activity reaches first saved event and reports history exhausted",
+      "passed": true
+    },
+    {
+      "name": "all240 actions accessible beyond previous15/60 limits",
+      "passed": true
+    },
+    {
+      "name": "expanded trail controls remain accessible on narrow dark/reduced-motion view",
+      "passed": true
+    },
+    {
+      "name": "no client runtime errors (1)",
+      "passed": false
+    }
+  ],
+  "fatal": "Error: no client runtime errors (1)\n    at check (file:///C:/Users/Danrave/Desktop/Project/Oddhound/claude/tests/e2e/trail-history-ui.ts:29:146)\n    at file:///C:/Users/Danrave/Desktop/Project/Oddhound/claude/tests/e2e/trail-history-ui.ts:118:3",
+  "errors": [
+    "./apps/web/app/runs/[id]/live-deck.tsx:11:10\nError: the name `LIMITS` is defined multiple times\n   9 | import { statusLabel } from '@/ui/status';\n  10 | import { LIMITS } from '@core/contracts/limits.ts';\n> 11 | import { LIMITS } from '@core/contracts/limits.ts';\n     |          ^^^^^^\n  12 | import { TrailMap } from './trail-map';\n  13 | import { trailAtTime } from './trail-data';\n  14 | import { OwnerPreview, type PreviewState } from './owner-preview';\n\nEcmascript file had an error\n\nImport traces:\n  Client Component Browser:\n    ./apps/web/app/runs/[id]/live-deck.tsx [Client Component Browser]\n    ./apps/web/app/runs/[id]/workspace.tsx [Client Component Browser]\n    ./apps/web/app/runs/[id]/workspace.tsx [Server Component]\n    ./apps/web/app/runs/[id]/page.tsx [Server Component]\n\n  Client Component SSR:\n    ./apps/web/app/runs/[id]/live-deck.tsx [Client Component SSR]\n    ./apps/web/app/runs/[id]/workspace.tsx [Client Component SSR]\n    ./apps/web/app/runs/[id]/workspace.tsx [Server Component]\n    ./apps/web/app/runs/[id]/page.tsx [Server Component]\n\n"
+  ],
+  "diagnostic": "tate } from './owner-preview';\n\nEcmascript file had an error\n\nImport traces:\n  Client Component Browser:\n    ./apps/web/app/runs/[id]/live-deck.tsx [Client Component Browser]\n    ./apps/web/app/runs/[id]/workspace.tsx [Client Component Browser]\n    ./apps/web/app/runs/[id]/workspace.tsx [Server Component]\n    ./apps/web/app/runs/[id]/page.tsx [Server Component]\n\n  Client Component SSR:\n    ./apps/web/app/runs/[id]/live-deck.tsx [Client Component SSR]\n    ./apps/web/app/runs/[id]/workspace.tsx [Client Component SSR]\n    ./apps/web/app/runs/[id]/workspace.tsx [Server Component]\n    ./apps/web/app/runs/[id]/page.tsx [Server Component]\n\n\n[browser] ./apps/web/app/runs/[id]/live-deck.tsx:11:10\nError: the name `LIMITS` is defined multiple times\n   9 | import { statusLabel } from '@/ui/status';\n  10 | import { LIMITS } from '@core/contracts/limits.ts';\n> 11 | import { LIMITS } from '@core/contracts/limits.ts';\n     |          ^^^^^^\n  12 | import { TrailMap } from './trail-map';\n  13 | import { trailAtTime } from './trail-data';\n  14 | import { OwnerPreview, type PreviewState } from './owner-preview';\n\nEcmascript file had an error\n\nImport traces:\n  Client Component Browser:\n    ./apps/web/app/runs/[id]/live-deck.tsx [Client Component Browser]\n    ./apps/web/app/runs/[id]/workspace.tsx [Client Component Browser]\n    ./apps/web/app/runs/[id]/workspace.tsx [Server Component]\n    ./apps/web/app/runs/[id]/page.tsx [Server Component]\n\n  Client Component SSR:\n    ./apps/web/app/runs/[id]/live-deck.tsx [Client Component SSR]\n    ./apps/web/app/runs/[id]/workspace.tsx [Client Component SSR]\n    ./apps/web/app/runs/[id]/workspace.tsx [Server Component]\n    ./apps/web/app/runs/[id]/page.tsx [Server Component] \n[browser] ./apps/web/app/runs/[id]/live-deck.tsx:11:10\nError: the name `LIMITS` is defined multiple times\n   9 | import { statusLabel } from '@/ui/status';\n  10 | import { LIMITS } from '@core/contracts/limits.ts';\n> 11 | import { LIMITS } from '@core/contracts/limits.ts';\n     |          ^^^^^^\n  12 | import { TrailMap } from './trail-map';\n  13 | import { trailAtTime } from './trail-data';\n  14 | import { OwnerPreview, type PreviewState } from './owner-preview';\n\nEcmascript file had an error\n\nImport traces:\n  Client Component Browser:\n    ./apps/web/app/runs/[id]/live-deck.tsx [Client Component Browser]\n    ./apps/web/app/runs/[id]/workspace.tsx [Client Component Browser]\n    ./apps/web/app/runs/[id]/workspace.tsx [Server Component]\n    ./apps/web/app/runs/[id]/page.tsx [Server Component]\n\n  Client Component SSR:\n    ./apps/web/app/runs/[id]/live-deck.tsx [Client Component SSR]\n    ./apps/web/app/runs/[id]/workspace.tsx [Client Component SSR]\n    ./apps/web/app/runs/[id]/workspace.tsx [Server Component]\n    ./apps/web/app/runs/[id]/page.tsx [Server Component] \n[browser] ./apps/web/app/runs/[id]/live-deck.tsx:11:10\nError: the name `LIMITS` is defined multiple times\n   9 | import { statusLabel } from '@/ui/status';\n  10 | import { LIMITS } from '@core/contracts/limits.ts';\n> 11 | import { LIMITS } from '@core/contracts/limits.ts';\n     |          ^^^^^^\n  12 | import { TrailMap } from './trail-map';\n  13 | import { trailAtTime } from './trail-data';\n  14 | import { OwnerPreview, type PreviewState } from './owner-preview';\n\nEcmascript file had an error\n\nImport traces:\n  Client Component Browser:\n    ./apps/web/app/runs/[id]/live-deck.tsx [Client Component Browser]\n    ./apps/web/app/runs/[id]/workspace.tsx [Client Component Browser]\n    ./apps/web/app/runs/[id]/workspace.tsx [Server Component]\n    ./apps/web/app/runs/[id]/page.tsx [Server Component]\n\n  Client Component SSR:\n    ./apps/web/app/runs/[id]/live-deck.tsx [Client Component SSR]\n    ./apps/web/app/runs/[id]/workspace.tsx [Client Component SSR]\n    ./apps/web/app/runs/[id]/workspace.tsx [Server Component]\n    ./apps/web/app/runs/[id]/page.tsx [Server Component] \n✓ Compiled in 163ms\n GET /runs/1687ebfc-3150-49b0-bf77-49c0b71d2a51 200 in 1656ms (next.js: 1087ms, application-code: 569ms)\n GET /api/runs/1687ebfc-3150-49b0-bf77-49c0b71d2a51/history?kind=events&limit=100&before=351 200 in 46ms (next.js: 21ms, application-code: 25ms)\n GET /api/runs/1687ebfc-3150-49b0-bf77-49c0b71d2a51/history?kind=events&limit=100&before=251 200 in 17ms (next.js: 2ms, application-code: 15ms)\n GET /api/runs/1687ebfc-3150-49b0-bf77-49c0b71d2a51/history?kind=events&limit=100&before=151 200 in 33ms (next.js: 0.9ms, application-code: 32ms)\n GET /api/runs/1687ebfc-3150-49b0-bf77-49c0b71d2a51/history?kind=events&limit=100&before=51 200 in 32ms (next.js: 0.8ms, application-code: 31ms)\n GET /api/runs/1687ebfc-3150-49b0-bf77-49c0b71d2a51/history?kind=actions&limit=100&before=181 200 in 38ms (next.js: 1.0ms, application-code: 37ms)\n GET /api/runs/1687ebfc-3150-49b0-bf77-49c0b71d2a51/history?kind=actions&limit=100&before=81 200 in 16ms (next.js: 0.8ms, application-code: 15ms)\n GET /api/runs/1687ebfc-3150-49b0-bf77-49c0b71d2a51/events?after=650 200 in 3.4s (next.js: 1435ms, application-code: 2.0s)\n",
+  "cleanup": "Dedicated database dropped; local server/browser stopped"
+}

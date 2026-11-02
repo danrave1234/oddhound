@@ -1,0 +1,62 @@
+{
+  "at": "2026-10-29T19:14:33.393Z",
+  "node": "v26.12.1",
+  "playwright": "1.64.1",
+  "mocked": "Synthetic saved run/states/events/actions only; real local Next/React/PostgreSQL/Chromium. No provider or external target.",
+  "checks": [
+    {
+      "name": "local Next server ready with dedicated synthetic database",
+      "passed": true
+    },
+    {
+      "name": "snapshot retains all650 discoveries and explicit older-history cursors",
+      "passed": true
+    },
+    {
+      "name": "history page is bounded to100 (0 already read)",
+      "passed": true
+    },
+    {
+      "name": "history page is bounded to100 (100 already read)",
+      "passed": true
+    },
+    {
+      "name": "history page is bounded to100 (200 already read)",
+      "passed": true
+    },
+    {
+      "name": "history page is bounded to100 (300 already read)",
+      "passed": true
+    },
+    {
+      "name": "history page is bounded to100 (400 already read)",
+      "passed": true
+    },
+    {
+      "name": "history page is bounded to100 (500 already read)",
+      "passed": true
+    },
+    {
+      "name": "history page is bounded to100 (600 already read)",
+      "passed": true
+    },
+    {
+      "name": "keyset pages reach event1 without gaps or duplicates",
+      "passed": true
+    },
+    {
+      "name": "history API refuses anonymous access to a private run",
+      "passed": true
+    },
+    {
+      "name": "history API rejects unbounded page request",
+      "passed": true
+    },
+    {
+      "name": "compact trail explicitly renders latest24 stops",
+      "passed": true
+    }
+  ],
+  "fatal": "locator.click: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('button', { name: 'Expand trail', exact: true })\u001b[22m\n\u001b[2m    - locator resolved to <button class=\"btn btn-sm\" aria-expanded=\"false\" aria-controls=\"_R_jacinebn5rlb_\">…</button>\u001b[22m\n\u001b[2m  - attempting click action\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <nextjs-portal></nextjs-portal> from <script data-nextjs-dev-overlay=\"true\">…</script> subtree intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m    - waiting 20ms\u001b[22m\n\u001b[2m    2 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m      - element is visible, enabled and stable\u001b[22m\n\u001b[2m      - scrolling into view if needed\u001b[22m\n\u001b[2m      - done scrolling\u001b[22m\n\u001b[2m      - <nextjs-portal></nextjs-portal> from <script data-nextjs-dev-overlay=\"true\">…</script> subtree intercepts pointer events\u001b[22m\n\u001b[2m    - retrying click action\u001b[22m\n\u001b[2m      - waiting 100ms\u001b[22m\n\u001b[2m    58 × waiting for element to be visible, enabled and stable\u001b[22m\n\u001b[2m       - element is visible, enabled and stable\u001b[22m\n\u001b[2m       - scrolling into view if needed\u001b[22m\n\u001b[2m       - done scrolling\u001b[22m\n\u001b[2m       - <nextjs-portal></nextjs-portal> from <script data-nextjs-dev-overlay=\"true\">…</script> subtree intercepts pointer events\u001b[22m\n\u001b[2m     - retrying click action\u001b[22m\n\u001b[2m       - waiting 500ms\u001b[22m\n\n    at C:\\Users\\Danrave\\Desktop\\Project\\Oddhound\\claude\\tests\\e2e\\trail-history-ui.ts:65:73",
+  "cleanup": "Dedicated database dropped; local server/browser stopped"
+}

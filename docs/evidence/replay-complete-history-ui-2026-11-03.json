@@ -1,0 +1,54 @@
+{
+  "checkedAt": "2026-11-02T17:59:26.653Z",
+  "runId": "883c2266-0b91-4cc6-bb3b-fa4fd111cd80",
+  "recording": "actual sanitized stopped Meta run",
+  "chromium": "156.0.8078.4",
+  "expectedEarlyActions": 79,
+  "checks": [
+    {
+      "label": "actual Chromium sandbox enabled",
+      "passed": true
+    },
+    {
+      "label": "recorded early actions exist outside the recent 300-event window",
+      "passed": true
+    },
+    {
+      "label": "playback becomes available after complete history loads",
+      "passed": true
+    },
+    {
+      "label": "native range input selected 20 percent of the recording",
+      "passed": true
+    },
+    {
+      "label": "early playback shows all 79 recorded completed actions",
+      "passed": true
+    },
+    {
+      "label": "terminal playback keeps the complete 351-action ledger total",
+      "passed": true
+    },
+    {
+      "label": "terminal candidate count retains all 2 candidates outside the recent event window",
+      "passed": true
+    },
+    {
+      "label": "Trail expands with the full terminal recording",
+      "passed": true
+    },
+    {
+      "label": "Trail pagination reaches stops beyond the first page",
+      "passed": true
+    },
+    {
+      "label": "expanded Trail finds actual document detail states",
+      "passed": true
+    },
+    {
+      "label": "no client runtime errors",
+      "passed": true
+    }
+  ],
+  "browserClosed": true
+}

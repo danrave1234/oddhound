@@ -20,7 +20,9 @@ export async function publicStatus() {
     killSwitch: kill,
     publicDailyLeftUsd: dailyLeft / 1e6,
     publicLifetimeLeftUsd: lifetimeLeft / 1e6,
-    liveRunsAvailable: !kill && dailyLeft > LIMITS.modelSpendPerRunMicros / 4 && lifetimeLeft > 0,
+    availableRunUsd: kill ? 0 : Math.min(LIMITS.modelSpendPerRunMicros, dailyLeft, lifetimeLeft) / 1e6,
+    // Keep the existing $0.50 admission headroom independent of the maximum run size.
+    liveRunsAvailable: !kill && Math.min(dailyLeft, lifetimeLeft) > 500_000,
     queued: queue.rows[0].n as number,
     active: active.rows[0].n as number,
     replayRunId: (replay.rows[0]?.id as string | undefined) ?? null,

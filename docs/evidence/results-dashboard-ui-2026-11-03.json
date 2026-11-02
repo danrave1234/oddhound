@@ -1,0 +1,55 @@
+{
+  "at": "2026-11-02T17:59:26.702Z",
+  "runId": "883c2266-0b91-4cc6-bb3b-fa4fd111cd80",
+  "recordingSha256": "209c0876afa5e487578d667dee3861efc4a26e3eea529b802144540ef4b4faea",
+  "chromium": "156.0.8078.4",
+  "checks": [
+    {
+      "label": "Chromium sandbox enabled",
+      "passed": true
+    },
+    {
+      "label": "finished run opens Results by default",
+      "passed": true
+    },
+    {
+      "label": "time-limited run stays explicitly partial and stopped",
+      "passed": true
+    },
+    {
+      "label": "actual zero issues, two review candidates and one observation remain distinct",
+      "passed": true
+    },
+    {
+      "label": "actual scope and outstanding gaps shown",
+      "passed": true
+    },
+    {
+      "label": "empty SEO view does not claim a passing audit",
+      "passed": true
+    },
+    {
+      "label": "security header remains an observation with accessible evidence entry",
+      "passed": true
+    },
+    {
+      "label": "finding selection opens existing evidence inspector",
+      "passed": true
+    },
+    {
+      "label": "dashboard fits a 390px viewport without horizontal overflow",
+      "passed": true
+    },
+    {
+      "label": "coverage action opens recorded controls and workflow details",
+      "passed": true
+    },
+    {
+      "label": "no browser client errors",
+      "passed": true
+    }
+  ],
+  "browserClosed": true,
+  "targetRequests": false,
+  "modelCalls": false
+}

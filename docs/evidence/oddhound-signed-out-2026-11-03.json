@@ -1,0 +1,29 @@
+{
+  "checkedAt": "2026-11-02T16:22:51.731Z",
+  "signedOut": true,
+  "cookiesSent": false,
+  "method": "read-only HTTP; no CTA activated or inference requested",
+  "checks": [
+    {
+      "path": "/",
+      "status": 200,
+      "landingChoices": {
+        "scan": true,
+        "demo": true,
+        "replay": true
+      }
+    },
+    {
+      "path": "/login",
+      "status": 200
+    },
+    {
+      "path": "/runs/883c2266-0b91-4cc6-bb3b-fa4fd111cd80",
+      "status": 404
+    },
+    {
+      "path": "/api/runs/883c2266-0b91-4cc6-bb3b-fa4fd111cd80/history?kind=events&limit=100",
+      "status": 404
+    }
+  ]
+}

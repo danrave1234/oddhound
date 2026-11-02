@@ -1,0 +1,52 @@
+▲ Next.js 16.4.3 (Turbopack)
+✓ Running next.config.ts took 261ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 10.3s
+  Running TypeScript ...
+  Finished TypeScript in 12.9s ...
+  Collecting page data using 15 workers ...
+  Generating static pages using 15 workers (0/9) ...
+  Generating static pages using 15 workers (2/9) 
+  Generating static pages using 15 workers (4/9) 
+  Generating static pages using 15 workers (6/9) 
+✓ Generating static pages using 15 workers (9/9) in 474ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ƒ /
+├ ○ /_not-found
+├ ƒ /api/admin/kill-switch
+├ ƒ /api/artifacts/[id]
+├ ƒ /api/auth/[...all]
+├ ƒ /api/demo/runs
+├ ƒ /api/findings/[id]/brief
+├ ƒ /api/findings/[id]/export
+├ ƒ /api/projects
+├ ƒ /api/projects/[id]/api-origins
+├ ƒ /api/projects/[id]/runs
+├ ƒ /api/projects/[id]/verify
+├ ƒ /api/runs/[id]
+├ ƒ /api/runs/[id]/events
+├ ƒ /api/runs/[id]/handoff
+├ ƒ /api/runs/[id]/history
+├ ƒ /api/runs/[id]/live
+├ ƒ /api/runs/[id]/preview
+├ ƒ /api/runs/[id]/retest
+├ ƒ /api/runs/[id]/stop
+├ ƒ /app
+├ ƒ /app/findings
+├ ƒ /app/projects/[id]
+├ ƒ /app/projects/new
+├ ƒ /app/reports
+├ ƒ /app/runs
+├ ○ /apple-icon.png
+├ ○ /icon.png
+├ ƒ /login
+├ ƒ /runs/[id]
+└ ƒ /status
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
