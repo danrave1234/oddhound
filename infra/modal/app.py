@@ -56,9 +56,9 @@ COMMON_ENV = {
     "ARTIFACT_STORE": "db",
     "ODDHOUND_ADMIN_EMAILS": "danravekeh123@gmail.com",
     "META_REASONING_EFFORT": "low",
-    # Development only (same as Fly): Muse Spark 1.3 at the "contributor" price. Remove before other
-    # owners' sites are scanned.
-    "META_MODEL": "muse-spark-1.3-contributor",
+    # Owners' sites use the standard tier; only the synthetic demo target uses the contributor tier.
+    "META_MODEL": "muse-spark-1.3",
+    "META_MODEL_DEMO": "muse-spark-1.3-contributor",
     "BETTER_AUTH_URL": url("oddhound-web"),
     "DEMO_TARGET_ORIGIN": url("oddhound-demo"),
     "DEMO_TARGET_RESET_URL": url("oddhound-demo") + "/__lab/reset",

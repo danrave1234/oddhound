@@ -101,11 +101,21 @@ export class OpenAICompatibleProvider implements ChatProvider {
   }
 }
 
+/**
+ * Which Meta model a run uses. Oddhound's own demo target holds only synthetic data, so it may use the
+ * cheaper contributor tier (META_MODEL_DEMO), whose data Meta may use. Owners' sites always use
+ * META_MODEL, so their page text never goes to the contributor tier by default.
+ */
+export function metaModelFor(kind: 'demo' | 'owner', env: NodeJS.ProcessEnv = process.env): string {
+  if (kind === 'demo' && env.META_MODEL_DEMO) return env.META_MODEL_DEMO;
+  return env.META_MODEL ?? 'muse-spark-1.3';
+}
+
 /** Build the primary/backup profiles from the environment. Missing keys leave a profile disabled. */
-export function providersFromEnv(env: NodeJS.ProcessEnv = process.env): OpenAICompatibleProvider[] {
+export function providersFromEnv(env: NodeJS.ProcessEnv = process.env, opts: { runKind?: 'demo' | 'owner' } = {}): OpenAICompatibleProvider[] {
   const out: OpenAICompatibleProvider[] = [];
   if (env.META_API_KEY) out.push(new OpenAICompatibleProvider({
-    id: 'meta-direct', label: 'Meta (direct API)', baseUrl: env.META_BASE_URL ?? 'https://api.meta.ai/v1', model: env.META_MODEL ?? 'muse-spark-1.3', apiKey: env.META_API_KEY,
+    id: 'meta-direct', label: 'Meta (direct API)', baseUrl: env.META_BASE_URL ?? 'https://api.meta.ai/v1', model: metaModelFor(opts.runKind ?? 'owner', env), apiKey: env.META_API_KEY,
     reasoningEffort: (env.META_REASONING_EFFORT as CompatibleProfile['reasoningEffort']) ?? 'low',
   }));
   if (env.BASETEN_API_KEY) out.push(new OpenAICompatibleProvider({

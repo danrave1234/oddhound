@@ -31,8 +31,15 @@ const runtime = runtimeFromEnv();
 const lab = labProfileFromEnv();
 const offline = !hosted && env.ODDHOUND_OFFLINE_TEST_DOUBLE === '1';
 
-function providers(): ChatProvider[] {
-  const real = providersFromEnv();
+/** Demo-target runs (and retests of them) hold synthetic data only; everything else is an owner's site. */
+async function runKind(runId: string): Promise<'demo' | 'owner'> {
+  const r = (await db.query<{ mode: string; parent_mode: string | null }>(
+    'SELECT r.mode, p.mode AS parent_mode FROM runs r LEFT JOIN runs p ON p.id = r.parent_run_id WHERE r.id = $1', [runId])).rows[0];
+  return r && (r.mode === 'demo_target' || (r.mode === 'retest' && r.parent_mode === 'demo_target')) ? 'demo' : 'owner';
+}
+
+function providers(kind: 'demo' | 'owner'): ChatProvider[] {
+  const real = providersFromEnv(env, { runKind: kind });
   if (real.length) return real;
   // Local development only: with no Meta key, runs use the clearly-labelled offline test double.
   return offline ? [new HeuristicTestPlanner()] : [];
@@ -45,7 +52,7 @@ process.on('unhandledRejection', (e) => log({ event: 'worker.unhandled_rejection
 
 const worker = startRunWorker(async (runId) => {
   log({ event: 'run.start', runId });
-  const status = await executeRun({ db, runtime, providers: providers(), workerId, lab, hosted, allowOfflineTestDouble: offline }, runId);
+  const status = await executeRun({ db, runtime, providers: providers(await runKind(runId)), workerId, lab, hosted, allowOfflineTestDouble: offline }, runId);
   log({ event: 'run.end', runId, status });
   return status;
 });
@@ -78,7 +85,7 @@ const idleTimer = idleExitMs > 0 ? setInterval(() => {
   if (activeJobs === 0 && Date.now() - lastActivity > idleExitMs) { log({ event: 'worker.idle_exit', idleMs: Date.now() - lastActivity }); void shutdown(); }
 }, 5_000) : null;
 
-log({ event: 'worker.ready', runtime: runtime.kind, providers: providers().map((p) => `${p.id}/${p.model}`), offlineTestDouble: offline, hosted });
+log({ event: 'worker.ready', runtime: runtime.kind, providers: providers('owner').map((p) => `${p.id}/${p.model}`), demoProviders: providers('demo').map((p) => `${p.id}/${p.model}`), offlineTestDouble: offline, hosted });
 
 const shutdown = async () => {
   clearInterval(timer);
