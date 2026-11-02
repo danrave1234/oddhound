@@ -701,3 +701,13 @@ details.disclosure > .disclosure-body { padding: 4px 14px 16px; display: grid; g
 .lp-hero .hero-note { display: block; }
 .lp-sheet-mark span { display: inline-flex; align-items: center; gap: 5px; }
 .lp-sheet-mark svg { margin: 0; vertical-align: 0; }
+
+/* ── Run instruments: plain numbers with real denominators ─────────────────────── */
+.instruments { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 12px 18px; margin: 0; padding: 14px 0 2px; border-top: 1px solid var(--separator); }
+.instruments div { display: grid; gap: 1px; min-width: 0; }
+.instruments dt { font-size: 12px; color: var(--text-3); }
+.instruments dd { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 22px; line-height: 1.15; white-space: nowrap; }
+.instruments dd small { font-family: var(--font); font-weight: 500; font-size: 12px; color: var(--text-3); }
+.instruments dd button { all: unset; cursor: pointer; border-radius: 4px; }
+.instruments dd button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.instruments .is-hot dd { color: var(--bad); }

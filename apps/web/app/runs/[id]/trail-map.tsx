@@ -41,12 +41,8 @@ export function TrailMap({ pages, live }: { pages: TrailPage[]; live: boolean })
     const row = Math.floor(i / perRow), col = i % perRow;
     return { ...s, x: PAD_X + (row % 2 === 0 ? col : perRow - 1 - col) * gap, y: TOP + row * ROW_H, row };
   });
-  let d = stops.length ? `M ${stops[0]!.x} ${stops[0]!.y}` : '';
-  for (let i = 1; i < stops.length; i++) {
-    const a = stops[i - 1]!, b = stops[i]!;
-    if (a.row === b.row) d += ` C ${(a.x + b.x) / 2} ${a.y - 14}, ${(a.x + b.x) / 2} ${b.y + 14}, ${b.x} ${b.y}`;
-    else { const bend = a.x + (a.row % 2 === 0 ? 44 : -44); d += ` C ${bend} ${a.y}, ${bend} ${b.y}, ${b.x} ${b.y}`; }
-  }
+  // Straight legs between controls, as on an orienteering course.
+  const d = stops.map((s, i) => `${i ? 'L' : 'M'} ${s.x} ${s.y}`).join(' ');
   const height = TOP + (stops.at(-1)?.row ?? 0) * ROW_H + 52;
   const latest = stops.find((s) => s.key === grouped.at(-1)?.key);
   const labelChars = Math.max(8, Math.min(Math.floor(gap / 7.2), 16));
@@ -78,7 +74,11 @@ export function TrailMap({ pages, live }: { pages: TrailPage[]; live: boolean })
             <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} aria-hidden focusable="false">
               <path d={d} className="tmap-path" />
               {stops.map((s) => <g key={s.key} transform={`translate(${s.x} ${s.y})`} className={`tmap-stop${s.key === latest?.key ? ' last' : ''}${selectedKey === s.key ? ' selected' : ''}${s.key === latest?.key && live ? ' fresh' : ''}`}>
-                <circle r={s.key === latest?.key ? 9 : 6.5} className="tmap-dot" />
+                {s.ordinal === 1
+                  ? <polygon points="0,-11 9.5,5.5 -9.5,5.5" className="tmap-dot tmap-start" />
+                  : <circle r={9} className="tmap-dot" />}
+                {s.key === latest?.key && !live && s.ordinal > 1 && <circle r={13} className="tmap-dot tmap-finish" />}
+                {s.ordinal > 1 && <text x={12} y={-9} className="tmap-num">{s.ordinal - 1}</text>}
                 {s.device === 'mobile' && <rect x={-2.5} y={-4} width={5} height={8} rx={1.2} className="tmap-phone" />}
                 <text y={24} textAnchor="middle" className="tmap-title">{short(pageName(s.route), labelChars)}</text>
                 <text y={38} textAnchor="middle" className="tmap-route">{short(s.visits > 1 ? `${s.route} ×${s.visits}` : s.route, labelChars + 2)}</text>

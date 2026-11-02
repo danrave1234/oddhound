@@ -5,7 +5,7 @@
 // while the agent works and is still when it is not. A demo replay can be played back in time.
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Icon, type IconName } from '@/ui/icons';
-import { CountUp, Ring, prefersReducedMotion, useNow } from '@/ui/motion';
+import { CountUp, prefersReducedMotion, useNow } from '@/ui/motion';
 import { statusLabel } from '@/ui/status';
 import { LIMITS } from '@core/contracts/limits.ts';
 import { TrailMap } from './trail-map';
@@ -126,16 +126,6 @@ export function LiveDeck({ snap, active, replay, onOpenBrowser, onOpenFindings }
     };
   }, [events, t, atEnd, run.status, snap.graph.states, snap.plan, snap.actions, snap.findings, snap.detectedSignals, snap.candidateCount]);
 
-  // ── Activity sparkline (events per time bucket) ────────────────────────────
-  const spark = useMemo(() => {
-    const until = atEnd ? (active && !replay ? now : endMs) : t;
-    const span = Math.max(30_000, until - startMs);
-    const n = 32, w = span / n;
-    const b = new Array(n).fill(0) as number[];
-    for (const e of model.seen) { const i = Math.min(n - 1, Math.floor((ts(e) - startMs) / w)); if (i >= 0) b[i]++; }
-    const max = Math.max(1, ...b);
-    return b.map((v) => v / max);
-  }, [model.seen, atEnd, active, replay, now, endMs, t, startMs]);
 
   // ── Toasts for findings and signals as they arrive ─────────────────────────
   const [toasts, setToasts] = useState<{ id: number; type: string; text: string }[]>([]);
@@ -225,27 +215,16 @@ export function LiveDeck({ snap, active, replay, onOpenBrowser, onOpenFindings }
             </div>
           </div>
 
-          {/* Gauges with real denominators */}
-          <div className="gauges">
-            <Ring label="actions (no limit)" value={model.actionsUsed} max={Math.max(50, model.actionsUsed * 1.25)} display={<CountUp value={model.actionsUsed} />} spoken={String(model.actionsUsed)} />
-            <Ring label={`of ${fmtClock(LIMITS.runWallClockMs)} time`} value={elapsedMs} max={LIMITS.runWallClockMs} display={fmtClock(elapsedMs)} spoken={fmtClock(elapsedMs)} tone="info" />
-            <Ring label={model.charters.length ? `of ${model.charters.length} plan items` : 'no plan yet'} value={planDone} max={Math.max(1, model.charters.length)} display={<CountUp value={planDone} />} spoken={String(planDone)} tone="ok" />
-            <Ring label={`of $${(snap.allowance.configuredCapMicros / 1e6).toFixed(2)} run maximum${active ? ` · $${(snap.allowance.availableMicros / 1e6).toFixed(2)} available` : ''}`} value={replay && !atEnd ? 0 : spendMicros} max={snap.allowance.configuredCapMicros}
-              display={replay && !atEnd ? '—' : `$${(spendMicros / 1e6).toFixed(2)}`} spoken={replay && !atEnd ? 'not shown during playback,' : `$${(spendMicros / 1e6).toFixed(2)}`} tone="warn" />
-          </div>
-
-          {/* Counters + sparkline */}
-          <div className="deck-foot">
-            <div className="counters">
-              <span><Icon name="browser" /><CountUp value={new Set(model.pages.map((pg) => pg.route)).size} /> pages</span>
-              <span><Icon name="question" /><CountUp value={model.candidates} /> candidates</span>
-              <button type="button" className={model.verified ? 'hot' : ''} onClick={onOpenFindings}><Icon name="bug" /><CountUp value={model.verified} /> verified</button>
-              <span><Icon name="sniff" /><CountUp value={model.signals} /> signals</span>
-            </div>
-            <div className="spark" role="img" aria-label="Recorded activity over the run">
-              {spark.map((v, i) => <i key={i} style={{ transform: `scaleY(${Math.max(0.06, v)})` }} />)}
-            </div>
-          </div>
+          {/* Plain instrument line: each number has its real denominator, nothing is a dial. */}
+          <dl className="instruments">
+            <div><dt>Elapsed</dt><dd className="tabular">{fmtClock(elapsedMs)}<small> of {fmtClock(LIMITS.runWallClockMs)}</small></dd></div>
+            <div><dt>Actions</dt><dd className="tabular"><CountUp value={model.actionsUsed} /></dd></div>
+            <div><dt>Pages</dt><dd className="tabular"><CountUp value={new Set(model.pages.map((pg) => pg.route)).size} /></dd></div>
+            <div><dt>Plan</dt><dd className="tabular">{model.charters.length ? <><CountUp value={planDone} /><small> of {model.charters.length}</small></> : <small>not yet</small>}</dd></div>
+            <div><dt>Candidates</dt><dd className="tabular"><CountUp value={model.candidates} /></dd></div>
+            <div className={model.verified ? 'is-hot' : undefined}><dt>Verified</dt><dd className="tabular"><button type="button" onClick={onOpenFindings} aria-label={`${model.verified} verified findings, open findings`}><CountUp value={model.verified} /></button></dd></div>
+            <div><dt>Model spend</dt><dd className="tabular">{replay && !atEnd ? <small>shown at the end</small> : <>${(spendMicros / 1e6).toFixed(2)}<small> of ${(snap.allowance.configuredCapMicros / 1e6).toFixed(2)}</small></>}</dd></div>
+          </dl>
         </div>
       </div>
 

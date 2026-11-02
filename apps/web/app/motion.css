@@ -299,11 +299,13 @@ a.proj-add:hover { background: var(--surface); }
 .trail-head { display: flex; align-items: baseline; gap: 10px; }
 .tmap { position: relative; width: 100%; min-width: 0; }
 .tmap svg { display: block; overflow: visible; }
-.tmap-path { fill: none; stroke: var(--blaze); stroke-width: 2.4; stroke-linecap: round; stroke-dasharray: 0.1 8; }
-.tmap-dot { fill: var(--surface); stroke: var(--accent); stroke-width: 2.4; }
-.tmap-stop.last .tmap-dot { fill: var(--blaze); stroke: var(--surface); stroke-width: 3; }
+.tmap-path { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.tmap-dot { fill: var(--surface); stroke: var(--accent); stroke-width: 2; }
+.tmap-finish { fill: none; }
+.tmap-num { font-family: var(--font-display); font-weight: 750; font-size: 13px; fill: var(--accent-text); font-variant-numeric: tabular-nums; }
+.tmap-stop.last .tmap-dot:not(.tmap-finish) { stroke-width: 3; }
 .tmap-phone { fill: none; stroke: var(--accent-text); stroke-width: 1.2; }
-.tmap-stop.last .tmap-phone { stroke: #fff; }
+
 .tmap-title { font-size: 12px; font-weight: 600; fill: var(--text); font-family: var(--font); }
 .tmap-route { font-size: 10.5px; fill: var(--text-3); font-family: var(--mono); }
 .tmap-hound { color: var(--text); transition: transform 900ms cubic-bezier(0.45, 0, 0.2, 1); }
