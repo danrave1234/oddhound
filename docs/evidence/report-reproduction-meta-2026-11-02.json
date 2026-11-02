@@ -1,0 +1,182 @@
+{
+  "at": "2026-11-02T19:45:57.537Z",
+  "report": "Hi, my friend booked a table and typed only spaces in the name box because she was in a hurry. It went through and now there is a booking with no name on it in our list. Shouldn't the form stop that?",
+  "runId": "6b8d83f1-32b5-4a92-a6f8-36817351d816",
+  "status": "completed",
+  "run": {
+    "status": "completed",
+    "stop_reason": null,
+    "sandbox_verdict": "sandbox_on",
+    "browser_state": "terminated",
+    "provider": "meta-direct",
+    "model": "muse-spark-1.3-contributor"
+  },
+  "verdict": [
+    {
+      "title": "Spaces-only guest name accepted for booking",
+      "verdict": "reproduced",
+      "findingId": "f4653262-de2c-400b-9178-890910c2ca86"
+    }
+  ],
+  "findings": [
+    {
+      "id": "52a81c45-1302-4052-b56d-e5a2790d64e1",
+      "title": "Pages can be framed by other sites",
+      "category": "configuration_observation",
+      "verification": "verified",
+      "rule_id": null
+    },
+    {
+      "id": "159f16f4-d69c-4389-9cad-7e22aaaf4e0c",
+      "title": "No Content-Security-Policy on HTML pages",
+      "category": "configuration_observation",
+      "verification": "verified",
+      "rule_id": null
+    },
+    {
+      "id": "99c34997-9cec-4176-b93c-d77e5ab0a6eb",
+      "title": "Another account can open booking detail page",
+      "category": "needs_review",
+      "verification": "inconclusive",
+      "rule_id": "B7"
+    },
+    {
+      "id": "65d085de-27c1-4bd5-ae4b-2044bf877099",
+      "title": "Edit allows party size 0",
+      "category": "needs_review",
+      "verification": "inconclusive",
+      "rule_id": "R1"
+    },
+    {
+      "id": "b22b480a-5ce0-49fc-a3ba-295161aa630c",
+      "title": "Whitespace-only guest name accepted",
+      "category": "needs_review",
+      "verification": "inconclusive",
+      "rule_id": "R2"
+    },
+    {
+      "id": "a2715c4d-e2fe-4dfe-86d7-a7b8f1fe5b41",
+      "title": "\"Book table\" is missing on a phone at /bookings/new",
+      "category": "needs_review",
+      "verification": "dismissed",
+      "rule_id": "R8"
+    },
+    {
+      "id": "60064a1b-cce7-4468-accf-365f8f63b3e4",
+      "title": "The page says \"Changes saved.\", but \"Notes (optional)\" is not saved",
+      "category": "verified_issue",
+      "verification": "verified",
+      "rule_id": "B11"
+    },
+    {
+      "id": "ea446e63-6ed2-46ab-a394-d9398d359a19",
+      "title": "Another account can see a user's record at /bookings/:id",
+      "category": "verified_issue",
+      "verification": "verified",
+      "rule_id": "B7"
+    },
+    {
+      "id": "127b3ae8-142f-4028-b0b2-0e95148d2c72",
+      "title": "Party size 0 accepted",
+      "category": "verified_issue",
+      "verification": "verified",
+      "rule_id": "R1"
+    },
+    {
+      "id": "eb62f82e-413c-4598-b649-b1c37d8d9b5c",
+      "title": "Party size 0 accepted for booking",
+      "category": "verified_issue",
+      "verification": "verified",
+      "rule_id": "R1"
+    },
+    {
+      "id": "f4653262-de2c-400b-9178-890910c2ca86",
+      "title": "Spaces-only guest name accepted for booking",
+      "category": "verified_issue",
+      "verification": "verified",
+      "rule_id": "R2"
+    },
+    {
+      "id": "70315e73-ecbb-40a3-8546-ab1a2cea7c71",
+      "title": "Saving from an out-of-date tab silently undoes \"Guest name\" saved in another tab",
+      "category": "verified_issue",
+      "verification": "verified",
+      "rule_id": "R6"
+    },
+    {
+      "id": "6dd7e596-2466-49df-a903-5e3cb006367a",
+      "title": "Total guests does not equal sum of Party column",
+      "category": "verified_issue",
+      "verification": "verified",
+      "rule_id": "R7"
+    },
+    {
+      "id": "49f69c56-6c9b-4b3e-a94f-f214f2196fb1",
+      "title": "\"Total guests:\" does not equal the sum of the \"Party\" values on /bookings",
+      "category": "verified_issue",
+      "verification": "verified",
+      "rule_id": "R7"
+    },
+    {
+      "id": "b7c6eac5-975a-4e44-a7fc-fbde51d98d77",
+      "title": "\"Edit booking\" is missing on a phone at /bookings/:id",
+      "category": "verified_issue",
+      "verification": "verified",
+      "rule_id": "R8"
+    },
+    {
+      "id": "8743ec73-d0ca-4fba-8d38-a98d6c744b06",
+      "title": "Pressing \"Book table\" twice creates 2 records",
+      "category": "verified_issue",
+      "verification": "verified",
+      "rule_id": "R9"
+    }
+  ],
+  "spendUsd": 0.147517,
+  "retest": {
+    "runId": "0eff609c-a810-4d49-a9e8-7aa33bd83db3",
+    "status": "completed",
+    "lifecycles": [
+      {
+        "title": "Another account can see a user's record at /bookings/:id",
+        "lifecycle": "fixed"
+      },
+      {
+        "title": "\"Edit booking\" is missing on a phone at /bookings/:id",
+        "lifecycle": "fixed"
+      },
+      {
+        "title": "Party size 0 accepted",
+        "lifecycle": "fixed"
+      },
+      {
+        "title": "Party size 0 accepted for booking",
+        "lifecycle": "fixed"
+      },
+      {
+        "title": "Pressing \"Book table\" twice creates 2 records",
+        "lifecycle": "fixed"
+      },
+      {
+        "title": "Saving from an out-of-date tab silently undoes \"Guest name\" saved in another tab",
+        "lifecycle": "fixed"
+      },
+      {
+        "title": "Spaces-only guest name accepted for booking",
+        "lifecycle": "fixed"
+      },
+      {
+        "title": "The page says \"Changes saved.\", but \"Notes (optional)\" is not saved",
+        "lifecycle": "fixed"
+      },
+      {
+        "title": "Total guests does not equal sum of Party column",
+        "lifecycle": "fixed"
+      },
+      {
+        "title": "\"Total guests:\" does not equal the sum of the \"Party\" values on /bookings",
+        "lifecycle": "open"
+      }
+    ]
+  }
+}
