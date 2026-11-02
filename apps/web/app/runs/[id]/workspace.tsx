@@ -1,4 +1,5 @@
 'use client';
+import { ProofChain } from './proof-chain';
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { HoundMark, Icon, type IconName } from '@/ui/icons';
@@ -479,6 +480,7 @@ function FindingInspector({ finding: f, controllable, onRetest, runActive, runMo
         <div className="obs"><div className="lbl"><Icon name="fail" /> Observed</div><p style={{ margin: 0 }}>{f.observed}</p></div>
       </div>
       {f.limitations && <section className="section"><h3 className="section-title">Limits</h3><p className="muted">{f.limitations}</p></section>}
+      {f.scenario_id && <ProofChain findingId={f.id} />}
       {f.scenario_id && (
         <div className="row" style={{ gap: 8 }}>
           <button className="btn btn-primary" onClick={copy}>{copyState === 'copied' ? <span className="pop-in" style={{ display: 'inline-flex' }}><Icon name="tick" /></span> : <Icon name="brief" />} {copyState === 'copied' ? 'Copied' : 'Copy fix prompt'}</button>

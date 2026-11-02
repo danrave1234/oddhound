@@ -1,40 +1,38 @@
 import Link from 'next/link';
-import { HoundMark, Icon, type IconName } from '@/ui/icons';
+import { HoundMark, Icon } from '@/ui/icons';
+import { Course } from '@/ui/course';
 import { publicStatus } from '@/lib/status-data';
+import { loadLandingRun } from '@/lib/landing-data';
 import { currentUser } from '@/lib/server';
 import { TryDemoButton } from './try-demo-button';
-import { HeroDemo } from './hero-demo';
+import { ProofView } from './runs/[id]/proof-chain';
 
 export const dynamic = 'force-dynamic';
 
-const STEPS: { title: string; detail: string }[] = [
-  { title: 'Prove you own the site', detail: 'Add a DNS record, a /.well-known file or a meta tag. Oddhound checks it again before every run.' },
-  { title: 'Let the hound explore', detail: 'A fresh, sandboxed browser signs up, edits and cancels the way a curious user would.' },
-  { title: 'Get replayed evidence', detail: 'Each suspect is re-run in a clean session. Only a broken rule with saved proof counts.' },
-  { title: 'Fix it and retest', detail: 'Paste the fix prompt into your coding AI. Retest runs the same check, unchanged.' },
+// What a scripted test usually does, next to what the agent is allowed to try (run contract, MVP §17).
+const BEYOND: { script: string; hound: string }[] = [
+  { script: 'Fills the booking form once with sensible values', hound: 'Books for 0 guests, a name made of spaces, one character over the limit, a date in the past' },
+  { script: 'Signs in as one test user', hound: 'Registers a second account and opens the first account’s records by ID' },
+  { script: 'Runs at one desktop size', hound: 'Repeats the flow on a 390 px phone and checks the buttons can still be pressed' },
+  { script: 'Follows the happy path', hound: 'Double-submits, presses Back mid-checkout, cancels and then edits' },
+  { script: 'Reports pass or fail', hound: 'Replays each failure twice in fresh sessions and checks a valid case before calling it a bug' },
 ];
 
-// Kinds of unexpected input and ordering the agent is allowed to try (run contract, MVP §17).
-const ODD = ['A party size of 0', 'A name made of spaces', 'One character over the limit', 'A second account', 'A 390px phone', 'Double submit',
-  'Back button mid-checkout', 'Cancel, then edit', 'A date in the past', 'Emoji in names', 'Required fields left empty', 'Someone else’s record ID'];
-
-const PROOF: { icon: IconName; title: string; body: string }[] = [
-  { icon: 'shield', title: 'Only sites you own', body: 'No verified ownership, no run. Private and internal addresses are refused even when a verified name points at them.' },
-  { icon: 'replay', title: 'Verified, not guessed', body: 'A candidate becomes an issue only when fresh replays break one of your rules and a valid case still passes.' },
-  { icon: 'retest', title: 'The same check after your fix', body: 'Retest replays the saved assertion. Nothing heals itself into a pass, and “no failures” means none in the tested scope.' },
-];
+const usd = (n: number) => (n < 0.01 && n > 0 ? '< $0.01' : `$${n.toFixed(2)}`);
 
 export default async function Landing() {
   const [status, user] = await Promise.all([publicStatus(), currentUser()]);
+  const recorded = await loadLandingRun(status.replayRunId).catch(() => null);
   const demoReason = status.killSwitch ? 'Live runs are paused right now.' : !status.liveRunsAvailable ? 'Today’s public budget is used up.' : !status.demoConfigured ? 'The demo target is not configured on this deployment.' : null;
   const scanHref = user ? '/app/projects/new' : '/login?next=/app/projects/new';
+  const runHref = recorded ? `/runs/${recorded.runId}?replay=1` : null;
+  const f = recorded?.featured;
   return (
     <div className="landing">
       <header className="site-nav">
         <div className="site-nav-inner">
           <Link href="/" className="brand"><HoundMark size={28} /> Oddhound</Link>
           <nav aria-label="Site">
-            <Link className="btn btn-ghost hide-sm" href="#how">How it works</Link>
             <Link className="btn btn-ghost" href="/status">Status</Link>
             {user ? <Link className="btn" href="/app">Open workspace</Link> : <Link className="btn" href="/login"><Icon name="signin" /> Sign in</Link>}
           </nav>
@@ -42,86 +40,90 @@ export default async function Landing() {
       </header>
 
       <main>
-        <section className="wrap hero3" aria-labelledby="hero-title">
-          <div className="hero3-grid">
-            <div className="hero3-copy">
-              <h1 id="hero-title" className="hero3-title">Find what you didn&apos;t test.</h1>
-              <p className="lead">
-                Oddhound is an AI tester running on Meta Muse Spark. It explores your web app in a real, isolated browser, signs up, books,
-                edits and cancels like a curious user, tries the odd things people actually do, and proves what breaks with replayed evidence.
-              </p>
-              <div className="hero-ctas">
-                <Link className="btn btn-primary btn-lg" href={scanHref}><Icon name="sniff" /> Scan your site</Link>
-                <TryDemoButton disabled={Boolean(demoReason)} reason={demoReason} />
-                {status.replayRunId
-                  ? <Link className="btn btn-ghost btn-lg" href={`/runs/${status.replayRunId}?replay=1`}><Icon name="eye" /> Watch a demo replay</Link>
-                  : <span className="btn btn-ghost btn-lg" aria-disabled="true" title="No recorded run yet"><Icon name="eye" /> No replay recorded yet</span>}
-              </div>
-              <p className="hero-note">
-                <Icon name="info" />
-                <span>The demo target is Oddhound&apos;s own booking app with labelled defects. No account needed.
-                  {status.liveRunsAvailable ? <> About <strong className="tabular" style={{ color: 'var(--text-2)' }}>${status.publicDailyLeftUsd.toFixed(2)}</strong> of today&apos;s shared budget is left.</> : ' The replay is always available.'}</span>
-              </p>
+        <section className="wrap lp-hero" aria-labelledby="hero-title">
+          <div className="lp-hero-copy">
+            <h1 id="hero-title" className="display">Find what you didn&apos;t test.</h1>
+            <p className="lead">
+              Oddhound sends a Meta Muse Spark agent through your web app in a fresh, sandboxed browser. It signs up, edits and cancels like a
+              curious user and tries what your test scripts skip. It reports a bug only after two fresh replays break your rule and a valid case still passes.
+            </p>
+            <div className="hero-ctas">
+              <TryDemoButton primary disabled={Boolean(demoReason)} reason={demoReason} />
+              <Link className="btn btn-lg" href={scanHref}><Icon name="sniff" /> Scan your site</Link>
             </div>
-            <HeroDemo />
+            <p className="hero-note">
+              The demo target is Oddhound&apos;s own booking app with labelled defects. No account needed.
+              {status.liveRunsAvailable ? <> <strong className="tabular">{usd(status.publicDailyLeftUsd)}</strong> of today&apos;s shared model budget is left.</> : ' Recorded runs stay available.'}
+            </p>
           </div>
+
+          {recorded && recorded.stops.length > 1 ? (
+            <figure className="lp-course" aria-labelledby="course-caption">
+              <figcaption id="course-caption" className="lp-course-head">
+                <span className="lp-course-title">A recorded run on the demo app</span>
+                {runHref && <Link href={runHref} className="lp-course-link">Open the run <Icon name="chevron" /></Link>}
+              </figcaption>
+              <Course stops={recorded.stops} width={560} height={recorded.stops.length > 5 ? 250 : 170}
+                label={`The agent's route through ${recorded.places} pages; a cross marks each page where a verified finding was proven.`} />
+              <table className="lp-sheet">
+                <caption className="sr-only">Pages visited in order</caption>
+                <tbody>
+                  {recorded.stops.slice(1).map((s, i) => (
+                    <tr key={s.key} className={s.failed ? 'is-failed' : undefined}>
+                      <th scope="row" className="tabular">{i + 1}</th>
+                      <td>{s.label}</td>
+                      <td className="lp-sheet-mark">{s.failed ? <span><Icon name="fail" /> Rule broken here</span> : null}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <dl className="lp-facts">
+                <div><dt>Actions</dt><dd className="tabular">{recorded.actions}</dd></div>
+                <div><dt>Verified bugs</dt><dd className="tabular">{recorded.verified}</dd></div>
+                {recorded.minutes !== null && <div><dt>Minutes</dt><dd className="tabular">{recorded.minutes}</dd></div>}
+                <div><dt>Model cost</dt><dd className="tabular">{recorded.offline ? '$0' : usd(recorded.spendUsd)}</dd></div>
+              </dl>
+              {recorded.offline && <p className="lp-course-note">This local recording used Oddhound&apos;s offline test double, not Meta inference.</p>}
+            </figure>
+          ) : (
+            <div className="lp-course lp-course-empty"><p className="muted">No recorded run yet. Start the demo to make the first one.</p></div>
+          )}
         </section>
 
-        <section className="wrap odd2" aria-labelledby="odd-title">
-          <h2 id="odd-title" className="h2">What the hound tries that test scripts forget</h2>
-          <ul className="odd2-list">{ODD.map((o) => <li key={o}>{o}</li>)}</ul>
-        </section>
-
-        <section id="how" className="wrap how2" aria-labelledby="how-title">
-          <h2 id="how-title" className="sec-title">How a run works</h2>
-          <ol className="how2-steps">
-            {STEPS.map((s, i) => (
-              <li key={s.title}>
-                <span className="how2-n" aria-hidden>{i + 1}</span>
-                <h3 className="h2">{s.title}</h3>
-                <p>{s.detail}</p>
-              </li>
-            ))}
-          </ol>
-        </section>
-
-        <section className="wrap proof" aria-labelledby="proof-title">
-          <div className="proof-intro">
-            <h2 id="proof-title" className="sec-title">Evidence first. Nothing invented.</h2>
-            <p className="lead">Every finding points to a rule you wrote and to proof from an independent replay. What wasn&apos;t tested is said plainly.</p>
-          </div>
-          <div className="proof-grid">
-            <article className="proof-feature" aria-label="Illustration of ownership proof and independent replays">
-              <div className="viz-own" aria-hidden>
-                <div className="vo-tabs"><span className="on">File</span><span>Meta tag</span><span>DNS TXT</span></div>
-                <div className="vo-code"><span className="muted">/.well-known/oddhound-verify.txt</span><span className="vo-type">oh_3f9a2c71e8…</span></div>
-                <span className="badge badge-ok vo-badge"><Icon name="check" />Verified</span>
-              </div>
-              <div className="viz-rep" aria-hidden>
-                <div className="vr-lane"><span>Replay 1</span><i className="vr-bar" /><Icon name="fail" /></div>
-                <div className="vr-lane"><span>Replay 2</span><i className="vr-bar" /><Icon name="fail" /></div>
-                <div className="vr-lane ok"><span>Valid case</span><i className="vr-bar" /><Icon name="check" /></div>
-              </div>
-            </article>
-            <ul className="proof-list">
-              {PROOF.map((p) => (
-                <li key={p.title}><span className="proof-icon"><Icon name={p.icon} /></span><div><h3 className="h3">{p.title}</h3><p>{p.body}</p></div></li>
-              ))}
-            </ul>
-          </div>
-        </section>
-
-        <section className="wrap">
-          <div className="cta-band">
-            <div className="cta-copy">
-              <h2 className="sec-title">Point the hound at your site.</h2>
-              <p>Verify it, approve what it may do, and watch it work. Or start with the demo, no account needed.</p>
-              <div className="row" style={{ gap: 10, marginTop: 8 }}>
-                <Link className="btn btn-lg cta-solid" href={scanHref}><Icon name="sniff" /> Scan your site</Link>
-                {status.replayRunId && <Link className="btn btn-lg cta-ghost" href={`/runs/${status.replayRunId}?replay=1`}><Icon name="eye" /> Watch a demo replay</Link>}
-              </div>
+        {f && (
+          <section className="wrap lp-proof" aria-labelledby="proof-title">
+            <div className="lp-proof-copy">
+              <h2 id="proof-title" className="h1">One finding, start to finish</h2>
+              <p className="lp-finding">{f.title}</p>
+              {f.ruleText && <p className="lp-rule"><span>Your rule</span>{f.ruleText}</p>}
+              <p className="lp-rule"><span>What happened</span>{f.observed}</p>
+              <p className="muted">Every check below is a saved replay in a fresh browser. The assertion is pinned by its hash, so a retest after your fix runs exactly the same check.</p>
             </div>
-            <span className="cta-mark hide-sm"><HoundMark size={112} /></span>
+            <div className="lp-proof-chain">
+              <ProofView findingId={f.findingId} chain={f} heading="The proof" />
+            </div>
+          </section>
+        )}
+
+        <section className="wrap lp-beyond" aria-labelledby="beyond-title">
+          <h2 id="beyond-title" className="h1">Where a test script stops</h2>
+          <table className="lp-compare">
+            <thead><tr><th scope="col">Your script</th><th scope="col">Oddhound also</th></tr></thead>
+            <tbody>{BEYOND.map((r) => <tr key={r.script}><td>{r.script}</td><td>{r.hound}</td></tr>)}</tbody>
+          </table>
+        </section>
+
+        <section className="wrap lp-limits" aria-labelledby="limits-title">
+          <h2 id="limits-title" className="h1">Limits, stated plainly</h2>
+          <dl>
+            <div><dt>Which sites</dt><dd>Only sites you prove you own with a DNS record, a file or a meta tag. Ownership is checked again before every run, and private or internal addresses are refused.</dd></div>
+            <div><dt>Which browser</dt><dd>A fresh, sandboxed Chromium for each run, with no Oddhound keys inside. Traffic goes through a filtering proxy, and the machine is destroyed when the run ends.</dd></div>
+            <div><dt>What it costs</dt><dd>Each run reserves at most $2 of model spend before any call. A daily ceiling and a kill switch protect the shared budget.</dd></div>
+            <div><dt>What a result means</dt><dd>A verified bug comes with saved replays. &ldquo;No failures&rdquo; means none in the tested scope, never that the app is bug-free.</dd></div>
+          </dl>
+          <div className="row" style={{ gap: 10 }}>
+            <Link className="btn btn-primary btn-lg" href={scanHref}><Icon name="sniff" /> Scan your site</Link>
+            {runHref && <Link className="btn btn-ghost btn-lg" href={runHref}><Icon name="eye" /> Inspect a recorded run</Link>}
           </div>
         </section>
       </main>

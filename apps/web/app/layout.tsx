@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import '@fontsource-variable/overpass/wght.css';
 import './globals.css';
 import './motion.css';
 
