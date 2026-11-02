@@ -4,7 +4,7 @@ import { describe, it, expect, beforeAll, beforeEach, afterAll } from 'vitest';
 import { getPool, closePool } from '../../packages/core/db/pool.ts';
 import { migrate } from '../../packages/core/db/migrate.ts';
 import { admitRun, assertLease, claimRun, FencedError, requestStop, reapStaleRuns, appendEvent, eventsAfter } from '../../packages/core/ledger/runs.ts';
-import { reserveSpend, settleSpend, markSpendUnknown, runSpend, setKillSwitch } from '../../packages/core/ledger/spend.ts';
+import { reserveSpend, settleSpend, markSpendUnknown, runSpend, setKillSwitch, spendAllowance } from '../../packages/core/ledger/spend.ts';
 import { demoTargetContract } from '../../packages/core/contracts/contract.ts';
 import { USD } from '../../packages/core/contracts/limits.ts';
 
@@ -26,13 +26,13 @@ beforeEach(async () => {
 afterAll(async () => { await closePool(); });
 
 describe('spend ledger (SELF-19)', () => {
-  it('concurrent reservations never exceed the $2 per-run cap', async () => {
+  it('concurrent reservations never exceed the approved $10 per-run cap', async () => {
     const runId = await newRun();
-    const results = await Promise.all(Array.from({ length: 20 }, (_, i) =>
+    const results = await Promise.all(Array.from({ length: 40 }, (_, i) =>
       reserveSpend(db, { runId, account: 'development', requestKey: `${runId}:${i}`, micros: 0.3 * USD, provider: 'meta-direct', model: 'muse-spark-1.3' })));
-    expect(results.filter((r) => r.ok).length).toBe(6); // 6 x $0.30 = $1.80; a 7th would exceed $2.00
+    expect(results.filter((r) => r.ok).length).toBe(33); // $9.90; another reservation would exceed $10.
     const s = await runSpend(db, runId);
-    expect(s.settled + s.outstanding).toBeLessThanOrEqual(2 * USD);
+    expect(s.settled + s.outstanding).toBeLessThanOrEqual(10 * USD);
   });
   it('the public daily ceiling holds across many runs racing at once (SELF-18)', async () => {
     const runs = await Promise.all(Array.from({ length: 6 }, () => newRun({ spendAccount: 'public' })));
@@ -44,15 +44,54 @@ describe('spend ledger (SELF-19)', () => {
   });
   it('unknown usage stays reserved; the same request key cannot reserve twice', async () => {
     const runId = await newRun();
-    const a = await reserveSpend(db, { runId, account: 'development', requestKey: 'k1', micros: 1.5 * USD, provider: 'p', model: 'm' });
-    const again = await reserveSpend(db, { runId, account: 'development', requestKey: 'k1', micros: 1.5 * USD, provider: 'p', model: 'm' });
+    const a = await reserveSpend(db, { runId, account: 'development', requestKey: 'k1', micros: 9.5 * USD, provider: 'p', model: 'm' });
+    const again = await reserveSpend(db, { runId, account: 'development', requestKey: 'k1', micros: 9.5 * USD, provider: 'p', model: 'm' });
     expect(a.ok && again.ok && a.reservationId === again.reservationId).toBe(true);
     await markSpendUnknown(db, 'k1');
     const b = await reserveSpend(db, { runId, account: 'development', requestKey: 'k2', micros: 0.6 * USD, provider: 'p', model: 'm' });
-    expect(b).toEqual({ ok: false, reason: 'run_cap' }); // the unknown $1.50 still counts
+    expect(b).toEqual({ ok: false, reason: 'run_cap' }); // the unknown $9.50 still counts
     await settleSpend(db, 'k1', 0.2 * USD, { inputTokens: 1 });
     const c = await reserveSpend(db, { runId, account: 'development', requestKey: 'k3', micros: 0.6 * USD, provider: 'p', model: 'm' });
     expect(c.ok).toBe(true);
+  });
+  it('keeps a historical allowance and cannot charge a different spending account', async () => {
+    const runId = await newRun({ spendAccount: 'public' });
+    await db.query('UPDATE runs SET model_spend_cap_micros = $2 WHERE id = $1', [runId, 2 * USD]);
+    expect(await reserveSpend(db, { runId, account: 'judging', requestKey: 'wrong-account', micros: USD, provider: 'p', model: 'm' }))
+      .toEqual({ ok: false, reason: 'invalid_amount' });
+    expect(await reserveSpend(db, { runId, account: 'public', requestKey: 'old-cap', micros: 3 * USD, provider: 'p', model: 'm' }))
+      .toEqual({ ok: false, reason: 'run_cap' });
+    expect(await spendAllowance(db, runId)).toMatchObject({ configuredCapMicros: 2 * USD, availableMicros: 2 * USD, limiting: 'run_cap' });
+  });
+  it('shows only the shared daily allowance left, including unknown and competing charges', async () => {
+    const runId = await newRun({ spendAccount: 'public' });
+    expect((await reserveSpend(db, { runId, account: 'public', requestKey: 'public-six', micros: 6 * USD, provider: 'p', model: 'm' })).ok).toBe(true);
+    await markSpendUnknown(db, 'public-six');
+    const other = await newRun({ spendAccount: 'public' });
+    await reserveSpend(db, { runId: other, account: 'public', requestKey: 'other-public', micros: 0.75 * USD, provider: 'p', model: 'm' });
+    expect(await spendAllowance(db, runId)).toMatchObject({ configuredCapMicros: 10 * USD, availableMicros: 0.25 * USD, limiting: 'daily_cap' });
+    expect(await reserveSpend(db, { runId, account: 'public', requestKey: 'too-much-public', micros: 0.3 * USD, provider: 'p', model: 'm' }))
+      .toEqual({ ok: false, reason: 'daily_cap' });
+    await setKillSwitch(db, true, 'test');
+    expect(await spendAllowance(db, runId)).toMatchObject({ availableMicros: 0, limiting: 'kill_switch' });
+  });
+  it('keeps the lifetime ceiling when a run could otherwise spend more', async () => {
+    const runId = await newRun({ spendAccount: 'public' });
+    const previous = (await db.query("SELECT lifetime_limit_micros FROM spend_accounts WHERE id = 'public'")).rows[0].lifetime_limit_micros;
+    try {
+      await db.query("UPDATE spend_accounts SET lifetime_limit_micros = $1 WHERE id = 'public'", [5 * USD]);
+      expect((await reserveSpend(db, { runId, account: 'public', requestKey: 'life-near', micros: 4.5 * USD, provider: 'p', model: 'm' })).ok).toBe(true);
+      expect(await spendAllowance(db, runId)).toMatchObject({ availableMicros: 0.5 * USD, limiting: 'lifetime_cap' });
+      expect(await reserveSpend(db, { runId, account: 'public', requestKey: 'life-over', micros: USD, provider: 'p', model: 'm' }))
+        .toEqual({ ok: false, reason: 'lifetime_cap' });
+    } finally { await db.query("UPDATE spend_accounts SET lifetime_limit_micros = $1 WHERE id = 'public'", [previous]); }
+  });
+  it('refuses a newly queued run when outstanding charges exhaust its daily account', async () => {
+    const runId = await newRun({ spendAccount: 'public' });
+    expect((await reserveSpend(db, { runId, account: 'public', requestKey: 'all-daily', micros: 7 * USD, provider: 'p', model: 'm' })).ok).toBe(true);
+    await markSpendUnknown(db, 'all-daily');
+    expect(await admitRun(db, { principal: 'test:no-funding', ownerId: null, projectId: null, mode: 'verified_site', contract: contract(), spendAccount: 'public' }))
+      .toEqual({ ok: false, reason: 'budget_unavailable' });
   });
   it('the kill switch blocks new model calls and new runs', async () => {
     const runId = await newRun();

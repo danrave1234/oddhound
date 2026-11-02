@@ -35,7 +35,9 @@ export async function reserveSpend(db: Db, req: ReserveRequest): Promise<Reserve
   return withTx(db, async (tx) => {
     // Serialize all reservations for this account (and the run) so concurrent callers cannot overshoot.
     await tx.query('SELECT id FROM spend_accounts WHERE id = $1 FOR UPDATE', [req.account]);
-    await tx.query('SELECT id FROM runs WHERE id = $1 FOR UPDATE', [req.runId]);
+    const run = (await tx.query<{ model_spend_cap_micros: string; spend_account: SpendAccount }>(
+      'SELECT model_spend_cap_micros, spend_account FROM runs WHERE id = $1 FOR UPDATE', [req.runId])).rows[0];
+    if (!run || run.spend_account !== req.account) return { ok: false, reason: 'invalid_amount' };
     const existing = await tx.query<{ id: string }>('SELECT id FROM spend_reservations WHERE request_key = $1', [req.requestKey]);
     if (existing.rows[0]) return { ok: true, reservationId: existing.rows[0].id };
     if (await killSwitchOn(tx)) return { ok: false, reason: 'kill_switch' };
@@ -43,7 +45,7 @@ export async function reserveSpend(db: Db, req: ReserveRequest): Promise<Reserve
     const acct = (await tx.query<{ lifetime_limit_micros: string; daily_limit_micros: string | null }>(
       'SELECT lifetime_limit_micros, daily_limit_micros FROM spend_accounts WHERE id = $1', [req.account])).rows[0]!;
     const runExposure = Number((await tx.query(`SELECT ${EXPOSURE} AS v FROM spend_reservations WHERE run_id = $1`, [req.runId])).rows[0].v);
-    if (runExposure + req.micros > LIMITS.modelSpendPerRunMicros) return { ok: false, reason: 'run_cap' };
+    if (runExposure + req.micros > Math.min(Number(run.model_spend_cap_micros), LIMITS.modelSpendPerRunMicros)) return { ok: false, reason: 'run_cap' };
     const day = utcDay();
     if (acct.daily_limit_micros !== null) {
       const dayExposure = Number((await tx.query(`SELECT ${EXPOSURE} AS v FROM spend_reservations WHERE account = $1 AND day_bucket = $2`, [req.account, day])).rows[0].v);
@@ -93,6 +95,28 @@ export async function accountExposure(db: Db, account: SpendAccount): Promise<{ 
       COALESCE(SUM(${exposureCase}), 0)::bigint AS lifetime
     FROM spend_reservations WHERE account = $1`, [account, utcDay()]);
   return { today: Number(r.rows[0].today), lifetime: Number(r.rows[0].lifetime) };
+}
+
+/** Informational snapshot only: reserveSpend remains the atomic authorization for every call.
+ * Include unknown/outstanding charges and the actual account policy, never promise unavailable funds. */
+export async function spendAllowance(db: Db, runId: string) {
+  const row = (await db.query(`SELECT r.model_spend_cap_micros, a.daily_limit_micros, a.lifetime_limit_micros,
+    (SELECT ${EXPOSURE} FROM spend_reservations WHERE run_id = r.id) AS run_exposure,
+    (SELECT ${EXPOSURE} FROM spend_reservations WHERE account = r.spend_account AND day_bucket = $2) AS daily_exposure,
+    (SELECT ${EXPOSURE} FROM spend_reservations WHERE account = r.spend_account) AS lifetime_exposure,
+    COALESCE((SELECT value = 'true'::jsonb FROM settings WHERE key = 'kill_switch'), false) AS killed
+    FROM runs r JOIN spend_accounts a ON a.id = r.spend_account WHERE r.id = $1`, [runId, utcDay()])).rows[0];
+  if (!row) throw new Error('Run spending account is unavailable');
+  const configuredCapMicros = Math.min(Number(row.model_spend_cap_micros), LIMITS.modelSpendPerRunMicros);
+  const runExposureMicros = Number(row.run_exposure);
+  const accountDailyRemainingMicros = row.daily_limit_micros === null ? null : Math.max(0, Number(row.daily_limit_micros) - Number(row.daily_exposure));
+  const accountLifetimeRemainingMicros = Math.max(0, Number(row.lifetime_limit_micros) - Number(row.lifetime_exposure));
+  const availableMicros = row.killed ? 0 : Math.max(0, Math.min(configuredCapMicros - runExposureMicros,
+    accountDailyRemainingMicros ?? Infinity, accountLifetimeRemainingMicros));
+  const limiting = row.killed ? 'kill_switch' as const
+    : accountDailyRemainingMicros !== null && availableMicros === accountDailyRemainingMicros ? 'daily_cap' as const
+    : availableMicros === accountLifetimeRemainingMicros ? 'lifetime_cap' as const : 'run_cap' as const;
+  return { configuredCapMicros, runExposureMicros, availableMicros, accountDailyRemainingMicros, accountLifetimeRemainingMicros, limiting };
 }
 
 export async function setKillSwitch(db: Db, on: boolean, actor: string): Promise<void> {

@@ -13,7 +13,7 @@ export const LIMITS = {
   queueEntryTtlMs: 105 * 60_000,
   browserActionsPerRun: Number.POSITIVE_INFINITY,
   modelTurnsPerRun: Number.POSITIVE_INFINITY,
-  modelSpendPerRunMicros: 2 * USD,
+  modelSpendPerRunMicros: 10 * USD, // Oct 30: owner-approved maximum; shared ledgers still apply.
   publicDailyMicros: 7 * USD,
   publicLifetimeMicros: 50 * USD,
   judgingReserveMicros: 15 * USD,

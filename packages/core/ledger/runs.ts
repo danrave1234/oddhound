@@ -19,7 +19,7 @@ export type AdmissionInput = {
 
 export type AdmissionResult =
   | { ok: true; runId: string }
-  | { ok: false; reason: 'kill_switch' | 'user_revoked' | 'principal_pending' | 'queue_full' | 'site_busy' | 'demo_hourly_limit' | 'demo_busy' };
+  | { ok: false; reason: 'kill_switch' | 'budget_unavailable' | 'user_revoked' | 'principal_pending' | 'queue_full' | 'site_busy' | 'demo_hourly_limit' | 'demo_busy' };
 
 export function canonicalJson(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(canonicalJson).join(',')}]`;
@@ -37,6 +37,18 @@ export async function admitRun(db: Db, input: AdmissionInput): Promise<Admission
     await tx.query('SELECT pg_advisory_xact_lock(777001)'); // one admission decision at a time
     const kill = await tx.query<{ value: unknown }>(`SELECT value FROM settings WHERE key = 'kill_switch'`);
     if (kill.rows[0]?.value === true) return { ok: false, reason: 'kill_switch' };
+    // Do not provision a browser when shared funding is already exhausted. This is an
+    // admission snapshot; every actual model attempt still obtains its atomic reservation.
+    const funding = (await tx.query(`SELECT lifetime_limit_micros, daily_limit_micros
+      FROM spend_accounts WHERE id = $1 FOR UPDATE`, [input.spendAccount])).rows[0];
+    const exposure = (await tx.query(`SELECT
+      COALESCE(SUM(CASE WHEN state = 'settled' THEN actual_micros WHEN state IN ('reserved','unknown') THEN reserved_micros ELSE 0 END),0)::bigint AS lifetime,
+      COALESCE(SUM(CASE WHEN state = 'settled' THEN actual_micros WHEN state IN ('reserved','unknown') THEN reserved_micros ELSE 0 END)
+        FILTER (WHERE day_bucket = $2),0)::bigint AS today
+      FROM spend_reservations WHERE account = $1`, [input.spendAccount, new Date().toISOString().slice(0, 10)])).rows[0];
+    if (!funding || Number(funding.lifetime_limit_micros) <= Number(exposure.lifetime) ||
+      (funding.daily_limit_micros !== null && Number(funding.daily_limit_micros) <= Number(exposure.today)))
+      return { ok: false, reason: 'budget_unavailable' };
     if (input.ownerId) {
       const u = await tx.query<{ revoked: boolean }>('SELECT revoked FROM "user" WHERE id = $1', [input.ownerId]);
       if (u.rows[0]?.revoked) return { ok: false, reason: 'user_revoked' };
@@ -62,10 +74,10 @@ export async function admitRun(db: Db, input: AdmissionInput): Promise<Admission
 
     const contractJson = canonicalJson(input.contract);
     const r = await tx.query<{ id: string }>(
-      `INSERT INTO runs (project_id, owner_id, principal, mode, origin, active_origins, environment, test_mode, contract, contract_hash, status, spend_account, parent_run_id)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'queued',$11,$12) RETURNING id`,
+      `INSERT INTO runs (project_id, owner_id, principal, mode, origin, active_origins, environment, test_mode, contract, contract_hash, status, spend_account, parent_run_id, model_spend_cap_micros)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'queued',$11,$12,$13) RETURNING id`,
       [input.projectId, input.ownerId, input.principal, input.mode, input.contract.target.origin, origins, input.contract.target.environment,
-        input.contract.testMode, contractJson, sha256(contractJson), input.spendAccount, input.parentRunId ?? null]);
+        input.contract.testMode, contractJson, sha256(contractJson), input.spendAccount, input.parentRunId ?? null, LIMITS.modelSpendPerRunMicros]);
     const runId = r.rows[0]!.id;
     await tx.query(`INSERT INTO audit_log (actor, action, origin, run_id, detail) VALUES ($1,'run_admitted',$2,$3,$4)`,
       [input.principal, input.contract.target.origin, runId, JSON.stringify({ mode: input.mode, spendAccount: input.spendAccount })]);
