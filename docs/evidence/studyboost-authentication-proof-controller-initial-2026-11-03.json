@@ -1,0 +1,8 @@
+{
+  "pass": false,
+  "phase": "controller before sanitized result",
+  "error": "Authentication probe failed without a sanitized result; private diagnostics withheld",
+  "controllerImage": "im-ZR0H1RZ7ERqNzQTePe5NGS",
+  "modelCalls": 0,
+  "correction": "Preserve configured controller Modal credentials while removing only container-identity variables, as the existing evaluation harness does."
+}

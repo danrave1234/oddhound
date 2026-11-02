@@ -1,0 +1,49 @@
+
+ RUN  v5.0.5 C:/Users/Danrave/Desktop/Project/Oddhound/claude
+
+ ❯ tests/integration/supplied-account-replay.test.ts (13 tests | 2 failed | 11 skipped) 22993ms
+   ❯ supplied test-account replays (7)
+     × submits the filled form instead of a same-named sign-in mode button 5527ms
+   ❯ supplied account through the worker (6)
+     × records the local return query needed to reproduce the observed login landing page 16353ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/integration/supplied-account-replay.test.ts > supplied test-account replays > submits the filled form instead of a same-named sign-in mode button
+AssertionError: expected 'blocked' to be 'passed' // Object.is equality
+
+Expected: "passed"
+Received: "blocked"
+
+ ❯ tests/integration/supplied-account-replay.test.ts:113:28
+    111|     const s = scenario(), hash = scenarioHash(s), before = logins;
+    112|     const result = await replayScenario(s, env());
+    113|     expect(result.outcome).toBe('passed');
+       |                            ^
+    114|     expect(logins - before).toBe(1);
+    115|     expect(scenarioHash(s)).toBe(hash);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  tests/integration/supplied-account-replay.test.ts > supplied account through the worker > records the local return query needed to reproduce the observed login landing page
+AssertionError: expected '/login' to be '/login?next=%2Fmy-room' // Object.is equality
+
+Expected: "/login?next=%2Fmy-room"
+Received: "/login"
+
+ ❯ tests/integration/supplied-account-replay.test.ts:268:46
+    266|     const scenarios = (await db.query('SELECT assertion, assertion_has…
+    267|     expect(scenarios).toHaveLength(1);
+    268|     expect(scenarios[0].assertion.auth.path).toBe('/login?next=%2Fmy-r…
+       |                                              ^
+    269|     expect(scenarioHash(scenarios[0].assertion)).toBe(scenarios[0].ass…
+    270|     const executions = (await db.query('SELECT outcome FROM scenario_e…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 11 skipped (13)
+   Start at  02:23:20
+   Duration  25.16s (tests 93%, import 3%, transform 3%)
+

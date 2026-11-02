@@ -15,6 +15,7 @@ const credRef = z.string().regex(/^cred_[A-Za-z0-9_-]{6,64}$/);
 /** The browser operations a step may use; each is validated and ledgered exactly like the single tools. */
 const stepShapes = {
   click: z.object({ tool: z.literal('click'), ref }),
+  hover: z.object({ tool: z.literal('hover'), ref }),
   fill: z.object({ tool: z.literal('fill'), ref, value: z.string().max(500) }),
   fill_credential: z.object({ tool: z.literal('fill_credential'), ref, credential_ref: credRef, field: z.enum(['username', 'password']) }),
   select_option: z.object({ tool: z.literal('select_option'), ref, value: z.string().max(200) }),
@@ -27,7 +28,7 @@ const stepShapes = {
 
 /** One browser step inside do_steps. */
 const StepSchema = z.discriminatedUnion('tool', [
-  stepShapes.click, stepShapes.fill, stepShapes.fill_credential, stepShapes.select_option,
+  stepShapes.click, stepShapes.hover, stepShapes.fill, stepShapes.fill_credential, stepShapes.select_option,
   stepShapes.press_key, stepShapes.navigate, stepShapes.go_back, stepShapes.scroll,
 ]);
 
@@ -38,7 +39,7 @@ const withExpect = <T extends z.ZodRawShape>(o: z.ZodObject<T>) => o.extend({ ex
 const byLabel = <T extends z.ZodRawShape & { ref: typeof ref }>(o: z.ZodObject<T>) =>
   withExpect(o).extend({ ref: ref.optional(), label: z.string().min(1).max(120).optional() });
 export const BatchStepSchema = z.discriminatedUnion('tool', [
-  byLabel(stepShapes.click), byLabel(stepShapes.fill), byLabel(stepShapes.fill_credential), byLabel(stepShapes.select_option),
+  byLabel(stepShapes.click), byLabel(stepShapes.hover), byLabel(stepShapes.fill), byLabel(stepShapes.fill_credential), byLabel(stepShapes.select_option),
   withExpect(stepShapes.press_key), withExpect(stepShapes.navigate), withExpect(stepShapes.go_back), withExpect(stepShapes.scroll), withExpect(stepShapes.drag),
 ]);
 export type BatchStep = z.infer<typeof BatchStepSchema>;
@@ -69,9 +70,14 @@ const BatchRefSchema = z.object({
 });
 
 export const ToolArgs = {
+  explore_next: z.object({ count: z.number().int().min(1).max(8).optional() }),
+  defer_page: z.object({ path: z.string().startsWith('/').max(300), status: z.enum(['blocked', 'skipped']), reason: z.string().min(5).max(240) }),
   observe: z.object({ screenshot: z.boolean().optional() }),
+  check_state: z.object({ expect: ExpectSchema }),
+  frontier_update: z.object({ id: z.string().min(1).max(80), reason: z.string().min(5).max(240) }),
   navigate: z.object({ path: z.string().startsWith('/').max(300) }),
   click: z.object({ ref }),
+  hover: z.object({ ref }),
   fill: z.object({ ref, value: z.string().max(500) }),
   fill_credential: z.object({ ref, credential_ref: credRef, field: z.enum(['username', 'password']) }),
   fill_form: z.object({ fields: z.array(z.union([
@@ -145,7 +151,7 @@ export const ToolArgs = {
 } as const;
 export type ToolName = keyof typeof ToolArgs;
 export type Charter = z.infer<typeof CharterSchema>;
-export const BROWSER_TOOLS = new Set<ToolName>(['navigate', 'click', 'fill', 'fill_credential', 'fill_form', 'select_option', 'press_key', 'scroll', 'go_back', 'set_device', 'use_actor', 'drag']);
+export const BROWSER_TOOLS = new Set<ToolName>(['navigate', 'click', 'hover', 'fill', 'fill_credential', 'fill_form', 'select_option', 'press_key', 'scroll', 'go_back', 'set_device', 'use_actor', 'drag']);
 
 /**
  * How the model is asked to drive the browser (R4 compares them on the same goals and budget):
@@ -199,6 +205,11 @@ const authRecipe = s({
 const form = s({ path: { type: 'string' }, fields: fieldMap, submit: { type: 'string' } }, ['path', 'fields', 'submit']);
 
 export const TOOL_DEFINITIONS: ToolDefinition[] = [
+  { type: 'function', function: { name: 'hover', description: 'Hover an observed control to reveal navigation or a tooltip. This is a browser action with the same scope and pacing as click.', parameters: s({ ref: refProp }, ['ref']) } },
+  { type: 'function', function: { name: 'check_state', description: 'Check an explicit expectation against the current page using trusted observations. Records the checked outcome separately from merely visiting or clicking.', parameters: s({ expect: expectProp }, ['expect']) } },
+  { type: 'function', function: { name: 'frontier_update', description: 'Record a concrete blocking reason for an attempted frontier entry. Unattempted pages cannot be dismissed just to finish.', parameters: s({ id: { type: 'string' }, reason: { type: 'string' } }, ['id', 'reason']) } },
+  { type: 'function', function: { name: 'explore_next', description: 'Visit the next discovered in-scope URLs in a breadth-first batch (default 6, maximum 8). Returns headings and interactables for planning; navigation is not a test. Use after login and whenever discovery has pending work. Stops on errors or authentication redirects.', parameters: s({ count: { type: 'integer', minimum: 1, maximum: 8 } }) } },
+  { type: 'function', function: { name: 'defer_page', description: 'Record why a discovered page cannot be tested (blocked prerequisite or deliberate skipped coverage). This remains a visible gap, never a pass. Use only with a concrete reason; do not skip work merely to finish early.', parameters: s({ path: { type: 'string' }, status: { type: 'string', enum: ['blocked', 'skipped'] }, reason: { type: 'string' } }, ['path', 'status', 'reason']) } },
   { type: 'function', function: { name: 'observe', description: 'Return a compact observation of the current page with element references. Set screenshot=true only when layout matters.', parameters: s({ screenshot: { type: 'boolean' } }) } },
   { type: 'function', function: { name: 'navigate', description: 'Open a path on the verified site (same origin only), e.g. "/items".', parameters: s({ path: { type: 'string' } }, ['path']) } },
   { type: 'function', function: { name: 'click', description: 'Click an element by reference, like a normal user.', parameters: s({ ref: refProp }, ['ref']) } },
@@ -254,6 +265,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
       description: 'Run up to 8 browser steps in order with ONE call (much cheaper than one tool call per step). Refs come from the latest observation; the run stops at the first failed step. You get one observation at the end. Use it for every predictable sequence: fill a form and submit, navigate then click, repeat a submit.',
       parameters: s({ steps: { type: 'array', maxItems: 8, items: { oneOf: [
         s({ tool: { const: 'click' }, ref: refProp }, ['tool', 'ref']),
+        s({ tool: { const: 'hover' }, ref: refProp }, ['tool', 'ref']),
         s({ tool: { const: 'fill' }, ref: refProp, value: { type: 'string' } }, ['tool', 'ref', 'value']),
         s({ tool: { const: 'fill_credential' }, ref: refProp, credential_ref: { type: 'string' }, field: { type: 'string', enum: ['username', 'password'] } }, ['tool', 'ref', 'credential_ref', 'field']),
         s({ tool: { const: 'select_option' }, ref: refProp, value: { type: 'string' } }, ['tool', 'ref', 'value']),
@@ -272,6 +284,7 @@ export const TOOL_DEFINITIONS: ToolDefinition[] = [
         goal: { type: 'string', description: 'What this batch tests, e.g. "quantity 0 and 101 are rejected; 100 is accepted"' },
         steps: { type: 'array', maxItems: 15, items: { oneOf: [
           s({ tool: { const: 'click' }, ref: refProp, label: labelProp, expect: expectProp }, ['tool']),
+          s({ tool: { const: 'hover' }, ref: refProp, label: labelProp, expect: expectProp }, ['tool']),
           s({ tool: { const: 'fill' }, ref: refProp, label: labelProp, value: fillValueProp, expect: expectProp }, ['tool', 'value']),
           s({ tool: { const: 'fill_credential' }, ref: refProp, label: labelProp, credential_ref: { type: 'string' }, field: { type: 'string', enum: ['username', 'password'] }, expect: expectProp }, ['tool', 'credential_ref', 'field']),
           s({ tool: { const: 'select_option' }, ref: refProp, label: labelProp, value: { type: 'string' }, expect: expectProp }, ['tool', 'value']),

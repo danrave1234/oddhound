@@ -1,0 +1,55 @@
+{
+  "id": "4639d5a1-abb6-49a9-8018-84645a615ad4",
+  "at": "2026-11-02T18:29:03.785Z",
+  "diagnostic": "authentication prerequisite only",
+  "modelCalls": 0,
+  "targetWrites": "two authorized sign-ins only",
+  "checks": [
+    {
+      "ownership": "https://preview.api.studyboost.com",
+      "verified": true
+    },
+    {
+      "ownership": "https://preview.studyboost.com",
+      "verified": true
+    },
+    {
+      "authPath": "/login",
+      "landedPath": "/my-room",
+      "savedSuccessTextReached": false,
+      "elapsedMs": 15174,
+      "loginResponses": [
+        {
+          "path": "/auth/login",
+          "status": 201
+        }
+      ],
+      "policyBlocks": []
+    },
+    {
+      "authPath": "/login?next=%2F",
+      "landedPath": "/",
+      "savedSuccessTextReached": true,
+      "elapsedMs": 2239,
+      "loginResponses": [
+        {
+          "path": "/auth/login",
+          "status": 201
+        }
+      ],
+      "policyBlocks": []
+    }
+  ],
+  "sandboxId": "sb-01M6ERBA5JS1GEKGE234M0NGCK",
+  "sandboxVerdict": "sandbox_on",
+  "chromium": "156.0.8078.4",
+  "node": "v26.12.1",
+  "pass": false,
+  "error": "Correctly recorded authentication did not succeed",
+  "cleanup": {
+    "confirmed": true,
+    "detail": "sandbox sb-01M6ERBA5JS1GEKGE234M0NGCK terminated (exit 137)"
+  },
+  "independentUnconfirmed": [],
+  "controllerImage": "im-ZR0H1RZ7ERqNzQTePe5NGS"
+}

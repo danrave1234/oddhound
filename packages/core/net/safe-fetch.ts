@@ -51,6 +51,17 @@ export async function resolvePublicAddresses(hostname: string, port: number, opt
 }
 
 export async function safeFetch(rawUrl: string, opts: SafeFetchOptions = {}): Promise<SafeFetchResult> {
+  return safeRequest(rawUrl, opts, 'GET', {});
+}
+
+/** Operator-only reset of the exact owned fixture origin; no arbitrary authenticated fetch API. */
+export async function resetOwnedFixture(origin: string, resetUrl: string, token: string, opts: SafeFetchOptions = {}): Promise<SafeFetchResult> {
+  const approved = new URL(origin), target = new URL(resetUrl);
+  if (approved.origin !== origin || target.origin !== origin || target.pathname !== '/__lab/reset' || target.search || target.hash || target.username || target.password || !token) throw new SafeFetchError('reset_scope_mismatch');
+  return safeRequest(resetUrl, { ...opts, maxBytes: 4096 }, 'POST', { 'x-lab-reset-token': token });
+}
+
+async function safeRequest(rawUrl: string, opts: SafeFetchOptions, method: 'GET' | 'POST', headers: Record<string, string>): Promise<SafeFetchResult> {
   const url = new URL(rawUrl);
   if (url.username || url.password) throw new SafeFetchError('credentials_in_url');
   const isHttps = url.protocol === 'https:';
@@ -67,9 +78,9 @@ export async function safeFetch(rawUrl: string, opts: SafeFetchOptions = {}): Pr
       host: address,
       port,
       path: `${url.pathname}${url.search}`,
-      method: 'GET',
+      method,
       servername: isHttps && !isIP(url.hostname) ? url.hostname : undefined,
-      headers: { host: url.host, 'user-agent': 'Oddhound/1.0 (+verification)', accept: 'text/html,text/plain;q=0.9', 'accept-encoding': 'identity' },
+      headers: { host: url.host, 'user-agent': 'Oddhound/1.0 (+verification)', accept: 'text/html,text/plain;q=0.9', 'accept-encoding': 'identity', ...headers },
       agent: false,
     }, (res) => {
       let size = 0;

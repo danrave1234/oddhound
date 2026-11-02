@@ -185,7 +185,7 @@ ${s.sequential ? '' : '  const tab2 = await page.context().newPage();\n  await t
 export function playwrightTest(s: Scenario, meta: { title: string; scenarioId: string; assertionHash: string }): string {
   const header = `// Oddhound regression test (exported). Scenario ${meta.scenarioId}, assertion ${meta.assertionHash.slice(0, 12)}.
 // Run: BASE_URL=https://your-staging-site npx playwright test oddhound-${meta.scenarioId.slice(0, 8)}.spec.ts
-// Uses synthetic accounts created during the test. Contains no credentials or session data.
+// Uses synthetic accounts or a separately supplied test account. Contains no credentials or session data.
 import { test, expect, type Page } from '@playwright/test';
 
 const BASE_URL = process.env.BASE_URL ?? '';
@@ -208,8 +208,11 @@ async function submitForm(page: Page, path: string, fields: Record<string, strin
 `;
   const recipe = 'auth' in s ? s.auth : undefined;
   const handoff = recipe?.kind === 'handoff';
+  const loginIdentity = recipe?.kind === 'login'
+    ? "  const who = { name: 'Oddhound Tester', email: process.env.TEST_ACCOUNT_USERNAME ?? '', password: process.env.TEST_ACCOUNT_PASSWORD ?? '' };\n  expect(Boolean(who.email && who.password), 'Set TEST_ACCOUNT_USERNAME and TEST_ACCOUNT_PASSWORD for the authorized test account').toBe(true);\n"
+    : '  const who = identity();\n';
   const auth = recipe && recipe.kind !== 'handoff'
-    ? `  const who = identity();\n  await submitForm(page, ${j(recipe.path)}, ${j(recipe.fields)}, ${j(recipe.submit)}, who);\n  await expect(page.getByText(${j(recipe.successText)})).toBeVisible();\n`
+    ? `${loginIdentity}  await submitForm(page, ${j(recipe.path)}, ${j(recipe.fields)}, ${j(recipe.submit)}, who);\n  await expect(page.getByText(${j(recipe.successText)})).toBeVisible();\n`
     : handoff
       ? '  // Recorded while signed in as the site owner. Save a signed-in session first:\n  //   npx playwright codegen --save-storage=auth.json <your site>, then run with STORAGE_STATE=auth.json\n  const who = identity();\n'
       : '';

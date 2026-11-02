@@ -7,9 +7,10 @@
 
 import { z } from 'zod';
 import { randomBytes } from 'node:crypto';
-import type { BrowserContext, Page } from 'playwright';
+import type { BrowserContext, Page, Locator } from 'playwright';
 import { canonicalJson, sha256 } from '../ledger/runs.ts';
-import { attachSentinels, checkPage, describeSignal, routeOf, type Signal } from '../browser/sentinels.ts';
+import { redactKnownSecrets } from '../ledger/credentials.ts';
+import { attachSentinels, checkPage, describeSignal, gatewayBlockReason, routeOf, type Signal } from '../browser/sentinels.ts';
 import { ExpectSchema, judgeExpectation, pageFacts } from './expect.ts';
 import { DOUBLE_PRESS_GAP_MS, INTERRUPTION_SETTLE_MS, claimVisible, judgeCrossActor, judgeInterruption, judgeInvariant, judgePersistence, judgeTwoTabs, occurrences, readTables, readView, rejectionShown, type Interruption, type PageView } from './behavior.ts';
 
@@ -22,6 +23,8 @@ export const FormAuthRecipeSchema = z.object({
   fields: FieldMap,
   submit: z.string().min(1).max(80),
   successText: z.string().min(1).max(120),
+  // Only a reference is saved; the worker resolves it against the current run's account grant.
+  credentialRef: z.string().regex(/^cred_[A-Za-z0-9_-]{6,64}$/).optional(),
 });
 /** The owner signed in through the live handoff; replays reuse that run's in-memory session. */
 export const HandoffAuthRecipeSchema = z.object({ kind: z.literal('handoff') });
@@ -234,6 +237,8 @@ export type ReplayEnv = {
   /** Signed-in sessions per replay role, so a verification batch registers at most two accounts. */
   sessions: Map<string, StorageState>;
   onIdentityCreated?: (role: string) => void;
+  /** Resolve only an account reference authorized by this run; login replays permit actor A only. */
+  resolveAccount?: (ref: string) => Promise<{ username: string; secret: string } | null>;
   /** The owner's signed-in session from this run's handoff (memory only; absent in later runs). */
   handoffState?: StorageState;
   /** Origins whose failures count as the site's own (the verified site and verified API hosts). */
@@ -257,42 +262,112 @@ export function expand(template: string, vars: Record<string, string>): string {
 
 async function fieldLocator(page: Page, key: string) {
   const byLabel = page.getByLabel(key, { exact: false });
-  if (await byLabel.count() > 0) return byLabel.first();
   const byName = page.locator(`[name="${key.replace(/"/g, '')}"]`);
-  if (await byName.count() > 0) return byName.first();
   const byPlaceholder = page.getByPlaceholder(key, { exact: false });
-  if (await byPlaceholder.count() > 0) return byPlaceholder.first();
-  throw new ReplayBlocked(`field not found: ${key}`);
+  // DOMContentLoaded may precede an SPA's login/form hydration. Wait for the same recorded
+  // selector candidates, in the same order; never repair the field name or saved assertion.
+  const deadline = Date.now() + 5_000;
+  do {
+    if (await byLabel.count() > 0) return byLabel.first();
+    if (await byName.count() > 0) return byName.first();
+    if (await byPlaceholder.count() > 0) return byPlaceholder.first();
+    await page.waitForTimeout(75);
+  } while (Date.now() < deadline);
+  throw new ReplayBlocked(`field not found within 5 seconds: ${key}`);
 }
 
 export async function fillAndSubmit(page: Page, origin: string, form: { path: string; fields: Record<string, string>; submit: string }, vars: Record<string, string>) {
   await page.goto(new URL(form.path, origin).toString(), { waitUntil: 'domcontentloaded' });
+  let filledForm: Locator | undefined;
+  const fields: Locator[] = [];
   for (const [key, template] of Object.entries(form.fields)) {
     const loc = await fieldLocator(page, key);
+    const ancestor = loc.locator('xpath=ancestor::form[1]');
+    if (!filledForm && await ancestor.count()) filledForm = ancestor;
+    if (filledForm && await filledForm.locator('*').and(loc).count() !== 1) throw new ReplayBlocked('recorded fields do not share one form');
+    fields.push(loc);
     await loc.fill(expand(template, vars), { timeout: 5_000 });
   }
-  const button = page.getByRole('button', { name: form.submit, exact: false });
-  if (await button.count() === 0) throw new ReplayBlocked(`submit not found: ${form.submit}`);
+  if (filledForm) for (const field of fields) {
+    if (await filledForm.locator('*').and(field).count() !== 1) throw new ReplayBlocked('recorded fields do not share one form');
+  }
+  // A mode selector or header action can have the same name as the submit. Use the form
+  // containing the recorded fields, keep the saved label exact, and refuse ambiguity.
+  const button = (filledForm ?? page).getByRole('button', { name: form.submit, exact: true });
+  try { await button.first().waitFor({ state: 'attached', timeout: 5_000 }); }
+  catch { throw new ReplayBlocked(`submit not found within 5 seconds: ${form.submit}`); }
+  if (await button.count() !== 1) throw new ReplayBlocked(`submit is ambiguous: ${form.submit}`);
   await button.first().click({ timeout: 5_000 }); // waits for the navigation it triggers to commit
   await page.waitForLoadState('domcontentloaded');
 }
 
 async function authenticate(page: Page, origin: string, auth: FormAuthRecipe, ident: { name: string; email: string; password: string }): Promise<void> {
-  // Login recipes need an account first: register with the same identity is not known, so a login
-  // recipe can only be replayed when the scenario was recorded with a supplied account (blocked otherwise).
-  if (auth.kind === 'login') throw new ReplayBlocked('login recipe requires a supplied account; replay uses fresh registrations');
+  // The caller resolves login references before opening a context. Registration uses a new identity.
   await fillAndSubmit(page, origin, auth, ident);
-  const body = await page.locator('body').innerText();
-  if (!body.includes(auth.successText)) throw new ReplayBlocked(`authentication did not reach success text "${auth.successText}"`);
+  const deadline = Date.now() + 5_000;
+  do {
+    const body = await page.locator('body').innerText({ timeout: 250 }).catch(() => '');
+    const passwordForm = await page.locator('input[type="password"]:visible').count();
+    const signOut = await page.getByRole('button', { name: /log ?out|sign ?out/i }).or(page.getByRole('link', { name: /log ?out|sign ?out/i })).count();
+    const signIn = await page.getByRole('button', { name: /^(?:sign ?in|log ?in|sign ?up|register)\b/i }).or(page.getByRole('link', { name: /^(?:sign ?in|log ?in|sign ?up|register)\b/i })).count();
+    const alerts = await page.getByRole('alert').allTextContents();
+    if (alerts.some((alert) => /error|invalid|required|incorrect|wrong|failed|unable|denied/i.test(alert))) break;
+    if (body.includes(auth.successText) && new URL(page.url()).pathname !== auth.path && (signOut > 0 || (passwordForm === 0 && signIn === 0))) return;
+    await page.waitForTimeout(100);
+  } while (Date.now() < deadline);
+  throw new ReplayBlocked(`authentication did not reach success text "${auth.successText}" without a sign-in form within 5 seconds`);
 }
 
 const shot = async (page: Page, label: string) => ({ label, data: await page.screenshot({ type: 'jpeg', quality: 60, fullPage: false }) });
 
 export async function replayScenario(s: Scenario, env: ReplayEnv): Promise<ReplayResult> {
+  const secrets = new Set<string>();
+  const gatewayBlocks: { reason: string; route: string; resourceType: string }[] = [];
+  let hadGatewayBlock = false, hadOwnGatewayBlock = false;
+  const inScope = env.inScope ?? ((origin: string) => origin === new URL(env.origin).origin);
+  let result = await replayScenarioInternal(s, {
+    ...env,
+    newContext: async (device, storageState) => {
+      const ctx = await env.newContext(device, storageState);
+      ctx.on('response', (r) => {
+        const reason = gatewayBlockReason(r);
+        if (!reason) return;
+        hadGatewayBlock = true;
+        const resourceType = r.request().resourceType();
+        let own = resourceType === 'document';
+        try { own ||= inScope(new URL(r.url()).origin); } catch { /* invalid URL */ }
+        hadOwnGatewayBlock ||= own;
+        if (gatewayBlocks.length < 20) gatewayBlocks.push({ reason, route: routeOf(r.url()), resourceType });
+      });
+      return ctx;
+    },
+    resolveAccount: async (ref) => {
+      const account = await env.resolveAccount?.(ref) ?? null;
+      if (account) secrets.add(account.secret);
+      return account;
+    },
+  });
+  // A refused target/API request can invalidate any assertion. A blocked third-party dependency can
+  // also cause a page error; it cannot be replayed as evidence that the target itself is defective.
+  if (hadOwnGatewayBlock || (hadGatewayBlock && s.kind === 'trace' && s.oracle.type === 'page_error')) {
+    result = { ...result, outcome: 'blocked', observed: 'Oddhound evaluation gateway blocked a request needed by this replay; no site defect was verified.', details: { ...result.details, gatewayBlocks } };
+  }
+  if (s.auth?.kind !== 'login') return result;
+  // Exact text redaction cannot prove arbitrary page pixels are safe. Keep these replays text-only.
+  return redactKnownSecrets({ ...result, screenshots: [], details: { ...result.details, screenshotsWithheld: 'Supplied-account credentials were used; pixel sanitization is not proved.' } }, secrets);
+}
+
+async function replayScenarioInternal(s: Scenario, env: ReplayEnv): Promise<ReplayResult> {
   const screenshots: ReplayResult['screenshots'] = [];
   const contexts: BrowserContext[] = [];
   /** Open a page for a replay role, signed in through the scenario's own auth recipe (cached per role). */
   const open = async (device: 'desktop' | 'mobile', role?: string, auth?: AuthRecipe) => {
+    let account: { username: string; secret: string } | null = null;
+    if (auth?.kind === 'login') {
+      if (role !== 'A') throw new ReplayBlocked('the supplied account is authorized only for actor A; a separate account is required');
+      account = auth.credentialRef ? await env.resolveAccount?.(auth.credentialRef) ?? null : null;
+      if (!account) throw new ReplayBlocked('login requires an account reference authorized by this run');
+    }
     if (auth?.kind === 'handoff') {
       // Only the owner's own account exists; it is never registered or signed in by the verifier.
       if (role !== 'A') throw new ReplayBlocked('a second account is not available: this run used the owner\'s own sign-in');
@@ -307,14 +382,17 @@ export async function replayScenario(s: Scenario, env: ReplayEnv): Promise<Repla
     contexts.push(ctx);
     const page = await ctx.newPage();
     if (key && auth && !cached) {
-      const ident = env.identity();
+      const ident = account ? { name: 'Oddhound Tester', email: account.username, password: account.secret } : env.identity();
       await authenticate(page, env.origin, auth, ident);
-      env.onIdentityCreated?.(role!);
+      if (auth.kind === 'register') env.onIdentityCreated?.(role!);
       env.sessions.set(key, await ctx.storageState());
     }
     return page;
   };
   try {
+    if ((s.kind === 'cross_account_read' || s.kind === 'cross_actor') && s.auth.kind === 'login') {
+      throw new ReplayBlocked('the supplied account is authorized only for actor A; a separate account is required');
+    }
     if (s.kind === 'form_rule') {
       const marker = `OH${randomBytes(4).toString('hex').toUpperCase()}`;
       const defect = scenarioDefect(s);

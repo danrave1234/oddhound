@@ -11,7 +11,7 @@ import { describeSignal, signalKey, type Signal } from '../browser/sentinels.ts'
 import type { RunStatus } from '../contracts/status.ts';
 import { appendEvent, assertLease, claimRun, FencedError, setRunStatus, refundIfNeverStarted } from '../ledger/runs.ts';
 import { reserveSpend, settleSpend, releaseSpend, markSpendUnknown } from '../ledger/spend.ts';
-import { resolveCredential, storeCredential, syntheticIdentity } from '../ledger/credentials.ts';
+import { resolveCredential, storeCredential, syntheticIdentity, redactKnownSecrets } from '../ledger/credentials.ts';
 import { saveArtifact } from '../artifacts/store.ts';
 import type { BrowserRuntime, ProvisionedBrowser } from '../browser/runtime.ts';
 import { newScopedContext } from '../browser/runtime.ts';
@@ -20,8 +20,12 @@ import { formatObservation, routePattern, stateFingerprint, type Observation } f
 import { judgeExpectation, pageFacts, type Expectation } from '../verifier/expect.ts';
 import { isBoundaryTemplate, resolveBoundary } from './boundary.ts';
 import { CoverageTracker } from './coverage.ts';
-import { runSpend } from '../ledger/spend.ts';
+import { authenticationReplayPath } from './auth-path.ts';
+import { NavigationFrontier } from './frontier.ts';
+import { OwnerPreview } from './preview.ts';
+import { runSpend, spendAllowance } from '../ledger/spend.ts';
 import type { LabProfile } from '../net/ip-policy.ts';
+import { resetOwnedFixture } from '../net/safe-fetch.ts';
 import { verifyOwnership, type VerificationMethod } from '../verification/ownership.ts';
 import { ProviderError, type ChatMessage, type ChatProvider, type ToolCall } from '../providers/types.ts';
 import { priceFor, inputTokenBound, reservationMicros, actualMicros } from '../providers/pricing.ts';
@@ -97,16 +101,16 @@ type StepInfo = { seq: number; error: string | null; notes: string[]; scopeBlock
 /** A scenario batch as Oddhound ran it: the ledgered action of each step and the model's expectation. */
 type BatchRecord = { no: number; goal: string; steps: { seq: number; expect?: Expectation; ok?: boolean; stated?: string }[] };
 
-/** At most this many automatic (detector) candidates per run, so verification fits in the run's time. */
-const MAX_DETECTOR_CANDIDATES = 10;
-
 type RunRow = {
+  owner_id: string | null;
   id: string; project_id: string | null; mode: string; origin: string; contract: unknown; spend_account: 'public' | 'judging' | 'development';
   parent_run_id: string | null; status: RunStatus;
+  model_spend_cap_micros: number | string;
 };
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 type StorageState = Awaited<ReturnType<RunSession['storageState']>>;
+type RunTimings = { modelMs: number; modelCalls: number; modelRetryWaitMs: number; browserMs: number; browserActions: number; verificationMs: number; verificationPhases: number };
 
 export async function executeRun(deps: ExecuteDeps, runId: string): Promise<RunStatus | null> {
   const { db } = deps;
@@ -114,6 +118,8 @@ export async function executeRun(deps: ExecuteDeps, runId: string): Promise<RunS
   if (generation === null) return null;
   const run = (await db.query<RunRow>('SELECT * FROM runs WHERE id = $1', [runId])).rows[0]!;
   const contract = RunContractSchema.parse(run.contract);
+  const startedAt = performance.now();
+  const timings: RunTimings = { modelMs: 0, modelCalls: 0, modelRetryWaitMs: 0, browserMs: 0, browserActions: 0, verificationMs: 0, verificationPhases: 0 };
   const ev = (type: string, payload: Record<string, unknown> = {}) => appendEvent(db, runId, type, payload);
   /** For callbacks nobody awaits: a failed event write must never become an unhandled rejection. */
   const evQuiet = (type: string, payload: Record<string, unknown> = {}) => { ev(type, payload).catch(() => {}); };
@@ -177,8 +183,8 @@ export async function executeRun(deps: ExecuteDeps, runId: string): Promise<RunS
         // A scale-to-zero host may take several seconds to wake, so allow 30 s and one retry. The failure records why.
         let ok = false; let why = '';
         for (let attempt = 1; attempt <= 2 && !ok; attempt++) {
-          const r = await fetch(resetUrl, { method: 'POST', headers: { 'x-lab-reset-token': process.env.ODDHOUND_FIXTURE_RESET_TOKEN ?? '' }, signal: AbortSignal.timeout(30_000) })
-            .then((res) => ({ ok: res.ok, why: `HTTP ${res.status}` }), (e: Error) => ({ ok: false, why: e.name === 'TimeoutError' ? 'timed out after 30 s' : 'unreachable' }));
+          const r = await resetOwnedFixture(contract.target.origin, resetUrl, process.env.ODDHOUND_FIXTURE_RESET_TOKEN ?? '', { timeoutMs: 30_000, lab: deps.lab })
+            .then((res) => ({ ok: res.status >= 200 && res.status < 300, why: `HTTP ${res.status}` }), () => ({ ok: false, why: 'reset scope, network or response refused' }));
           ok = r.ok; why = r.why;
           if (!ok && why.startsWith('HTTP 4')) break; // a wrong token will not fix itself
         }
@@ -188,7 +194,9 @@ export async function executeRun(deps: ExecuteDeps, runId: string): Promise<RunS
     }
 
     if (run.mode === 'retest') {
-      await executeRetest(deps, run, contract, generation, ev, (b) => { browser = b; });
+      const started = performance.now(); timings.verificationPhases++;
+      try { await executeRetest(deps, run, contract, generation, ev, (b) => { browser = b; }); }
+      finally { timings.verificationMs += performance.now() - started; }
       return await done();
     }
 
@@ -235,7 +243,7 @@ export async function executeRun(deps: ExecuteDeps, runId: string): Promise<RunS
     // 4. Exploration with the Meta model.
     const candidates: Candidate[] = [];
     const recorded: Recorded = { auth: handoffState ? { kind: 'handoff' } : null, labelsByPath: new Map(), controlsByPath: new Map(), submitByPath: new Map(), acceptedByPath: new Map(), createdBy: new Map(), creators: new Map() };
-    const loop = await agentLoop({ deps, runId, generation, contract, run, provider, price, session, ev, abort, candidates, recorded, egress });
+    const loop = await agentLoop({ deps, runId, generation, contract, run, provider, price, session, ev, abort, candidates, recorded, egress, timings });
     if (loop.stopReason) stopReason = loop.stopReason;
 
     // 5. Deterministic configuration observations from captured responses (no model involvement). Recorded
@@ -246,11 +254,13 @@ export async function executeRun(deps: ExecuteDeps, runId: string): Promise<RunS
     //    the run's expiry; candidates left over are recorded as not verified, never dropped.
     await ev('run.phase', { phase: 'verifying', candidates: candidates.length });
     const expiry = (await db.query<{ expires_at: Date | null }>('SELECT expires_at FROM runs WHERE id = $1', [runId])).rows[0]?.expires_at?.getTime() ?? Date.now() + 5 * 60_000;
-    await verifyCandidates({ db, runId, generation, run, contract, candidates, browser, ev, handoffState, deadline: expiry - 60_000 });
+    const verificationStarted = performance.now(); timings.verificationPhases++;
+    try { await verifyCandidates({ db, runId, generation, run, contract, candidates, browser, ev, handoffState, deadline: expiry - 60_000 }); }
+    finally { timings.verificationMs += performance.now() - verificationStarted; }
 
     // Truthful status: a model provider failure is a failed run, not a completed one.
     const ended = loop.stopReason === 'provider_error' ? 'failed'
-      : loop.stopReason?.startsWith('budget_') || loop.stopReason === 'limit_turns' || loop.stopReason === 'limit_actions' || loop.stopReason === 'egress_cap' ? 'stopped' : 'completed';
+      : loop.stopReason?.startsWith('budget_') || loop.stopReason === 'exploration_stalled' || loop.stopReason === 'limit_turns' || loop.stopReason === 'limit_actions' || loop.stopReason === 'egress_cap' ? 'stopped' : 'completed';
     await finish(ended, stopReason);
     return await done();
   } catch (e) {
@@ -285,6 +295,14 @@ export async function executeRun(deps: ExecuteDeps, runId: string): Promise<RunS
       await ev(d.confirmed ? 'browser.terminated' : 'browser.destroy_unconfirmed', { detail: d.detail, egress: browser.egressStats() });
     }
     await setRunStatus(db, runId, generation, finalStatus, { stopReason });
+    await ev('run.timings', {
+      clock: 'monotonic', totalElapsedMs: Math.round(performance.now() - startedAt),
+      model: { calls: timings.modelCalls, elapsedMs: Math.round(timings.modelMs), retryWaitMs: Math.round(timings.modelRetryWaitMs) },
+      browser: { actions: timings.browserActions, elapsedMs: Math.round(timings.browserMs) },
+      observation: session?.observationTiming ?? { count: 0, elapsedMs: 0 },
+      verification: { phases: timings.verificationPhases, elapsedMs: Math.round(timings.verificationMs) },
+      measurement: 'Model includes each provider attempt, with retry backoff separate. Browser measures dispatched exploration operations; observation includes render settling and private session redaction. Verification measures the independent replay phase including evidence work. Buckets do not cover provisioning, cleanup, pacing or all controller work.',
+    });
     await ev(`run.${finalStatus}`, { status: finalStatus, reason: stopReason ?? null });
     return finalStatus;
   }
@@ -304,7 +322,7 @@ function redactUrl(raw: string): string {
 type LoopArgs = {
   deps: ExecuteDeps; runId: string; generation: number; contract: RunContract; run: RunRow; provider: ChatProvider;
   price: NonNullable<ReturnType<typeof priceFor>>; session: RunSession; ev: (t: string, p?: Record<string, unknown>) => Promise<number>;
-  abort: AbortController; candidates: Candidate[]; recorded: Recorded;
+  abort: AbortController; candidates: Candidate[]; recorded: Recorded; timings: RunTimings;
   /** Set when the run's traffic cap is used up: the loop stops at its next turn. */
   egress?: { exhausted: string | null };
 };
@@ -323,24 +341,45 @@ export type Recorded = {
 };
 
 async function agentLoop(a: LoopArgs): Promise<{ stopReason?: string; summary?: string }> {
-  const { deps: { db }, runId, generation, contract, provider, price, session, ev, abort, candidates, recorded } = a;
+  const { deps: { db }, runId, generation, contract, provider, price, session, ev: rawEv, abort, candidates, recorded } = a;
+  const secrets = new Set<string>();
+  let checkedFrontier: NavigationFrontier | undefined;
+  const ev = (type: string, payload: Record<string, unknown> = {}) => {
+    if (type === 'scenario.finished' && ['passed', 'failed'].includes(String(payload.outcome)) && session.lastObservation) checkedFrontier?.checked(session.lastObservation.url, `${payload.family ?? 'scenario'}: ${payload.outcome}`);
+    return rawEv(type, session.redact(redactKnownSecrets(payload, secrets)));
+  };
   const mode: AgentMode = a.deps.agentMode ?? agentModeFromEnv();
   const tools = toolDefinitionsFor(mode);
   await ev('agent.mode', { mode, tools: tools.map((t) => t.function.name) });
-  let pendingAuth: { path: string; fields: Record<string, string> } | null = null;
+  type PendingAuth = { kind: 'register' | 'login'; credentialRef?: string; path: string; fields: Record<string, string>;
+    submitted?: { label: string; actor: string; device: string; deadline: number } };
+  let pendingAuth: PendingAuth | null = null;
+  const currentFormPath = async () => { const u = new URL((await session.page()).url()); return `${u.pathname}${u.search}`; };
   // The pages the site lists about itself, so the plan starts from the whole site, not only what one page links to.
   const allowedPath = (p: string) => {
     const path = new URL(p, contract.target.origin).pathname;
     return !contract.deniedPathPrefixes.some((d) => path.startsWith(d)) && !pathHasDeniedKeyword(path, contract.deniedPathKeywords);
   };
   const siteMap = await readSiteMap(await session.page(), contract.target.origin, allowedPath).catch(() => null);
-  const knownPaths = siteMap?.paths ?? [];
+  let sitemapQueue = siteMap?.remainingSitemaps ?? [];
+  let readSitemaps = siteMap?.sitemaps ?? [];
+  const knownPaths = (siteMap?.paths ?? []).filter(allowedPath);
+  const exploration = new NavigationFrontier(contract.target.origin, allowedPath);
+  checkedFrontier = exploration;
+  for (const path of siteMap?.paths ?? []) exploration.add(path, undefined, session.discoveryContext);
+  const discoveryLimits = {
+    remainingSitemaps: siteMap?.remainingSitemaps.length ?? 0, failedSitemaps: siteMap?.failedSitemaps.length ?? 0,
+    truncatedDocuments: siteMap?.truncatedDocuments.length ?? 0,
+    sample: [...siteMap?.remainingSitemaps ?? [], ...siteMap?.failedSitemaps ?? [], ...siteMap?.truncatedDocuments ?? []].slice(0, 20),
+  };
+  const preview = new OwnerPreview(db, runId, session, Boolean(a.run.owner_id) && a.run.mode !== 'demo_target');
   if (siteMap) await ev('site.mapped', { pages: knownPaths.length, fromSitemap: siteMap.sources.sitemap, fromLinks: siteMap.sources.links, sitemaps: siteMap.sitemaps, sample: knownPaths.slice(0, 30) });
+  if (discoveryLimits.remainingSitemaps || discoveryLimits.failedSitemaps || discoveryLimits.truncatedDocuments) await ev('site.discovery_incomplete', discoveryLimits);
   const listed = knownPaths.length
     ? `\nPages this site lists (sitemap.xml, robots.txt and links on the first page; ${knownPaths.length}${knownPaths.length > 80 ? ', first 80 shown' : ''}): ${knownPaths.slice(0, 80).join(', ')}. Use them to plan and to reach pages directly with navigate.`
     : '';
   const messages: ChatMessage[] = [
-    { role: 'system', content: systemPrompt(contract, mode) },
+    { role: 'system', content: systemPrompt(contract, mode, Number(a.run.model_spend_cap_micros)) },
     { role: 'user', content: `Begin. You are actor A on desktop, on ${contract.target.origin}/. Start with observe.${listed}` },
   ];
 
@@ -356,14 +395,14 @@ async function agentLoop(a: LoopArgs): Promise<{ stopReason?: string; summary?: 
     const last = session.lastObservation ? formatObservation(session.lastObservation) : 'No page observed yet.';
     const cov = coverage.summary();
     const todo = cov.unexercised.map((u) => `${u.route} ${u.kind} "${u.label}"`).join('; ');
-    const unvisited = knownPaths.filter((p) => !recorded.controlsByPath.has(new URL(p, contract.target.origin).pathname));
     return [
       'NOTEBOOK (kept by Oddhound; the earlier conversation was compacted to save cost)',
       `Budget: ${budgetText()}. Turn ${turns}, last action #${seq}. You are actor ${session.actor} on ${session.device}.`,
-      recorded.auth ? `Sign-up recipe that worked: ${recorded.auth.kind === 'handoff' ? 'owner handoff session' : `${recorded.auth.path} -> "${recorded.auth.successText}"`}` : 'No sign-up recorded yet.',
+      recorded.auth ? `Authentication recipe that worked: ${recorded.auth.kind === 'handoff' ? 'owner handoff session' : `${recorded.auth.kind} at ${recorded.auth.path} -> "${recorded.auth.successText}"`}` : 'No authentication recorded yet.',
       `Synthetic identities:\n${ids.join('\n') || '- none'}`,
       `Pages seen:\n${pages.join('\n') || '- none'}`,
-      ...(unvisited.length ? [`Pages the site lists that you have not visited (${unvisited.length}): ${unvisited.slice(0, 40).join(', ')}`] : []),
+      exploration.hint(),
+      `Sitemap discovery limits: ${discoveryLimits.remainingSitemaps} known sitemap documents unread; ${discoveryLimits.failedSitemaps} missing, refused or unreadable; ${discoveryLimits.truncatedDocuments} truncated at the byte limit. These remain discovery gaps, not tested coverage.`,
       `Test plan:\n${charters.join('\n') || '- none yet: call plan_tests'}`,
       `Findings recorded so far:\n${found.join('\n') || '- none'}`,
       `Coverage: ${cov.exercised} of ${cov.total} controls on ${cov.pages} observed page(s) exercised; ${cov.blocked} blocked by policy.${todo ? ` Not yet exercised (sample): ${todo}.` : ''}`,
@@ -373,16 +412,14 @@ async function agentLoop(a: LoopArgs): Promise<{ stopReason?: string; summary?: 
   };
   const toolsJson = JSON.stringify(tools);
   const identities: { ref: string; name: string; email: string }[] = [];
-  const secrets = new Set<string>();
-  let turns = 0, actions = 0, lastActionAt = 0, nudges = 0, seq = 0;
+  let turns = 0, actions = 0, lastActionAt = 0, seq = 0;
   let previousState: string | null = null;
   let finished: string | undefined;
+  let finishStopReason: string | undefined;
   const stepLog: StepRecord[] = [];
   let quietSteps = false; // true while do_steps runs: intermediate steps return one line, not a page
   const seenSignals = new Set<string>();
   const plan = new Map<string, Charter>();
-  let finishRefusals = 0;
-  let detectorCandidates = 0;
   // Values typed into forms on the current path, so a later submit can be recorded as accepted or not.
   const typed = new Map<string, Map<string, string>>();
   const noteTyped = async (label: string | null, value: string) => {
@@ -409,7 +446,7 @@ async function agentLoop(a: LoopArgs): Promise<{ stopReason?: string; summary?: 
       recorded.acceptedByPath?.set(path, acc);
       // Only a form on a record-free path (e.g. /bookings/new) creates records; saving /bookings/4/edit does not,
       // and neither does a sign-up or sign-in form (its landing page may carry a flag such as ?welcome=1).
-      const authForm = pendingAuth?.path === path || (recorded.auth && 'path' in recorded.auth && recorded.auth.path === path);
+      const authForm = (pendingAuth && new URL(pendingAuth.path, contract.target.origin).pathname === path) || (recorded.auth && 'path' in recorded.auth && new URL(recorded.auth.path, contract.target.origin).pathname === path);
       if (!authForm && !/\/\d{1,12}(\/|$)/.test(path)) {
         for (const id of recordIdsInUrl(o.url)) {
           if (recorded.createdBy?.has(id)) continue;
@@ -450,15 +487,22 @@ async function agentLoop(a: LoopArgs): Promise<{ stopReason?: string; summary?: 
     return null;
   });
   const emitCoverage = async () => {
+    const discovery = exploration.summary();
+    const changes = exploration.drainChanges();
+    // Delta chunks persist the frontier without repeating a huge route inventory on every action.
+    for (let start = 0; start < changes.length; start += 100) await ev('exploration.updated', { revision: discovery.revision, changes: changes.slice(start, start + 100), summary: discovery });
     const cov = coverage.summary();
-    const key = `${cov.total}/${cov.exercised}/${cov.blocked}/${cov.pages}`;
+    const key = JSON.stringify(cov);
     if (key === lastCoverage) return;
     lastCoverage = key;
     await ev('coverage.updated', cov);
   };
   // Leave time at the end for independent verification (replays) before the run's hard expiry.
   let spentMicros = 0;
+  let allowance = await spendAllowance(db, runId);
   let wrapUpSent = false;
+  let finishRefusalKey = '', finishRefusalStreak = 0, noToolReplies = 0;
+  let invalidToolKey = '', invalidToolStreak = 0;
   const expiresAt = (await db.query<{ expires_at: Date | null }>('SELECT expires_at FROM runs WHERE id = $1', [runId])).rows[0]?.expires_at?.getTime() ?? Date.now() + LIMITS.runWallClockMs;
   const verificationReserveMs = () => Math.min(6 * 60_000, 90_000 + candidates.length * 35_000);
 
@@ -511,11 +555,11 @@ async function agentLoop(a: LoopArgs): Promise<{ stopReason?: string; summary?: 
   };
 
   /** Turn new sentinel signals from the last action into verified-on-replay candidates. */
-  const handleSignals = async (tool: ToolName | InternalTool, actionSeq: number, drained: { signals: Signal[]; scopeBlocked: boolean }): Promise<string[]> => {
+  const handleSignals = async (tool: ToolName | InternalTool, actionSeq: number, drained: { signals: Signal[]; scopeBlocked: boolean }, listedNavigation = false): Promise<string[]> => {
     const notes: string[] = [];
     for (const sig of drained.signals) {
-      // A 404 after the model typed a URL itself is not a broken link on the site.
-      if (sig.kind === 'http_404' && tool === 'navigate') continue;
+      // A guessed URL is not a broken site link. A destination advertised before this action is.
+      if (sig.kind === 'http_404' && tool === 'navigate' && !listedNavigation) continue;
       const key = signalKey(sig);
       if (seenSignals.has(key)) continue;
       seenSignals.add(key);
@@ -526,7 +570,6 @@ async function agentLoop(a: LoopArgs): Promise<{ stopReason?: string; summary?: 
       }
       await ev('signal.detected', { rule: sig.rule, kind: sig.kind, detail: describeSignal(sig), actionSeq });
       notes.push(`ODDHOUND DETECTED (${sig.rule}): ${describeSignal(sig)}. Recorded automatically for replay; do not report it again. Look for related problems nearby.`);
-      if (detectorCandidates >= MAX_DETECTOR_CANDIDATES) continue;
       const t = traceFor(actionSeq);
       if (typeof t === 'string') { await ev('signal.not_replayable', { rule: sig.rule, reason: t }); continue; }
       const oracle: Oracle = sig.kind === 'http_5xx' ? { type: 'http_status', min: 500, max: 599, method: sig.method, route: sig.route }
@@ -539,14 +582,47 @@ async function agentLoop(a: LoopArgs): Promise<{ stopReason?: string; summary?: 
       const scenario: Scenario = { kind: 'trace', device: t.device, ...(auth ? { auth } : {}), start: t.start, steps: t.steps, oracle };
       const rule = BASELINE_RULES.find((r) => r.id === sig.rule)!;
       candidates.push({ title: titleForSignal(sig), ruleId: sig.rule, impact: BASELINE_IMPACT[sig.rule] ?? 'medium', observed: describeSignal(sig), scenario, actor: t.actor, device: t.device, source: 'detector' });
-      detectorCandidates++;
       await ev('finding.candidate', { title: titleForSignal(sig), ruleId: rule.id, kind: 'trace', source: 'detector' });
     }
     return notes;
   };
 
+  const finishPendingAuth = async (o: Observation) => {
+    const pending = pendingAuth, submitted = pending?.submitted;
+    if (!pending || !submitted || recorded.auth) return;
+    if (Date.now() > submitted.deadline || session.actor !== submitted.actor || session.device !== submitted.device) { pendingAuth = null; return; }
+    if (o.alerts.some((alert) => /error|invalid|required|already|incorrect|wrong|failed|unable|denied/i.test(alert))) { pendingAuth = null; return; }
+    if (new URL(o.url).pathname === new URL(pending.path, contract.target.origin).pathname) return;
+    // A redirect alone is not evidence of sign-in. Wait for the password/sign-in form to disappear
+    // and an observed post-login control/heading. The heading fallback is evidence, not identity proof.
+    const signOut = o.elements.find((e) => (e.kind === 'button' || e.kind === 'link') && /log ?out|sign ?out/i.test(e.label));
+    if (!signOut && o.elements.some((e) => e.type === 'password' || ((e.kind === 'button' || e.kind === 'link') && /^(?:sign ?in|log ?in|sign ?up|register)\b/i.test(e.label)))) return;
+    const heading = o.headings.find((text) => text.trim() && !/log ?in|sign ?in|sign ?up|register|error|denied|failed|loading/i.test(text));
+    const successText = signOut?.label ?? heading;
+    if (!successText) return;
+    const replayPath = authenticationReplayPath(pending.path, contract.target.origin);
+    if (!replayPath) {
+      pendingAuth = null;
+      await ev('recipe.unavailable', { kind: pending.kind, reason: 'unsupported_authentication_url_state' });
+      return;
+    }
+    recorded.auth = { kind: pending.kind, ...(pending.credentialRef ? { credentialRef: pending.credentialRef } : {}), path: replayPath, fields: pending.fields, submit: submitted.label, successText };
+    exploration.authenticated();
+    pendingAuth = null;
+    await ev('recipe.recorded', { kind: recorded.auth.kind, path: pending.path, fields: Object.keys(pending.fields), successText });
+    const workflow = pending.kind === 'login' ? 'Sign in' : 'Registration';
+    const summary = `${workflow} at ${pending.path} reached "${successText}" (recorded by Oddhound).`;
+    await db.query(`INSERT INTO workflows (run_id, name, status, summary) VALUES ($1,$2,'completed',$3)
+      ON CONFLICT (run_id, name) DO UPDATE SET status = 'completed', updated_at = now()`, [runId, workflow, summary]);
+    await ev('workflow.updated', { name: workflow, status: 'completed', summary });
+  };
+
   const recordState = async (o: Observation, label: string, actionId: string | null): Promise<boolean> => {
+    await finishPendingAuth(o);
+    for (const url of session.drainNavigations()) exploration.navigation(url);
+    exploration.observe(o, session.discoveryContext);
     coverage.observe(o);
+    await preview.update().catch(() => {});
     const path = new URL(o.url).pathname;
     if (plan.size && !recorded.controlsByPath.has(path)) pagesSincePlan.add(path);
     const labels = recorded.labelsByPath.get(path) ?? new Set<string>();
@@ -589,8 +665,11 @@ async function agentLoop(a: LoopArgs): Promise<{ stopReason?: string; summary?: 
     const step = toStep(tool, args);
     const urlBeforePath = (() => { try { const u = new URL(page.url()); return `${u.pathname}${u.search}`; } catch { return '/'; } })();
     const actedOn = session.turnObservation; // the snapshot whose refs this action used
+    const listedNavigation = tool === 'navigate' && exploration.wasListed(args.path, session.discoveryContext);
     let error: string | null = null;
+    const actionStarted = performance.now(); a.timings.browserActions++;
     try { await fn(); } catch (e) { error = (e as Error).message.split('\n')[0]!.slice(0, 240); }
+    finally { a.timings.browserMs += performance.now() - actionStarted; }
     if (!error && actedOn) {
       const refs = [args.ref, args.target, ...(Array.isArray(args.fields) ? args.fields.map((f: { ref?: string }) => f.ref) : [])];
       for (const r of refs) if (typeof r === 'string') coverage.exercise(actedOn, r);
@@ -599,11 +678,13 @@ async function agentLoop(a: LoopArgs): Promise<{ stopReason?: string; summary?: 
     const left = await session.enforceMainFrameOrigin();
     if (left) await ev('scope.denied', { url: redactUrl(left), reason: 'main_frame_left_verified_origin', recovered: true });
     const after = (await session.page()).url();
+    if (tool === 'navigate') exploration.attempted(args.path, after, error);
+    if (tool === 'click' && actedOn && typeof args.ref === 'string') exploration.exercised(actedOn, args.ref, error);
     await db.query(`UPDATE actions SET state = $2, result = $3, url_after = $4, completed_at = now() WHERE id = $1`,
       [actionId, error ? 'failed' : 'succeeded', JSON.stringify({ error }), redactUrl(after)]);
     await ev('action.finished', { actionId, seq: mySeq, tool, description: describe, ok: !error, error, url: redactUrl(after) });
     const drained = await session.drainSignals();
-    const notes = await handleSignals(tool, mySeq, drained);
+    const notes = await handleSignals(tool, mySeq, drained, listedNavigation);
     const dialogs = session.drainDialogs();
     if (dialogs.length) await ev('dialog.dismissed', { seq: mySeq, dialogs });
     const o = await session.observe();
@@ -616,7 +697,7 @@ async function agentLoop(a: LoopArgs): Promise<{ stopReason?: string; summary?: 
   };
 
   /** Money and time left: the only budgets (turns and actions are not capped). */
-  const budgetText = () => `$${(spentMicros / 1e6).toFixed(3)} of $${(LIMITS.modelSpendPerRunMicros / 1e6).toFixed(2)} spent, ${Math.max(0, Math.round((expiresAt - Date.now()) / 60_000))} min left`;
+  const budgetText = () => `$${(spentMicros / 1e6).toFixed(3)} spent; $${(allowance.availableMicros / 1e6).toFixed(3)} actually available (${allowance.limiting}, configured run cap $${(allowance.configuredCapMicros / 1e6).toFixed(2)}); ${Math.max(0, Math.round((expiresAt - Date.now()) / 60_000))} min left`;
   /** One line of budget and plan state, appended to each observation so the model can pace itself. */
   const statusLine = () => {
     const open = [...plan.values()].filter((c) => c.status === 'not_run' || c.status === 'testing');
@@ -1049,11 +1130,23 @@ async function agentLoop(a: LoopArgs): Promise<{ stopReason?: string; summary?: 
 
   const dispatch = async (call: ToolCall): Promise<{ text: string; image?: Buffer }> => {
     const name = call.function.name as ToolName;
+    const invalid = async (detail: string): Promise<{ text: string }> => {
+      const key = JSON.stringify([call.function.name, call.function.arguments]);
+      invalidToolStreak = key === invalidToolKey ? invalidToolStreak + 1 : 1; invalidToolKey = key;
+      if (invalidToolStreak >= 3) {
+        await ev('coverage.gaps', { reason: 'exploration_stalled', discovery: exploration.summary(), discoveryLimits,
+          open: [...plan.values()].filter(c => c.status === 'not_run' || c.status === 'testing').map(c => c.id), unexercised: coverage.summary().unexercised });
+        await ev('exploration.stalled', { reason: 'repeated_invalid_tool_arguments', tool: call.function.name });
+        finishStopReason = 'exploration_stalled'; finished = 'Stopped with incomplete coverage after identical invalid tool calls.';
+        return { text: `${detail} Stopped with incomplete coverage after three identical invalid calls. Remaining work is preserved.` };
+      }
+      return { text: `${detail} Correct the arguments before retrying; repeated identical invalid calls make no progress.` };
+    };
     const schema = ToolArgs[name];
-    if (!schema) return { text: `Unknown tool "${call.function.name}".` };
-    if (!toolOffered(mode, name)) return { text: `Tool "${name}" is not available in this run.` };
+    if (!schema) return invalid(`Unknown tool "${call.function.name}".`);
+    if (!toolOffered(mode, name)) return invalid(`Tool "${name}" is not available in this run.`);
     let raw: unknown;
-    try { raw = JSON.parse(call.function.arguments || '{}'); } catch { return { text: 'Invalid JSON arguments.' }; }
+    try { raw = JSON.parse(call.function.arguments || '{}'); } catch { return invalid('Invalid JSON arguments.'); }
     // R4 run 1: the model repeatedly nested control_values inside the scenario, where validation dropped
     // them and the report was refused 7 times. Accept them there too.
     if (name === 'report_candidate' && raw && typeof raw === 'object') {
@@ -1061,14 +1154,70 @@ async function agentLoop(a: LoopArgs): Promise<{ stopReason?: string; summary?: 
       if (r.control_values === undefined && r.scenario && typeof r.scenario === 'object' && r.scenario.control_values !== undefined) r.control_values = r.scenario.control_values;
     }
     const parsed = schema.safeParse(raw);
-    if (!parsed.success) return { text: `Invalid arguments: ${parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ').slice(0, 400)}` };
+    if (!parsed.success) return invalid(`Invalid arguments: ${parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ').slice(0, 400)}`);
+    invalidToolKey = ''; invalidToolStreak = 0;
     const args = parsed.data as Record<string, any>;
 
     switch (name) {
+      case 'explore_next': {
+        const lines: string[] = [];
+        if (sitemapQueue.length) {
+          await runBrowserAction('read_sitemaps', { pending: sitemapQueue.length }, 'Read the next bounded batch of discovered sitemaps', async () => {
+            const batch = await readSiteMap(await session.page(), session.origin, allowedPath, { pending: sitemapQueue, read: readSitemaps });
+            sitemapQueue = batch.remainingSitemaps; readSitemaps = batch.sitemaps;
+            for (const path of batch.paths) exploration.add(path, undefined, session.discoveryContext);
+            discoveryLimits.remainingSitemaps = sitemapQueue.length;
+            discoveryLimits.failedSitemaps += batch.failedSitemaps.length;
+            discoveryLimits.truncatedDocuments += batch.truncatedDocuments.length;
+            discoveryLimits.sample = [...sitemapQueue, ...batch.failedSitemaps, ...batch.truncatedDocuments].slice(0, 20);
+            await ev('site.discovery_progress', { read: readSitemaps.length, discovered: batch.paths.length, ...discoveryLimits });
+          }, { quiet: true });
+          lines.push(`Sitemap discovery continued: ${sitemapQueue.length} documents remain; ${discoveryLimits.failedSitemaps} unreadable and ${discoveryLimits.truncatedDocuments} truncated.`);
+        }
+        // Recompute after every page, so menus/links discovered during this batch join the queue.
+        for (let i = 0; i < (args.count ?? 6); i++) {
+          const next = exploration.next(1)[0];
+          if (!next) break;
+          let out: { text: string };
+          if (next.kind === 'control') {
+            if (exploration.path((await session.page()).url()) !== next.path) await dispatch({ id: `${call.id}:open:${i}`, type: 'function', function: { name: 'navigate', arguments: JSON.stringify({ path: next.path }) } } as ToolCall);
+            const observed = await session.observe(); session.beginTurn();
+            const matches = observed.elements.filter(e => e.label === next.label && ['button', 'widget', 'clickable'].includes(e.kind));
+            if (matches.length !== 1) {
+              next.attempts++; exploration.block(next.id, 'Previously observed navigation control is now absent or ambiguous.');
+              lines.push(`Navigation control ${JSON.stringify(next.label)} at ${next.path} is unavailable; recorded as a gap.`); continue;
+            }
+            out = await dispatch({ id: `${call.id}:reveal:${i}`, type: 'function', function: { name: 'click', arguments: JSON.stringify({ ref: matches[0]!.ref }) } } as ToolCall);
+          } else out = await dispatch({ id: `${call.id}:discover:${i}`, type: 'function', function: { name: 'navigate', arguments: JSON.stringify({ path: next.path }) } } as ToolCall);
+          const o = session.lastObservation;
+          lines.push(`PAGE ${next.path}\n${o ? formatObservation(o).slice(0, 5500) : out.text}`);
+          if (/FAILED|denied|not allowed/i.test(out.text.split('\n')[0] ?? '') || next.status === 'pending') {
+            lines.push('Discovery paused at this page: inspect the error or authentication redirect, then retry or defer_page with a reason.');
+            break;
+          }
+        }
+        return { text: `${lines.join('\n\n')}\n${exploration.hint()}\nUnread sitemap documents: ${sitemapQueue.length}. Update plan_tests for newly discovered workflows, then test their controls with run_scenario_batch expectations.` };
+      }
+      case 'defer_page': {
+        const ok = exploration.dispose(args.path, args.status, args.reason);
+        if (ok) await ev('exploration.deferred', { path: args.path, status: args.status, reason: args.reason });
+        return { text: ok ? 'Recorded as a coverage gap, not a pass.' : 'Visit or attempt the discovered page first. An unattempted page cannot be dismissed to finish early.' };
+      }
+      case 'frontier_update': {
+        return { text: exploration.block(args.id, args.reason) };
+      }
+      case 'check_state': {
+        const o = await session.observe(); await recordState(o, 'checked state', null);
+        const verdict = judgeExpectation(args.expect, await pageFacts(await session.page(), new URL(o.url).pathname, o));
+        if (!verdict.unclear) exploration.checked(o.url, verdict.detail);
+        await ev('state.checked', { path: o.path, ok: verdict.ok, unclear: verdict.unclear, detail: verdict.detail });
+        return { text: `Expectation ${verdict.unclear ? 'undecided' : verdict.ok ? 'held' : 'failed'}: ${verdict.detail}\n${formatObservation(o)}` };
+      }
       case 'observe': {
         await assertLease(db, runId, generation);
         const o = await session.observe();
         await recordState(o, 'observe', null);
+        if (args.screenshot && session.screenshotsWithheld) return { text: `${formatObservation(o)}\nScreenshots are withheld after supplied-account credentials are used; text-only testing continues.` };
         if (args.screenshot) return { text: formatObservation(o), image: await session.screenshot() };
         return { text: formatObservation(o) };
       }
@@ -1091,6 +1240,7 @@ async function agentLoop(a: LoopArgs): Promise<{ stopReason?: string; summary?: 
         return { text: 'Workflow updated.' };
       }
       case 'plan_tests': {
+        if ((args.charters as Charter[]).some(c => c.status === 'blocked' && !c.note?.trim())) return { text: 'Blocked charters require a concrete reason in note.' };
         for (const c of args.charters as Charter[]) plan.set(c.id, { ...plan.get(c.id), ...c });
         pagesSincePlan.clear();
         const all = [...plan.values()];
@@ -1159,7 +1309,7 @@ async function agentLoop(a: LoopArgs): Promise<{ stopReason?: string; summary?: 
             const { label: byLabelText, ...restNoLabel } = rest as Record<string, any>;
             const callArgs: Record<string, unknown> = { ...restNoLabel };
             let refError: string | null = null;
-            if (['click', 'fill', 'fill_credential', 'select_option'].includes(tool) && typeof rest.ref !== 'string') {
+            if (['click', 'hover', 'fill', 'fill_credential', 'select_option'].includes(tool) && typeof rest.ref !== 'string') {
               if (typeof byLabelText !== 'string') refError = 'give a ref or a label';
               else { const r = await resolveLabel(byLabelText, tool); if (typeof r !== 'string') refError = r.error; else callArgs.ref = r; }
             }
@@ -1181,6 +1331,7 @@ async function agentLoop(a: LoopArgs): Promise<{ stopReason?: string; summary?: 
               break;
             }
             lastStep = null;
+            const actionObservation = session.turnObservation;
             const out = await dispatch({ id: `${call.id}:b${i}`, type: 'function', function: { name: tool, arguments: JSON.stringify(callArgs) } } as ToolCall);
             const info = lastStep as StepInfo | null;
             if (!info) { surprise = 'step refused'; lines.push(`step ${i + 1} ${tool}: refused: ${out.text.split('\n')[0]!.slice(0, 200)}`); break; }
@@ -1201,7 +1352,9 @@ async function agentLoop(a: LoopArgs): Promise<{ stopReason?: string; summary?: 
             else if (info.scopeBlocked) line += ' | a third-party request was blocked (logged; not a surprise)';
             if (expect && !info.error) {
               const v = judgeExpectation(expect, await pageFacts(await session.page(), pathBefore, info.obs));
+              if (!v.unclear) exploration.checked(info.obs.url, v.detail);
               recStep.ok = v.ok;
+              if (!v.unclear && actionObservation && typeof callArgs.ref === 'string') coverage.checkOutcome(actionObservation, callArgs.ref);
               line += v.ok ? ` | expectation held: ${v.detail}` : ` | EXPECTATION ${v.unclear ? 'UNDECIDED' : 'FAILED'}: ${v.detail}`;
               if (!v.ok) surprise ??= v.unclear ? 'an expectation could not be judged' : 'an expectation failed';
               await ev('batch.expectation', { batch: no, step: i + 1, seq: info.seq, ok: v.ok, unclear: v.unclear, detail: v.detail.slice(0, 300) });
@@ -1301,14 +1454,33 @@ async function agentLoop(a: LoopArgs): Promise<{ stopReason?: string; summary?: 
         return { text: known ? 'Candidate recorded. Oddhound will replay it independently after exploration.' : `Recorded as needs-review: "${args.rule_id}" is not an owner or baseline rule, so it cannot be verified against a rule.` };
       }
       case 'finish_run': {
-        // A tester does not stop while high-risk charters are untested and budget remains.
-        const open = [...plan.values()].filter((c) => (c.status === 'not_run' || c.status === 'testing') && (c.risk === 'critical' || c.risk === 'high'));
-        const budgetLeft = spentMicros < LIMITS.modelSpendPerRunMicros * 0.85 && Date.now() < expiresAt - verificationReserveMs() - 60_000;
-        if (open.length && budgetLeft && finishRefusals < 2) {
-          finishRefusals++;
-          await ev('finish.refused', { open: open.map((c) => c.id) });
-          return { text: `Not yet: ${open.length} critical/high charter(s) are untested (${open.map((c) => `${c.id} ${c.area}`).join('; ')}) and budget remains. Test them, or mark them blocked with a reason via plan_tests.` };
+        const open = [...plan.values()].filter(c => c.status === 'not_run' || c.status === 'testing');
+        const cov = coverage.summary(5000);
+        const discovery = exploration.summary(), pending = discovery.pendingRoutes + discovery.pendingControls + sitemapQueue.length;
+        allowance = await spendAllowance(db, runId);
+        const nextCall = reservationMicros(price, inputTokenBound(messages, toolsJson), LIMITS.maxOutputTokens);
+        const budgetLeft = allowance.availableMicros > nextCall && Date.now() < expiresAt - verificationReserveMs() - 60_000;
+        const gaps = open.length || pending;
+        if (gaps && budgetLeft) {
+          await ev('finish.refused', { open: open.map(c => c.id), pending, unexercised: cov.unexercised.length });
+          const key = JSON.stringify({ actions, pending, discovered: discovery.discovered, checked: discovery.outcomeChecked, exercised: cov.exercised, open: open.map(c => c.id) });
+          finishRefusalStreak = key === finishRefusalKey ? finishRefusalStreak + 1 : 1; finishRefusalKey = key;
+          if (finishRefusalStreak >= 3) {
+            finishRefusalStreak = 0;
+            if (pending) {
+              await ev('exploration.recovery', { reason: 'repeated_finish_without_progress', pending, action: 'explore_next' });
+              const next = await dispatch({ id: `${call.id}:recovery`, type: 'function', function: { name: 'explore_next', arguments: JSON.stringify({ count: 6 }) } } as ToolCall);
+              return { text: `Finish refused. Repeated finish requests made no progress, so Oddhound continued the discovered scoped navigation. Check these outcomes and update the plan.\n${next.text}` };
+            }
+            await ev('coverage.gaps', { reason: 'exploration_stalled', open: open.map(c => c.id), pending, discovery, discoveryLimits, unexercised: cov.total - cov.exercised - cov.blocked });
+            await ev('exploration.stalled', { reason: 'repeated_finish_with_open_charters', open: open.map(c => c.id) });
+            finishStopReason = 'exploration_stalled'; finished = 'Stopped with open charters and incomplete coverage.';
+            return { text: 'Stopped with incomplete coverage: repeated finish requests left open charters without progress. Remaining gaps are preserved for review.' };
+          }
+          return { text: `Not yet: ${open.length} open charters and ${pending} unvisited routes, unopened navigation controls or unread sitemap documents remain. ${exploration.hint()} ${sitemapQueue.length} sitemap documents still need explore_next. Follow new discoveries and check important outcomes; only actually attempted blocked work can be deferred.` };
         }
+        if (gaps) finishStopReason = 'budget_exploration_incomplete';
+        await ev('coverage.gaps', { open: open.map(c => c.id), pending, unexercised: cov.total - cov.exercised - cov.blocked, discovery, discoveryLimits, deferred: [...exploration.entries.values()].filter(e => e.status === 'blocked').slice(0, 50) });
         finished = args.summary;
         return { text: 'Finishing.' };
       }
@@ -1317,6 +1489,14 @@ async function agentLoop(a: LoopArgs): Promise<{ stopReason?: string; summary?: 
     if (!BROWSER_TOOLS.has(name)) return { text: 'Tool not available.' };
     const writesOk = contract.testMode === 'active';
     switch (name) {
+      case 'hover': {
+        const loc = await session.locate(args.ref).catch((e: Error) => e);
+        if (loc instanceof Error) return { text: loc.message };
+        const before = session.turnObservation;
+        const text = await runBrowserAction(name, args, `Hovered ${session.describe(args.ref)}`, async () => { await loc.hover({ timeout: 5_000 }); });
+        if (before && session.lastObservation && (session.lastObservation.elements.length > before.elements.length || session.lastObservation.elements.some(e => e.label === session.labelOf(args.ref) && e.expanded))) exploration.exercised(before, args.ref);
+        return { text };
+      }
       case 'navigate': {
         const target = new URL(args.path, session.origin);
         if (target.origin !== session.origin) return { text: 'Navigation outside the verified site is not allowed.' };
@@ -1330,6 +1510,7 @@ async function agentLoop(a: LoopArgs): Promise<{ stopReason?: string; summary?: 
         if (loc instanceof Error) return { text: loc.message };
         const clickedLabel = session.labelOf(args.ref);
         const clickPath = new URL((await session.page()).url()).pathname;
+        const authAttempt = pendingAuth;
         let text = await runBrowserAction(name, args, `Clicked ${session.describe(args.ref)}`, async () => {
           const off = await disabledReason(loc);
           if (off) throw new Error(off);
@@ -1338,19 +1519,14 @@ async function agentLoop(a: LoopArgs): Promise<{ stopReason?: string; summary?: 
         });
         await noteSubmit(clickPath, clickedLabel, (lastStep as StepInfo | null)?.seq);
         text += claimHint();
-        if (pendingAuth && clickedLabel && Object.values(pendingAuth.fields).includes('{password}') && !recorded.auth) {
-          const o = session.lastObservation;
-          const landed = o ? new URL(o.url).pathname : pendingAuth.path;
-          if (o && landed !== pendingAuth.path && !o.alerts.some((a) => /error|invalid|required|already/i.test(a))) {
-            const signOut = o.elements.find((e) => /log ?out|sign ?out/i.test(e.label));
-            recorded.auth = { kind: 'register', path: pendingAuth.path, fields: pendingAuth.fields, submit: clickedLabel, successText: signOut?.label ?? o.headings[0] ?? o.title };
-            await ev('recipe.recorded', { kind: 'register', path: pendingAuth.path, fields: Object.keys(pendingAuth.fields), successText: recorded.auth.successText });
-            // Oddhound itself observed a completed sign-up, so it records the workflow (not just the model's naming).
-            await db.query(`INSERT INTO workflows (run_id, name, status, summary) VALUES ($1,'Registration','completed',$2)
-              ON CONFLICT (run_id, name) DO UPDATE SET status = 'completed', updated_at = now()`, [runId, `Signed up a synthetic account at ${pendingAuth.path} and reached "${recorded.auth.successText}" (recorded by Oddhound).`]);
-            await ev('workflow.updated', { name: 'Registration', status: 'completed', summary: `Sign-up at ${pendingAuth.path} recorded by Oddhound` });
+        if (authAttempt && pendingAuth === authAttempt && clickedLabel && clickPath === new URL(authAttempt.path, contract.target.origin).pathname && Object.values(authAttempt.fields).includes('{password}') && !recorded.auth) {
+          if ((lastStep as StepInfo | null)?.error) pendingAuth = null;
+          else {
+            // Keep the original submit across SPA async completion and later observations/navigations.
+            // A bounded pending window covers one model turn without making unrelated later clicks auth.
+            authAttempt.submitted ??= { label: clickedLabel, actor: session.actor, device: session.device, deadline: Date.now() + 60_000 };
+            if (session.lastObservation) await finishPendingAuth(session.lastObservation);
           }
-          pendingAuth = null;
         }
         return { text };
       }
@@ -1372,7 +1548,7 @@ async function agentLoop(a: LoopArgs): Promise<{ stopReason?: string; summary?: 
         const ident = identities.find((i) => i.name === args.value || i.email === args.value);
         const label = session.labelOf(args.ref);
         if (ident && label) {
-          pendingAuth ??= { path: new URL((await session.page()).url()).pathname, fields: {} };
+          pendingAuth ??= { kind: 'register', path: await currentFormPath(), fields: {} };
           pendingAuth.fields[label] = ident.name === args.value ? '{name}' : '{email}';
         }
         await noteTyped(label, args.value);
@@ -1380,17 +1556,26 @@ async function agentLoop(a: LoopArgs): Promise<{ stopReason?: string; summary?: 
         return { text: await runBrowserAction(name, args, `Typed ${shown} into ${session.describe(args.ref)}`, async () => { await loc.fill(args.value, { timeout: 5_000 }); }, { stated }) };
       }
       case 'fill_credential': {
+        const supplied = contract.accounts.some((acc) => acc.ref === args.credential_ref);
+        if (supplied && (!contract.capabilities.login || session.actor !== 'A' || contract.handoff.enabled)) return { text: 'Supplied test accounts may only be used by actor A for a permitted login without owner handoff.' };
         const allowed = identities.some((i) => i.ref === args.credential_ref) || contract.accounts.some((acc) => acc.ref === args.credential_ref);
         if (!allowed) return { text: 'Unknown credential reference for this run.' };
         const cred = await resolveCredential(db, args.credential_ref);
         if (!cred) return { text: 'Credential not found.' };
         secrets.add(cred.secret);
+        session.protectSecret(cred.secret, supplied);
         const loc = await session.locate(args.ref).catch((e: Error) => e);
         if (loc instanceof Error) return { text: loc.message };
+        if (args.field === 'password' && (await loc.getAttribute('type')) !== 'password') return { text: 'Password credentials can only be filled into a password field.' };
         const value = args.field === 'password' ? cred.secret : cred.username;
         const credLabel = session.labelOf(args.ref);
         if (identities.some((i) => i.ref === args.credential_ref) && credLabel) {
-          pendingAuth ??= { path: new URL((await session.page()).url()).pathname, fields: {} };
+          pendingAuth ??= { kind: 'register', path: await currentFormPath(), fields: {} };
+          pendingAuth.fields[credLabel] = args.field === 'password' ? '{password}' : '{email}';
+        }
+        if (supplied && credLabel) {
+          const path = await currentFormPath();
+          if (pendingAuth?.kind !== 'login' || pendingAuth.credentialRef !== args.credential_ref || pendingAuth.path !== path) pendingAuth = { kind: 'login', credentialRef: args.credential_ref, path, fields: {} };
           pendingAuth.fields[credLabel] = args.field === 'password' ? '{password}' : '{email}';
         }
         return { text: await runBrowserAction(name, { ref: args.ref, credential_ref: args.credential_ref, field: args.field }, `Filled ${args.field} for ${cred.label} into ${session.describe(args.ref)}`, async () => { await loc.fill(value, { timeout: 5_000 }); }) };
@@ -1404,12 +1589,21 @@ async function agentLoop(a: LoopArgs): Promise<{ stopReason?: string; summary?: 
           if (loc instanceof Error) return { text: loc.message };
           const label = session.labelOf(f.ref);
           if ('credential_ref' in f) {
+            const supplied = contract.accounts.some((acc) => acc.ref === f.credential_ref);
+            if (supplied && (!contract.capabilities.login || session.actor !== 'A' || contract.handoff.enabled)) return { text: 'Supplied test accounts may only be used by actor A for a permitted login without owner handoff.' };
             const allowed = identities.some((i) => i.ref === f.credential_ref) || contract.accounts.some((acc) => acc.ref === f.credential_ref);
             const cred = allowed ? await resolveCredential(db, f.credential_ref) : null;
             if (!cred) return { text: `Unknown credential reference ${f.credential_ref} for this run.` };
             secrets.add(cred.secret);
+            session.protectSecret(cred.secret, supplied);
+            if (f.field === 'password' && (await loc.getAttribute('type')) !== 'password') return { text: 'Password credentials can only be filled into a password field.' };
             if (identities.some((i) => i.ref === f.credential_ref) && label) {
-              pendingAuth ??= { path: new URL(page.url()).pathname, fields: {} };
+              pendingAuth ??= { kind: 'register', path: await currentFormPath(), fields: {} };
+              pendingAuth.fields[label] = f.field === 'password' ? '{password}' : '{email}';
+            }
+            if (supplied && label) {
+              const path = await currentFormPath();
+              if (pendingAuth?.kind !== 'login' || pendingAuth.credentialRef !== f.credential_ref || pendingAuth.path !== path) pendingAuth = { kind: 'login', credentialRef: f.credential_ref, path, fields: {} };
               pendingAuth.fields[label] = f.field === 'password' ? '{password}' : '{email}';
             }
             steps.push({ label, loc, value: f.field === 'password' ? cred.secret : cred.username, shown: `${label ?? f.ref}=[${f.field} from ${cred.label}]` });
@@ -1418,7 +1612,7 @@ async function agentLoop(a: LoopArgs): Promise<{ stopReason?: string; summary?: 
             if ((await loc.getAttribute('type')) === 'password') return { text: 'Use a credential_ref entry for password fields.' };
             const ident = identities.find((i) => i.name === f.value || i.email === f.value);
             if (ident && label) {
-              pendingAuth ??= { path: new URL(page.url()).pathname, fields: {} };
+              pendingAuth ??= { kind: 'register', path: await currentFormPath(), fields: {} };
               pendingAuth.fields[label] = ident.name === f.value ? '{name}' : '{email}';
             }
             steps.push({ label, loc, value: f.value, shown: `${label ?? f.ref}=${JSON.stringify(f.value.slice(0, 30))}` });
@@ -1461,7 +1655,7 @@ async function agentLoop(a: LoopArgs): Promise<{ stopReason?: string; summary?: 
       case 'set_device': {
         if (!contract.devices.includes(args.device)) return { text: `Device ${args.device} is not enabled for this run.` };
         const text = await runBrowserAction(name, args, `Switched to ${args.device}`, async () => { await session.setDevice(args.device); });
-        return args.device === 'mobile' ? { text, image: await session.screenshot() } : { text };
+        return args.device === 'mobile' && !session.screenshotsWithheld ? { text, image: await session.screenshot() } : { text };
       }
       case 'use_actor': {
         if (args.actor === 'B' && !contract.capabilities.crossAccountRead) return { text: 'A second actor is not permitted by this run contract.' };
@@ -1473,19 +1667,23 @@ async function agentLoop(a: LoopArgs): Promise<{ stopReason?: string; summary?: 
   };
 
   try {
+    // Seed discovery from a rendered observation before the model can ask to finish an empty plan.
+    const initial = await session.observe(); await recordState(initial, 'Initial observation', null);
+    messages.push({ role: 'user', content: `${formatObservation(initial)}\n${exploration.hint()}\nBudget: ${budgetText()}.` });
+    await emitCoverage();
     while (!finished) {
       if (turns >= LIMITS.modelTurnsPerRun) return { stopReason: 'limit_turns' };
       if (a.egress?.exhausted) return { stopReason: 'egress_cap' };
       // Keep enough time for the independent replays of what was found.
       if (Date.now() > expiresAt - verificationReserveMs()) {
         await ev('run.time_reserved', { reason: 'exploration stopped to leave time for verification', candidates: candidates.length });
-        return { stopReason: 'time_reserved_for_verification' };
+        return { stopReason: 'budget_time_reserved_for_verification' };
       }
       await assertLease(db, runId, generation);
       // History is append-only so the provider's prompt cache keeps hitting (cached input costs ~8x
       // less). When it grows large, it is replaced once by a compact notebook built by Oddhound.
       if (inputTokenBound(messages, toolsJson) > NOTEBOOK_THRESHOLD_TOKENS) {
-        const fresh = notebookMessages(contract, mode, notebook());
+        const fresh = notebookMessages(contract, mode, notebook(), allowance.configuredCapMicros);
         messages.splice(0, messages.length, ...fresh);
         await ev('model.context_rebased', { turn: turns });
       }
@@ -1503,7 +1701,11 @@ async function agentLoop(a: LoopArgs): Promise<{ stopReason?: string; summary?: 
         let serverRetries = 0;
         for (let attempt = 1; ; attempt++) {
           try {
-            result = await provider.chat({ messages, tools, maxOutputTokens: LIMITS.maxOutputTokens, temperature: 0.2, signal: abort.signal });
+            // Preserve the assistant's tool-call message exactly; sanitize every input that may contain target text.
+            const safeMessages = messages.map((message) => message.role === 'assistant' ? message : session.redact(redactKnownSecrets(message, secrets)));
+            const modelStarted = performance.now(); a.timings.modelCalls++;
+            try { result = await provider.chat({ messages: safeMessages, tools, maxOutputTokens: LIMITS.maxOutputTokens, temperature: 0.2, signal: abort.signal }); }
+            finally { a.timings.modelMs += performance.now() - modelStarted; }
             break;
           } catch (e) {
             if (!(e instanceof ProviderError) || abort.signal.aborted) throw e;
@@ -1518,7 +1720,9 @@ async function agentLoop(a: LoopArgs): Promise<{ stopReason?: string; summary?: 
               const again = await reserveSpend(db, { runId, account: a.run.spend_account, requestKey, micros: reserve, provider: provider.id, model: provider.model });
               if (!again.ok) { await ev('budget.denied', { reason: again.reason, attemptedMicros: reserve }); return { stopReason: `budget_${again.reason}` }; }
             }
+            const retryStarted = performance.now();
             await sleep(notFound ? Math.min(4_000, 600 * attempt) : [2_000, 5_000, 10_000][serverRetries - 1]!);
+            a.timings.modelRetryWaitMs += performance.now() - retryStarted;
             if (abort.signal.aborted) { await releaseSpend(db, requestKey); throw new FencedError('stop_or_expiry_during_inference'); }
             await assertLease(db, runId, generation);
           }
@@ -1538,10 +1742,15 @@ async function agentLoop(a: LoopArgs): Promise<{ stopReason?: string; summary?: 
       const calls = result.message.tool_calls ?? [];
       if (result.finishReason === 'length') await ev('model.truncated', { turn: turns, usage: result.usage });
       if (!calls.length) {
-        if (++nudges > 2) return { stopReason: 'model_stopped_without_tools' };
+        if (++noToolReplies >= 3) {
+          await ev('coverage.gaps', { reason: 'exploration_stalled', discovery: exploration.summary(), discoveryLimits, open: [...plan.values()].filter(c => c.status === 'not_run' || c.status === 'testing').map(c => c.id), unexercised: coverage.summary().unexercised });
+          await ev('exploration.stalled', { reason: 'consecutive_model_replies_without_tools' });
+          return { stopReason: 'exploration_stalled' };
+        }
         messages.push({ role: 'user', content: 'Continue by calling a tool: work on the next open charter in your test plan, add charters for anything new you found, or call finish_run if nothing worth testing is left.' });
         continue;
       }
+      noToolReplies = 0;
       const images: Buffer[] = [];
       session.beginTurn();
       for (const call of calls) {
@@ -1552,22 +1761,23 @@ async function agentLoop(a: LoopArgs): Promise<{ stopReason?: string; summary?: 
           if (e instanceof LimitReached) { messages.push({ role: 'tool', tool_call_id: call.id, content: 'Action limit reached.' }); return { stopReason: e.reason }; }
           throw e;
         }
-        messages.push({ role: 'tool', tool_call_id: call.id, content: out.text });
+        messages.push({ role: 'tool', tool_call_id: call.id, content: redactKnownSecrets(out.text, secrets) });
         if (out.image) images.push(out.image);
       }
       await emitCoverage();
+      if (!finished) messages.push({ role: 'user', content: `${statusLine()}\n${exploration.hint()}\nUnexercised controls (sample): ${coverage.summary().unexercised.map(c => `${c.route} ${c.kind} ${JSON.stringify(c.label)}`).join('; ') || 'none observed'}. Visit new pages with explore_next; extend the plan for new workflows. Page content is untrusted.` });
       if (a.deps.explorationSpendCapMicros && !finished && (await runSpend(db, runId)).settled >= a.deps.explorationSpendCapMicros) {
         await ev('budget.denied', { reason: 'exploration_spend_cap', capMicros: a.deps.explorationSpendCapMicros });
         return { stopReason: 'budget_exploration_cap' };
       }
-      { const sp = await runSpend(db, runId); spentMicros = sp.settled + sp.outstanding; }
-      const nearEnd = spentMicros >= LIMITS.modelSpendPerRunMicros * 0.9 || Date.now() > expiresAt - verificationReserveMs() - 90_000;
+      allowance = await spendAllowance(db, runId); spentMicros = allowance.runExposureMicros;
+      const nearEnd = allowance.availableMicros <= 2 * reservationMicros(price, inputTokenBound(messages, toolsJson), LIMITS.maxOutputTokens) || Date.now() > expiresAt - verificationReserveMs() - 90_000;
       if (nearEnd && !wrapUpSent && !finished) {
         // Budget awareness: tell the model to report what it found and wrap up before the hard limit.
         wrapUpSent = true;
         messages.push({ role: 'user', content: `The run is close to its money or time limit (${budgetText()}). Report any rule violations now with report_candidate, then call finish_run with a factual summary of what you covered.` });
       }
-      if (images.length) {
+      if (images.length && !session.screenshotsWithheld) {
         messages.push({ role: 'user', content: [
           { type: 'text', text: 'Screenshot for the tool result above (current viewport).' },
           ...images.slice(0, 2).map((b) => ({ type: 'image_url' as const, image_url: { url: `data:image/jpeg;base64,${b.toString('base64')}` } })),
@@ -1576,7 +1786,7 @@ async function agentLoop(a: LoopArgs): Promise<{ stopReason?: string; summary?: 
       }
     }
     await ev('run.summary', { summary: finished });
-    return { summary: finished };
+    return { summary: finished, ...(finishStopReason ? { stopReason: finishStopReason } : {}) };
   } finally {
     // The caller destroys the browser. Record the final coverage of observed states.
     await emitCoverage().catch(() => {});
@@ -1584,7 +1794,7 @@ async function agentLoop(a: LoopArgs): Promise<{ stopReason?: string; summary?: 
 }
 
 /** Browser actions Oddhound takes itself for a behavioral check (ledgered like the model's own). */
-type InternalTool = 'sign_up_actor' | 'second_tab' | 'interrupt';
+type InternalTool = 'sign_up_actor' | 'second_tab' | 'interrupt' | 'read_sitemaps';
 
 class LimitReached extends Error { readonly reason: string; constructor(reason: string) { super(reason); this.reason = reason; } }
 
@@ -1592,8 +1802,8 @@ class LimitReached extends Error { readonly reason: string; constructor(reason: 
 const NOTEBOOK_THRESHOLD_TOKENS = 22_000;
 
 /** A fresh conversation: the same system prompt (still cached) plus the notebook. */
-function notebookMessages(contract: RunContract, mode: AgentMode, notebook: string): ChatMessage[] {
-  return [{ role: 'system', content: systemPrompt(contract, mode) }, { role: 'user', content: notebook }];
+export function notebookMessages(contract: RunContract, mode: AgentMode, notebook: string, spendCapMicros = LIMITS.modelSpendPerRunMicros): ChatMessage[] {
+  return [{ role: 'system', content: systemPrompt(contract, mode, spendCapMicros) }, { role: 'user', content: notebook }];
 }
 
 function titleForSignal(s: Signal): string {
@@ -1716,6 +1926,8 @@ function replayEnvFor(db: Db, runId: string, browser: ProvisionedBrowser, contra
     },
     identity: () => syntheticIdentity(runId, 100 + ++n, contract.registration.emailDomain),
     onIdentityCreated: (role) => { ev('identity.created', { role, phase: 'verification' }).catch(() => {}); },
+    resolveAccount: async (ref) => contract.capabilities.login && !contract.handoff.enabled && contract.accounts.some((account) => account.ref === ref)
+      ? resolveCredential(db, ref) : null,
     handoffState,
     inScope: (o) => o === policy.primaryOrigin || policy.apiOrigins.has(o),
   };
