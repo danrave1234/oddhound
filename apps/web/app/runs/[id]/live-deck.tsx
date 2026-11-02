@@ -9,18 +9,25 @@ import { CountUp, Ring, prefersReducedMotion, useNow } from '@/ui/motion';
 import { statusLabel } from '@/ui/status';
 import { LIMITS } from '@core/contracts/limits.ts';
 import { TrailMap } from './trail-map';
+import { trailAtTime } from './trail-data';
+import { OwnerPreview, type PreviewState } from './owner-preview';
+import { completeReplayEvents } from './replay-data';
 
 type Ev = { seq: number; at: string; type: string; payload: Record<string, any> };
 type DeckSnap = {
   run: Record<string, any>;
   events: Ev[];
+  history?: { eventsHasMore: boolean };
   actions: Record<string, any>[];
-  graph: { states: { id: string; route: string; title: string; actor: string; device: string }[] };
+  graph: { states: { id: string; route: string; title: string; actor: string; device: string; first_seen_at?: string }[] };
   findings: Record<string, any>[];
   latestScreenshot: { id: string; label: string; created_at: string } | null;
+  preview?: PreviewState;
   spend: { settled: number; outstanding: number };
+  allowance: { configuredCapMicros: number; availableMicros: number };
   plan?: { status: string; risk: string }[];
   detectedSignals?: number;
+  candidateCount?: number;
 };
 
 const PHASES: { key: string; label: string }[] = [
@@ -44,12 +51,31 @@ const ts = (e: Ev) => new Date(e.at).getTime();
 
 export function LiveDeck({ snap, active, replay, onOpenBrowser, onOpenFindings }: { snap: DeckSnap; active: boolean; replay: boolean; onOpenBrowser: () => void; onOpenFindings: () => void }) {
   const run = snap.run;
-  const events = snap.events;
+  const [recording, setRecording] = useState<{ key: string; events: Ev[]; error: string | null } | null>(null);
+  const [historyRetry, setHistoryRetry] = useState(0);
+  const historyKey = `${run.id}:${snap.events[0]?.seq}:${snap.events.at(-1)?.seq}`;
+  const needsHistory = replay && (snap.history?.eventsHasMore ?? snap.events.length >= 300);
+  const savedRecording = recording?.key === historyKey ? recording : null;
+  const historyReady = !needsHistory || Boolean(savedRecording && !savedRecording.error);
+  const events = historyReady && savedRecording ? savedRecording.events : snap.events;
+  useEffect(() => {
+    if (!needsHistory) return;
+    const controller = new AbortController();
+    void completeReplayEvents(snap.events, true, async (before, signal) => {
+      const response = await fetch(`/api/runs/${run.id}/history?kind=events&limit=100&before=${before}`, {
+        cache: 'no-store', signal: AbortSignal.any([signal, AbortSignal.timeout(15_000)]),
+      });
+      if (!response.ok) throw new Error('Earlier recording history could not be loaded.');
+      return response.json();
+    }, controller.signal).then(events => setRecording({ key: historyKey, events, error: null }))
+      .catch(() => { if (!controller.signal.aborted) setRecording({ key: historyKey, events: [], error: 'Playback needs the complete recording. Earlier history could not be loaded.' }); });
+    return () => controller.abort();
+  }, [needsHistory, historyKey, run.id, snap.events, historyRetry]);
   const startMs = run.started_at ? new Date(run.started_at).getTime() : events[0] ? ts(events[0]) : Date.now();
   const endMs = run.finished_at ? new Date(run.finished_at).getTime() : events.length ? ts(events[events.length - 1]!) : startMs;
 
   // ── Replay playback (demo replays only) ────────────────────────────────────
-  const canPlay = replay && events.length > 2 && endMs > startMs;
+  const canPlay = replay && historyReady && events.length > 2 && endMs > startMs;
   const [cursor, setCursor] = useState<number>(Infinity);
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState(4);
@@ -87,20 +113,18 @@ export function LiveDeck({ snap, active, replay, onOpenBrowser, onOpenFindings }
     const lastAction = actionEvents[actionEvents.length - 1] ?? null;
     const statusEvents = seen.filter((e) => e.type.startsWith('run.') && e.payload?.status);
     const status = atEnd ? run.status : (statusEvents[statusEvents.length - 1]?.payload.status ?? 'queued');
-    const discovered = seen.filter((e) => e.type === 'state.discovered').map((e) => ({ key: `${e.payload.route}|${e.payload.actor}|${e.payload.device}`, route: e.payload.route as string, title: e.payload.title as string, device: e.payload.device as string, seq: e.seq }));
-    const uniq = [...new Map(discovered.map((d) => [d.key, d])).values()];
-    const pages = atEnd && snap.graph.states.length ? snap.graph.states.map((s, i) => ({ key: s.id, route: s.route, title: s.title, device: s.device, seq: i })) : uniq;
+    const pages = trailAtTime(snap.graph.states, seen, t);
     const planEvents = seen.filter((e) => e.type === 'plan.updated');
     const charters: { status: string; risk: string }[] = atEnd && snap.plan ? snap.plan : (planEvents[planEvents.length - 1]?.payload.charters ?? []);
     const count = (type: string) => seen.filter((e) => e.type === type).length;
     const actionsUsed = atEnd ? Math.max(snap.actions[0]?.seq ?? 0, actionEvents.length) : actionEvents.length;
     return {
       status, lastAction, pages, charters, actionsUsed,
-      candidates: count('finding.candidate'), verified: atEnd ? snap.findings.filter((f) => f.category === 'verified_issue' && f.verification === 'verified').length : count('finding.verified'),
+      candidates: atEnd ? (snap.candidateCount ?? count('finding.candidate')) : count('finding.candidate'), verified: atEnd ? snap.findings.filter((f) => f.category === 'verified_issue' && f.verification === 'verified').length : count('finding.verified'),
       signals: atEnd ? (snap.detectedSignals ?? count('signal.detected')) : count('signal.detected'),
       seen,
     };
-  }, [events, t, atEnd, run.status, snap.graph.states, snap.plan, snap.actions, snap.findings, snap.detectedSignals]);
+  }, [events, t, atEnd, run.status, snap.graph.states, snap.plan, snap.actions, snap.findings, snap.detectedSignals, snap.candidateCount]);
 
   // ── Activity sparkline (events per time bucket) ────────────────────────────
   const spark = useMemo(() => {
@@ -138,6 +162,10 @@ export function LiveDeck({ snap, active, replay, onOpenBrowser, onOpenFindings }
 
   return (
     <section className={`deck${showLiveMotion ? ' deck-live' : ''}`} aria-label="Run overview">
+      {needsHistory && !historyReady && <p role={savedRecording?.error ? 'alert' : 'status'}>
+        {savedRecording?.error ?? 'Loading the complete recorded history…'}
+        {savedRecording?.error && <button className="btn btn-sm" onClick={() => { setRecording(null); setHistoryRetry(n => n + 1); }}>Retry recording</button>}
+      </p>}
       {/* Phase track */}
       <div className="deck-top">
         <ol className="phases" aria-label="Run phase">
@@ -171,7 +199,7 @@ export function LiveDeck({ snap, active, replay, onOpenBrowser, onOpenFindings }
       <div className="deck-main">
         {/* Latest frame */}
         <button type="button" className="deck-frame" onClick={onOpenBrowser} aria-label="Open the Browser view">
-          {snap.latestScreenshot && failedFrame !== snap.latestScreenshot.id ? (
+          {snap.run.mode !== 'demo_target' && !replay ? <OwnerPreview runId={snap.run.id} preview={snap.preview ?? null} active={active} /> : snap.latestScreenshot && failedFrame !== snap.latestScreenshot.id ? (
             <>
               <img key={snap.latestScreenshot.id} className="deck-frame-img" src={`/api/artifacts/${snap.latestScreenshot.id}`} alt="" onError={() => setFailedFrame(snap.latestScreenshot!.id)}
                 ref={(el) => { if (el && el.complete && el.naturalWidth === 0) setFailedFrame(snap.latestScreenshot!.id); }} />
@@ -202,7 +230,7 @@ export function LiveDeck({ snap, active, replay, onOpenBrowser, onOpenFindings }
             <Ring label="actions (no limit)" value={model.actionsUsed} max={Math.max(50, model.actionsUsed * 1.25)} display={<CountUp value={model.actionsUsed} />} spoken={String(model.actionsUsed)} />
             <Ring label={`of ${fmtClock(LIMITS.runWallClockMs)} time`} value={elapsedMs} max={LIMITS.runWallClockMs} display={fmtClock(elapsedMs)} spoken={fmtClock(elapsedMs)} tone="info" />
             <Ring label={model.charters.length ? `of ${model.charters.length} plan items` : 'no plan yet'} value={planDone} max={Math.max(1, model.charters.length)} display={<CountUp value={planDone} />} spoken={String(planDone)} tone="ok" />
-            <Ring label={`of $${(LIMITS.modelSpendPerRunMicros / 1e6).toFixed(2)} model spend`} value={replay && !atEnd ? 0 : spendMicros} max={LIMITS.modelSpendPerRunMicros}
+            <Ring label={`of $${(snap.allowance.configuredCapMicros / 1e6).toFixed(2)} run maximum${active ? ` · $${(snap.allowance.availableMicros / 1e6).toFixed(2)} available` : ''}`} value={replay && !atEnd ? 0 : spendMicros} max={snap.allowance.configuredCapMicros}
               display={replay && !atEnd ? '—' : `$${(spendMicros / 1e6).toFixed(2)}`} spoken={replay && !atEnd ? 'not shown during playback,' : `$${(spendMicros / 1e6).toFixed(2)}`} tone="warn" />
           </div>
 
@@ -223,7 +251,7 @@ export function LiveDeck({ snap, active, replay, onOpenBrowser, onOpenFindings }
 
       {/* Discovered pages as a trail map */}
       <div className="trail-wrap">
-        <div className="trail-head"><span className="trail-label">Trail</span><span className="muted" style={{ fontSize: 12.5 }}>{model.pages.length ? (() => { const n = new Set(model.pages.map((pg) => pg.route)).size; return `${n} ${n === 1 ? 'page' : 'pages'} reached, in order (${model.pages.length} page ${model.pages.length === 1 ? 'state' : 'states'})`; })() : ''}</span></div>
+        <div className="trail-head"><span className="trail-label">Trail</span><span className="muted" style={{ fontSize: 12.5 }}>{model.pages.length ? (() => { const n = new Set(model.pages.map((pg) => pg.route)).size; return `${n} ${n === 1 ? 'page' : 'pages'} reached · states in discovery order`; })() : ''}</span></div>
         {model.pages.length
           ? <TrailMap pages={model.pages} live={showLiveMotion} />
           : <p className="muted" style={{ fontSize: 13, margin: 0 }}>{active ? 'The trail grows as the agent reaches new pages.' : 'No pages recorded.'}</p>}

@@ -49,6 +49,7 @@ export async function readArtifact(db: Db, id: string): Promise<{ data: Buffer; 
 
 /** Deletes expired artifacts (files and rows). Run periodically by the worker. */
 export async function purgeExpiredArtifacts(db: Db): Promise<number> {
+  await db.query('DELETE FROM run_owner_previews WHERE expires_at < now()');
   const r = await db.query<{ id: string; storage_key: string }>('DELETE FROM artifacts WHERE expires_at < now() RETURNING id, storage_key');
   for (const row of r.rows) if (!row.storage_key.startsWith('db:')) await rm(join(/*turbopackIgnore: true*/ artifactRoot(), row.storage_key), { force: true });
   return r.rowCount ?? 0;

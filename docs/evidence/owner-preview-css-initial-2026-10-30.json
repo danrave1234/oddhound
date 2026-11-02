@@ -1,0 +1,8 @@
+{
+  "test": "page CSS visibility override with overflowing known-secret glyphs",
+  "result": "failed",
+  "identicalProtectedPixels": false,
+  "runtime": "Node 26.12.1, Playwright 1.64.1, Chromium channel with chromiumSandbox true",
+  "data": "Two synthetic known-secret markers; no target account, remote traffic or inference",
+  "scope": "Initial implementation before isolated-world and inline-style fixes; preserved failure evidence"
+}

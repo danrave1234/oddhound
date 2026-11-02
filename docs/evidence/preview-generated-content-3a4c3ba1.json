@@ -1,0 +1,63 @@
+{
+  "at": "2026-10-29T19:37:09.002Z",
+  "node": "v26.12.1",
+  "playwright": "1.64.1",
+  "chromium": "156.0.8078.4",
+  "sandbox": "sandbox_on",
+  "sourceBefore": "a935fd261439858ca48e2d47357531382be879f3d9446e4c19548938654eb3f7",
+  "sourceAfter": "a935fd261439858ca48e2d47357531382be879f3d9446e4c19548938654eb3f7",
+  "sourceChangedDuringProbe": false,
+  "mocked": "All pages and secret markers are synthetic. Real local Chromium/capture code. No provider, account, external target or deployment.",
+  "results": [
+    {
+      "id": "ordinary-before-control",
+      "outcome": "protected",
+      "rawPixelsDiffer": true,
+      "protectedPixelsDiffer": false,
+      "errors": []
+    },
+    {
+      "id": "specific-before",
+      "outcome": "leak",
+      "rawPixelsDiffer": true,
+      "protectedPixelsDiffer": true,
+      "errors": []
+    },
+    {
+      "id": "specific-after",
+      "outcome": "leak",
+      "rawPixelsDiffer": true,
+      "protectedPixelsDiffer": true,
+      "errors": []
+    },
+    {
+      "id": "attribute-before",
+      "outcome": "leak",
+      "rawPixelsDiffer": true,
+      "protectedPixelsDiffer": true,
+      "errors": []
+    },
+    {
+      "id": "specific-marker",
+      "outcome": "leak",
+      "rawPixelsDiffer": true,
+      "protectedPixelsDiffer": true,
+      "errors": []
+    },
+    {
+      "id": "canvas-shadow",
+      "outcome": "leak",
+      "rawPixelsDiffer": true,
+      "protectedPixelsDiffer": true,
+      "errors": []
+    },
+    {
+      "id": "iframe-shadow",
+      "outcome": "leak",
+      "rawPixelsDiffer": true,
+      "protectedPixelsDiffer": true,
+      "errors": []
+    }
+  ],
+  "cleanup": "All local browser contexts and browser closed"
+}

@@ -1,0 +1,63 @@
+{
+  "at": "2026-10-29T19:40:24.720Z",
+  "node": "v26.12.1",
+  "playwright": "1.64.1",
+  "chromium": "156.0.8078.4",
+  "sandbox": "sandbox_on",
+  "sourceBefore": "0aa60892f0a7b384aa7fa02bf5475e1a4b51e173e8de237fb347ab473667b949",
+  "sourceAfter": "0aa60892f0a7b384aa7fa02bf5475e1a4b51e173e8de237fb347ab473667b949",
+  "sourceChangedDuringProbe": false,
+  "mocked": "All pages and secret markers are synthetic. Real local Chromium/capture code. No provider, account, external target or deployment.",
+  "results": [
+    {
+      "id": "ordinary-before-control",
+      "outcome": "protected",
+      "rawPixelsDiffer": true,
+      "protectedPixelsDiffer": false,
+      "errors": []
+    },
+    {
+      "id": "specific-before",
+      "outcome": "protected",
+      "rawPixelsDiffer": true,
+      "protectedPixelsDiffer": false,
+      "errors": []
+    },
+    {
+      "id": "specific-after",
+      "outcome": "protected",
+      "rawPixelsDiffer": true,
+      "protectedPixelsDiffer": false,
+      "errors": []
+    },
+    {
+      "id": "attribute-before",
+      "outcome": "protected",
+      "rawPixelsDiffer": true,
+      "protectedPixelsDiffer": false,
+      "errors": []
+    },
+    {
+      "id": "specific-marker",
+      "outcome": "protected",
+      "rawPixelsDiffer": true,
+      "protectedPixelsDiffer": false,
+      "errors": []
+    },
+    {
+      "id": "canvas-shadow",
+      "outcome": "protected",
+      "rawPixelsDiffer": true,
+      "protectedPixelsDiffer": false,
+      "errors": []
+    },
+    {
+      "id": "iframe-shadow",
+      "outcome": "protected",
+      "rawPixelsDiffer": true,
+      "protectedPixelsDiffer": false,
+      "errors": []
+    }
+  ],
+  "cleanup": "All local browser contexts and browser closed"
+}

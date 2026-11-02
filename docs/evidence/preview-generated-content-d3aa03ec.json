@@ -1,0 +1,91 @@
+{
+  "at": "2026-10-29T19:42:45.048Z",
+  "node": "v26.12.1",
+  "playwright": "1.64.1",
+  "chromium": "156.0.8078.4",
+  "sandbox": "sandbox_on",
+  "sourceBefore": "19147b4c2b7d916732913874dbeb705281f4ce134996f26051c803564f940d2f",
+  "sourceAfter": "19147b4c2b7d916732913874dbeb705281f4ce134996f26051c803564f940d2f",
+  "sourceChangedDuringProbe": false,
+  "mocked": "All pages and secret markers are synthetic. Real local Chromium/capture code. No provider, account, external target or deployment.",
+  "results": [
+    {
+      "id": "ordinary-before-control",
+      "outcome": "protected",
+      "rawPixelsDiffer": true,
+      "protectedPixelsDiffer": false,
+      "errors": []
+    },
+    {
+      "id": "specific-before",
+      "outcome": "protected",
+      "rawPixelsDiffer": true,
+      "protectedPixelsDiffer": false,
+      "errors": []
+    },
+    {
+      "id": "specific-after",
+      "outcome": "protected",
+      "rawPixelsDiffer": true,
+      "protectedPixelsDiffer": false,
+      "errors": []
+    },
+    {
+      "id": "attribute-before",
+      "outcome": "protected",
+      "rawPixelsDiffer": true,
+      "protectedPixelsDiffer": false,
+      "errors": []
+    },
+    {
+      "id": "specific-marker",
+      "outcome": "protected",
+      "rawPixelsDiffer": true,
+      "protectedPixelsDiffer": false,
+      "errors": []
+    },
+    {
+      "id": "list-style-string",
+      "outcome": "protected",
+      "rawPixelsDiffer": true,
+      "protectedPixelsDiffer": false,
+      "errors": []
+    },
+    {
+      "id": "custom-counter-marker",
+      "outcome": "protected",
+      "rawPixelsDiffer": true,
+      "protectedPixelsDiffer": false,
+      "errors": []
+    },
+    {
+      "id": "css-mask-image",
+      "outcome": "leak",
+      "rawPixelsDiffer": true,
+      "protectedPixelsDiffer": true,
+      "errors": []
+    },
+    {
+      "id": "css-filter-resource",
+      "outcome": "leak",
+      "rawPixelsDiffer": true,
+      "protectedPixelsDiffer": true,
+      "errors": []
+    },
+    {
+      "id": "canvas-shadow",
+      "outcome": "protected",
+      "rawPixelsDiffer": true,
+      "protectedPixelsDiffer": false,
+      "errors": []
+    },
+    {
+      "id": "iframe-shadow",
+      "outcome": "protected",
+      "rawPixelsDiffer": true,
+      "protectedPixelsDiffer": false,
+      "errors": []
+    }
+  ],
+  "cleanup": "All local browser contexts and browser closed"
+}

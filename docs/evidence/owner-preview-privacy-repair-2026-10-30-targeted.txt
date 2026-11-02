@@ -1,0 +1,9 @@
+
+ RUN  v5.0.5 C:/Users/Danrave/Desktop/Project/Oddhound/claude
+
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  03:39:33
+   Duration  6.11s (tests 94%, import 5%, transform 1%)
+

@@ -1,0 +1,18 @@
+{
+  "stage": "initial concurrent implementation, before privacy repair",
+  "timeLocal": "2026-10-30T03:12:45+08:00",
+  "provider": "none",
+  "runtime": "Node26.12.1; Playwright1.64.1; real local Chromium",
+  "sandbox": "sandbox_on",
+  "tests": 4,
+  "passed": 0,
+  "failed": 4,
+  "failures": [
+    "Split and complete copies under one parent produced different pixels when the secret changed",
+    "Open shadow-root secret produced different pixels when the secret changed",
+    "Closed shadow-root content was released instead of pausing",
+    "A MutationObserver reflected the secret between marking and capture"
+  ],
+  "fixtures": "Synthetic known credential markers only; no real credentials or real-site traffic",
+  "earlierHarnessAttempt": "Headless-shell sandbox probe was unsupported; rerun used channel chromium and confirmed sandbox_on"
+}
