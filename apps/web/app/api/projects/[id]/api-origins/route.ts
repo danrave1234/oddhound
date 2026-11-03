@@ -2,7 +2,7 @@
 // its API on another host; writes there are allowed only after that origin is verified on its own.
 import { z } from 'zod';
 import { isIP } from 'node:net';
-import { currentUser, db, json, mayScanVerifiedSites } from '@/lib/server';
+import { currentUser, db, isUuid, json, mayScanVerifiedSites } from '@/lib/server';
 import { canonicalOrigin, newVerificationToken, OriginError, verifyOwnership } from '@core/verification/ownership.ts';
 import { labProfileFromEnv, isDialAllowed } from '@core/net/ip-policy.ts';
 
@@ -10,7 +10,7 @@ const MAX_API_ORIGINS = 4; // matches RunContractSchema.target.apiOrigins
 const Body = z.object({ origin: z.string().trim().min(8).max(300) });
 
 async function ownedProject(id: string, userId: string) {
-  if (!/^[0-9a-f-]{36}$/.test(id)) return null;
+  if (!isUuid(id)) return null;
   return (await db().query<{ id: string; origin: string }>('SELECT id, origin FROM projects WHERE id = $1 AND owner_id = $2', [id, userId])).rows[0] ?? null;
 }
 

@@ -25,6 +25,9 @@ function setupText(setup: { path: string; fields: Record<string, string>; submit
   return `Create a record at \`${setup.path}\` (${fields}) and press "${setup.submit}". Below, {id} is that record's number.`;
 }
 
+/** One line of at most `max` characters: whitespace runs collapsed, then cut (shared by the report writers). */
+export const oneLine = (s: string, max: number) => s.replace(/\s+/g, ' ').trim().slice(0, max);
+
 /** Neutralise anything that could act as an instruction or break out of the fenced block. */
 export function fenceUntrusted(text: string): string {
   return text.replace(/```/g, "'''").replace(/<\/?(system|assistant|user|instructions?)>/gi, '[tag removed]').slice(0, 2000);

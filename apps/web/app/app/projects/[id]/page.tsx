@@ -4,7 +4,7 @@ import { Shell } from '@/ui/shell';
 import { StatusBadge } from '@/ui/status';
 import { Icon } from '@/ui/icons';
 import { SetupSteps } from '@/ui/setup-steps';
-import { currentUser, db } from '@/lib/server';
+import { currentUser, db, isUuid } from '@/lib/server';
 import { VerifyPanel } from './verify-panel';
 import { ApiOrigins } from './api-origins';
 import { suggestedDomainRecord } from '@core/verification/ownership.ts';
@@ -21,7 +21,7 @@ export default async function Project({ params }: { params: Promise<{ id: string
   const { id } = await params;
   const user = await currentUser();
   if (!user) redirect(`/login?next=/app/projects/${id}`);
-  if (!/^[0-9a-f-]{36}$/.test(id)) notFound();
+  if (!isUuid(id)) notFound();
   const project = (await db().query('SELECT id, name, origin, environment, description FROM projects WHERE id = $1 AND owner_id = $2', [id, user.id])).rows[0];
   if (!project) notFound();
   const sv = (await db().query('SELECT token, method, verified, last_reason, last_checked_at FROM site_verifications WHERE project_id = $1 AND origin = $2 ORDER BY revision DESC LIMIT 1', [id, project.origin])).rows[0];

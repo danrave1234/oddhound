@@ -58,8 +58,11 @@ export async function canControlRun(user: AppUser | null, run: RunAccessRow): Pr
   return false;
 }
 
+/** Cheap shape check for route ids before any query. */
+export const isUuid = (id: string) => /^[0-9a-f-]{36}$/.test(id);
+
 export async function loadRunForAccess(runId: string) {
-  if (!/^[0-9a-f-]{36}$/.test(runId)) return null;
+  if (!isUuid(runId)) return null;
   const r = await db().query<RunAccessRow & { id: string; project_id: string | null; status: string; origin: string; parent_run_id: string | null }>(
     `SELECT r.id, r.owner_id, r.mode, r.principal, r.project_id, r.status, r.origin, r.parent_run_id, p.mode AS parent_mode
      FROM runs r LEFT JOIN runs p ON p.id = r.parent_run_id WHERE r.id = $1`, [runId]);

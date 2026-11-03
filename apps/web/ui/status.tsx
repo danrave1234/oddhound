@@ -37,3 +37,9 @@ export const findingStatus = (f: { category: string; verification: string; lifec
   f.category === 'configuration_observation' ? 'observed' : (f.lifecycle ?? f.verification);
 
 export const statusLabel = (v: string) => MAP[v]?.label ?? v.replace(/_/g, ' ');
+
+/** Finding categories in display order, with their plural group labels (run workspace and findings list). */
+export const FINDING_GROUPS: { key: string; label: string }[] = [
+  { key: 'verified_issue', label: 'Verified issues' }, { key: 'needs_review', label: 'Needs review' },
+  { key: 'configuration_observation', label: 'Configuration observations' }, { key: 'suggestion', label: 'Suggestions' },
+];

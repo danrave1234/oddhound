@@ -32,9 +32,12 @@ export function resultDomain(f: ResultFinding, rules: Rule[]): ResultDomain {
   return 'other';
 }
 
+/** A finding that counts as a verified issue: the category and the saved verification must both say so. */
+export const isVerifiedIssue = (f: { category: string; verification: string }) => f.category === 'verified_issue' && f.verification === 'verified';
+
 export function resultCounts(findings: ResultFinding[]) {
   return {
-    verified: findings.filter(f => f.category === 'verified_issue' && f.verification === 'verified').length,
+    verified: findings.filter(isVerifiedIssue).length,
     review: findings.filter(f => f.category === 'needs_review').length,
     observations: findings.filter(f => f.category === 'configuration_observation').length,
     suggestions: findings.filter(f => f.category === 'suggestion').length,

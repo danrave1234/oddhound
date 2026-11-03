@@ -3,6 +3,7 @@
 // Everything shown comes from /api/findings/[id]/proof, which reads stored executions only.
 import { useEffect, useState } from 'react';
 import { Icon } from '@/ui/icons';
+import { copyText, fetchText } from '@/ui/copy';
 
 type Leg = { stage: 'verify' | 'retest'; role: 'replay' | 'control'; n: number; runId: string; outcome: string; reading: string; pinned: boolean; observed: string; evidenceIds: string[]; at: string };
 export type Chain = {
@@ -46,13 +47,14 @@ export function ProofChain({ findingId }: { findingId: string }) {
 /** Renders a loaded chain. Also used on the landing page with a chain read on the server. */
 export function ProofView({ findingId, chain, heading = 'How this was proven' }: { findingId: string; chain: Chain; heading?: string }) {
   const [open, setOpen] = useState<number | null>(null);
-  const [copy, setCopy] = useState<'idle' | 'copied' | 'failed'>('idle');
+  const [copy, setCopy] = useState<'idle' | 'copied' | 'failed' | 'unavailable'>('idle');
   const [receipt, setReceipt] = useState<string | null>(null);
 
   async function copyReceipt() {
-    const text: string = receipt ?? await fetch(`/api/findings/${findingId}/proof?format=receipt`).then((r) => r.text());
+    let text: string;
+    try { text = receipt ?? await fetchText(`/api/findings/${findingId}/proof?format=receipt`); } catch { setCopy('unavailable'); return; }
     setReceipt(text);
-    try { await navigator.clipboard.writeText(text); setCopy('copied'); } catch { setCopy('failed'); }
+    setCopy(await copyText(text));
   }
 
   if (!chain.legs.length) return <p className="muted">No replays were recorded for this finding.</p>;
@@ -97,7 +99,7 @@ export function ProofView({ findingId, chain, heading = 'How this was proven' }:
       <p className={`pc-verdict pc-v-${chain.verdict.state}`}>{chain.verdict.text}</p>
       <div className="row" style={{ gap: 8 }}>
         <button className="btn btn-sm" onClick={copyReceipt}><Icon name={copy === 'copied' ? 'tick' : 'copy'} /> {copy === 'copied' ? 'Receipt copied' : 'Copy fix receipt'}</button>
-        <span role="status" className="muted" style={{ fontSize: 12.5 }}>{copy === 'copied' ? 'Markdown for your pull request description.' : copy === 'failed' ? 'Clipboard unavailable; the receipt is shown below.' : ''}</span>
+        <span role="status" className="muted" style={{ fontSize: 12.5 }}>{copy === 'copied' ? 'Markdown for your pull request description.' : copy === 'failed' ? 'Clipboard unavailable; the receipt is shown below.' : copy === 'unavailable' ? 'The receipt could not be loaded. Try again.' : ''}</span>
       </div>
       {copy === 'failed' && receipt && <pre className="brief" tabIndex={0} aria-label="Fix receipt">{receipt}</pre>}
     </section>

@@ -4,6 +4,7 @@ import { canControlRun, currentUser, json, loadRunForAccess, db, mayScanVerified
 import { admitRun } from '@core/ledger/runs.ts';
 import { RunContractSchema } from '@core/contracts/contract.ts';
 import { enqueueRun } from '@core/queue/queue.ts';
+import { runExpiry, verifiedApiOrigins } from '@/lib/admission';
 
 export async function POST(_req: Request, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params;
@@ -17,14 +18,12 @@ export async function POST(_req: Request, ctx: { params: Promise<{ id: string }>
   const sv = (await db().query<{ revision: number; method: string; last_checked_at: Date }>(
     'SELECT revision, method, last_checked_at FROM site_verifications WHERE project_id = $1 AND origin = $2 AND verified ORDER BY revision DESC LIMIT 1', [parent.project_id, project.origin])).rows[0];
   if (!sv) return json({ error: 'The site is no longer verified. Check ownership again on the project page first.' }, 409);
-  const apiOrigins = (await db().query<{ origin: string; revision: number; verified: boolean }>(
-    `SELECT DISTINCT ON (origin) origin, revision, verified FROM site_verifications WHERE project_id = $1 AND origin <> $2 ORDER BY origin, revision DESC`,
-    [parent.project_id, project.origin])).rows.filter((a) => a.verified).map((a) => ({ origin: a.origin, verificationRevision: a.revision }));
+  const apiOrigins = await verifiedApiOrigins(db(), parent.project_id, project.origin);
   const previous = RunContractSchema.parse(parent.contract);
   const contract = RunContractSchema.parse({
     ...previous,
     target: { ...previous.target, apiOrigins, verification: { kind: 'owner_verified', method: sv.method, revision: sv.revision, checkedAt: new Date(sv.last_checked_at).toISOString() } },
-    expiresAt: new Date(Date.now() + 60 * 60_000).toISOString(),
+    expiresAt: runExpiry(),
   });
   const result = await admitRun(db(), { principal: `user:${user.id}`, ownerId: user.id, projectId: parent.project_id, mode: 'verified_site', contract, spendAccount: 'public' });
   if (!result.ok) return json({ error: `Run not admitted: ${result.reason.replace(/_/g, ' ')}.`, reason: result.reason }, 429);

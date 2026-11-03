@@ -2,6 +2,8 @@
 // answer: fixed, still failing, or not decided. Each row comes from that retest's own replay result,
 // never from a lifecycle carried over from an earlier retest.
 
+import { oneLine } from './fix-brief.ts';
+
 export type RetestEvent = { type: string; at?: string; payload: Record<string, unknown> };
 export type ReleaseRow = { findingId: string; title: string; state: 'fixed' | 'still_failing' | 'undecided'; detail: string };
 export type ReleaseCheck = { rows: ReleaseRow[]; fixed: number; stillFailing: number; undecided: number; ready: boolean };
@@ -34,8 +36,6 @@ export function releaseCheck(events: RetestEvent[], expected?: number): ReleaseC
   return { rows, fixed, stillFailing, undecided, ready: rows.length > 0 && complete && stillFailing === 0 && undecided === 0 };
 }
 
-const oneLine = (s: string) => s.replace(/\s+/g, ' ').trim().slice(0, 160);
-
 export function releaseNoteMarkdown(c: ReleaseCheck, meta: { origin: string; runUrl: string; at: string }): string {
   const lines = [
     `## Oddhound release check: ${meta.origin}`,
@@ -47,7 +47,7 @@ export function releaseNoteMarkdown(c: ReleaseCheck, meta: { origin: string; run
     const rows = c.rows.filter((r) => r.state === state);
     if (!rows.length) return;
     lines.push(`### ${title}`);
-    for (const r of rows) lines.push(`- ${mark} ${oneLine(r.title)}: ${r.detail}`);
+    for (const r of rows) lines.push(`- ${mark} ${oneLine(r.title, 160)}: ${r.detail}`);
     lines.push('');
   };
   section('Still failing', 'still_failing', '[x]');

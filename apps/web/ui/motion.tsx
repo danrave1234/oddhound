@@ -58,18 +58,3 @@ export function useNow(enabled: boolean, ms = 1000) {
   }, [enabled, ms]);
   return now;
 }
-
-/** Progress ring with a defined denominator. `value` and `max` are real counts. */
-export function Ring({ value, max, size = 56, label, display, spoken, tone = 'accent' }: { value: number; max: number; size?: number; label: string; display: React.ReactNode; spoken: string; tone?: 'accent' | 'ok' | 'warn' | 'bad' | 'info' }) {
-  const r = (size - 7) / 2, c = 2 * Math.PI * r;
-  const k = max > 0 ? Math.max(0, Math.min(1, value / max)) : 0;
-  return (
-    <div className={`gauge gauge-${tone}`} role="img" aria-label={`${spoken} ${label}`}>
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden>
-        <circle cx={size / 2} cy={size / 2} r={r} className="gauge-track" />
-        <circle cx={size / 2} cy={size / 2} r={r} className="gauge-fill" strokeDasharray={c} strokeDashoffset={c * (1 - k)} transform={`rotate(-90 ${size / 2} ${size / 2})`} />
-      </svg>
-      <div className="gauge-text"><strong>{display}</strong><span>{label}</span></div>
-    </div>
-  );
-}

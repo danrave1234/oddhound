@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Icon } from '@/ui/icons';
+import { copyText } from '@/ui/copy';
 
 type Method = 'dns_txt' | 'well_known_file' | 'meta_tag';
 
@@ -10,7 +11,7 @@ function CopyField({ value, label }: { value: string; label: string }) {
   return (
     <div className="copy-field">
       <input className="input mono" readOnly value={value} aria-label={label} onFocus={(e) => e.currentTarget.select()} />
-      <button type="button" className="btn" onClick={() => navigator.clipboard.writeText(value).then(() => setState('copied'), () => setState('failed'))}>
+      <button type="button" className="btn" onClick={async () => setState(await copyText(value))}>
         {state === 'copied' ? <span className="pop-in" style={{ display: 'inline-flex', color: 'var(--ok)' }}><Icon name="tick" /></span> : <Icon name="copy" />} {state === 'copied' ? 'Copied' : 'Copy'}
       </button>
       <span role="status" className="sr-only">{state === 'copied' ? 'Copied to clipboard' : state === 'failed' ? 'Copy failed; select the text manually' : ''}</span>

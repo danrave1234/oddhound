@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { currentUser, db, json } from '@/lib/server';
+import { currentUser, db, isUuid, json } from '@/lib/server';
 import { verifyOwnership } from '@core/verification/ownership.ts';
 import { labProfileFromEnv } from '@core/net/ip-policy.ts';
 
@@ -9,7 +9,7 @@ const Body = z.object({ method: z.enum(['dns_txt', 'well_known_file', 'meta_tag'
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params;
   const user = await currentUser();
-  if (!user || !/^[0-9a-f-]{36}$/.test(id)) return json({ error: 'Not found' }, 404);
+  if (!user || !isUuid(id)) return json({ error: 'Not found' }, 404);
   const parsed = Body.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return json({ error: 'Choose a verification method.' }, 400);
   const sv = (await db().query<{ id: string; origin: string; token: string; site_origin: string; site_token: string }>(

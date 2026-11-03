@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { Icon, type IconName } from '@/ui/icons';
+import { copyText } from '@/ui/copy';
 import { StatusBadge, findingStatus } from '@/ui/status';
 import type { ReportVerdict, Comparison } from '@/lib/run-data';
 import { checklistMarkdown, type GapItem } from '@core/reports/gaps.ts';
@@ -24,7 +25,7 @@ export function ResultsDashboard({ status, reason, report, reportVerdict, findin
   const changeCounts = comparison ? Object.values(comparison.changes).reduce((n, c) => ({ ...n, [c]: n[c] + 1 }), { new: 0, repeat: 0 }) : null;
   async function copyChecklist() {
     const text = checklistMarkdown(gaps, { origin, runUrl: `${window.location.origin}/runs/${runId}` });
-    try { await navigator.clipboard.writeText(text); setListState('copied'); } catch { setListState('failed'); }
+    setListState(await copyText(text));
   }
   const totals = resultCounts(findings);
   const grouped = RESULT_DOMAINS.map(domain => ({ ...domain, findings: findings.filter(f => resultDomain(f, rules) === domain.key) }));

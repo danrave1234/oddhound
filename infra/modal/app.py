@@ -1,7 +1,7 @@
 """Oddhound on Modal: web app, run worker and demo targets. Per-run browsers are Modal Sandboxes created
 by the worker (packages/core/browser/modal-runtime.ts), in the separate secret-free app "oddhound-browser".
 
-Deploy from a clean export of committed code (see infra/modal/README.md):
+Deploy from a clean export of committed code (see docs/MODAL_VERIFICATION.md):
 
     ODDHOUND_MODAL_WORKSPACE=<workspace> MODAL_BROWSER_IMAGE_ID=im-... modal deploy infra/modal/app.py
 

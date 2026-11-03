@@ -2,9 +2,8 @@
 // Every line comes from the saved finding, its pinned scenario and the replays that judged it.
 // Site-quoted text is kept to one line and labelled untrusted; nothing about the cause is guessed.
 
-import { reproduction, type BriefInput } from './fix-brief.ts';
+import { oneLine, reproduction, type BriefInput } from './fix-brief.ts';
 
-const oneLine = (s: string, max = 300) => s.replace(/\s+/g, ' ').trim().slice(0, max);
 const severity: Record<string, string> = { high: 'High', medium: 'Medium', low: 'Low' };
 
 export function bugTicketMarkdown(b: BriefInput, meta: { runUrl: string; appOrigin: string }): string {
@@ -25,11 +24,11 @@ export function bugTicketMarkdown(b: BriefInput, meta: { runUrl: string; appOrig
   lines.push('');
   if (b.scenario) {
     lines.push('## Steps to reproduce');
-    reproduction(b.scenario.assertion).forEach((s, i) => lines.push(`${i + 1}. ${oneLine(s)}`));
+    reproduction(b.scenario.assertion).forEach((s, i) => lines.push(`${i + 1}. ${oneLine(s, 300)}`));
     lines.push('');
   }
   lines.push('## Expected');
-  lines.push(oneLine(f.expected));
+  lines.push(oneLine(f.expected, 300));
   lines.push(`Source: ${f.ruleSource}${f.ruleId ? ` (${f.ruleId})` : ''}.`);
   lines.push('');
   lines.push('## Actual');

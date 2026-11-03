@@ -5,6 +5,7 @@ import { canControlRun, currentUser, json, loadRunForAccess, db, anonymousPrinci
 import { admitRun } from '@core/ledger/runs.ts';
 import { RunContractSchema, demoTargetContract } from '@core/contracts/contract.ts';
 import { enqueueRun } from '@core/queue/queue.ts';
+import { runExpiry } from '@/lib/admission';
 
 export async function POST(_req: Request, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params;
@@ -23,7 +24,7 @@ export async function POST(_req: Request, ctx: { params: Promise<{ id: string }>
     if (!user || !mayScanVerifiedSites(user)) return json({ error: 'Verified-site retests are invite-only for now.' }, 403);
     // A handed-over session cannot be replayed without the owner signing in again.
     if (contract.handoff.enabled) return json({ error: 'This run used your own sign-in, which a retest cannot repeat. After deploying the fix, start a new run with the sign-in handoff instead.' }, 409);
-    contract = { ...contract, expiresAt: new Date(Date.now() + 60 * 60_000).toISOString() };
+    contract = { ...contract, expiresAt: runExpiry() };
   }
   const principal = user ? `user:${user.id}` : await anonymousPrincipal();
   const result = await admitRun(db(), {

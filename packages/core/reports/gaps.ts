@@ -5,7 +5,7 @@ export type DiscoveryEntry = { path: string; family?: string; visited: boolean; 
 export type CoverageRoute = { route: string; total: number; exercised: number; blocked: number };
 export type GapItem = { kind: 'not_opened' | 'blocked' | 'skipped' | 'controls'; path: string; text: string };
 
-const oneLine = (s: string) => s.replace(/\s+/g, ' ').trim().slice(0, 140);
+import { oneLine } from './fix-brief.ts';
 
 export function untestedChecklist(input: { entries?: DiscoveryEntry[] | null; routes?: CoverageRoute[] | null; limit?: number }): GapItem[] {
   const items: GapItem[] = [];
@@ -15,8 +15,8 @@ export function untestedChecklist(input: { entries?: DiscoveryEntry[] | null; ro
     const key = `${e.disposition ?? 'pending'}:${e.path}`;
     if (seen.has(key)) continue;
     seen.add(key);
-    if (e.disposition === 'blocked') items.push({ kind: 'blocked', path: e.path, text: `${e.path}: blocked, ${oneLine(e.reason ?? 'no reason recorded')}` });
-    else if (e.disposition === 'skipped') items.push({ kind: 'skipped', path: e.path, text: `${e.path}: skipped by the agent, ${oneLine(e.reason ?? 'no reason recorded')}` });
+    if (e.disposition === 'blocked') items.push({ kind: 'blocked', path: e.path, text: `${e.path}: blocked, ${oneLine(e.reason ?? 'no reason recorded', 140)}` });
+    else if (e.disposition === 'skipped') items.push({ kind: 'skipped', path: e.path, text: `${e.path}: skipped by the agent, ${oneLine(e.reason ?? 'no reason recorded', 140)}` });
     else if (!e.visited) items.push({ kind: 'not_opened', path: e.path, text: `${e.path}: discovered, never opened` });
   }
   for (const r of input.routes ?? []) {

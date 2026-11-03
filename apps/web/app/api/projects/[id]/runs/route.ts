@@ -1,10 +1,11 @@
 // Start a run on a verified site from the owner-approved run contract (MVP §17).
 import { z } from 'zod';
-import { currentUser, db, json, mayScanVerifiedSites } from '@/lib/server';
+import { currentUser, db, isUuid, json, mayScanVerifiedSites } from '@/lib/server';
 import { admitRun } from '@core/ledger/runs.ts';
 import { RunContractSchema, DEFAULT_DENIED_PATH_KEYWORDS, DEFAULT_DENIED_OPERATIONS, HANDOFF_DENIED_OPERATIONS, SIGN_OUT_KEYWORDS, withBaselineRules, type RunContract } from '@core/contracts/contract.ts';
 import { storeCredential } from '@core/ledger/credentials.ts';
 import { enqueueRun } from '@core/queue/queue.ts';
+import { runExpiry, verifiedApiOrigins } from '@/lib/admission';
 
 const Body = z.object({
   testMode: z.enum(['active', 'observation_only']),
@@ -27,16 +28,13 @@ const Body = z.object({
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params;
   const user = await currentUser();
-  if (!user || !/^[0-9a-f-]{36}$/.test(id)) return json({ error: 'Not found' }, 404);
+  if (!user || !isUuid(id)) return json({ error: 'Not found' }, 404);
   if (!mayScanVerifiedSites(user)) return json({ error: 'Verified-site scanning is invite-only for now.' }, 403);
   const project = (await db().query('SELECT id, origin, environment, description FROM projects WHERE id = $1 AND owner_id = $2', [id, user.id])).rows[0];
   if (!project) return json({ error: 'Not found' }, 404);
   const sv = (await db().query('SELECT revision, method, verified, last_checked_at FROM site_verifications WHERE project_id = $1 AND origin = $2 ORDER BY revision DESC LIMIT 1', [id, project.origin])).rows[0];
   if (!sv?.verified) return json({ error: 'Verify that you own this site before starting a run.' }, 409);
-  // Only verified API hosts enter scope; an added but unverified host stays a public resource.
-  const apiOrigins = (await db().query<{ origin: string; revision: number; verified: boolean }>(
-    `SELECT DISTINCT ON (origin) origin, revision, verified FROM site_verifications WHERE project_id = $1 AND origin <> $2 ORDER BY origin, revision DESC`,
-    [id, project.origin])).rows.filter((a) => a.verified).map((a) => ({ origin: a.origin, verificationRevision: a.revision }));
+  const apiOrigins = await verifiedApiOrigins(db(), id, project.origin);
 
   const parsed = Body.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return json({ error: 'Check the run settings.', issues: parsed.error.issues }, 400);
@@ -68,7 +66,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     deniedOperations: [...b.deniedOperations, ...(b.handoff.enabled ? HANDOFF_DENIED_OPERATIONS : [])].slice(0, 20),
     handoff: b.handoff,
     devices: b.devices,
-    expiresAt: new Date(Date.now() + 60 * 60_000).toISOString(),
+    expiresAt: runExpiry(),
   });
   // An admin working on a local development build spends the development allocation (MVP §20), not
   // the public one, so it does not use up the public per-user daily quota. Never in production.

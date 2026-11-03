@@ -2,9 +2,10 @@
 // Last-Event-ID, so nothing is lost when the connection drops.
 import { canViewRun, currentUser, db, loadRunForAccess } from '@/lib/server';
 import { eventsAfter } from '@core/ledger/runs.ts';
+import { TERMINAL_RUN_STATUSES } from '@core/contracts/status.ts';
 
 export const dynamic = 'force-dynamic';
-const TERMINAL = new Set(['completed', 'stopped', 'failed', 'blocked']);
+const TERMINAL = new Set<string>(TERMINAL_RUN_STATUSES);
 
 export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params;

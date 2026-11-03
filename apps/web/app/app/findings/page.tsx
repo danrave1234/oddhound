@@ -1,15 +1,15 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { Shell } from '@/ui/shell';
-import { StatusBadge, findingStatus } from '@/ui/status';
+import { StatusBadge, findingStatus, FINDING_GROUPS } from '@/ui/status';
 import { Icon } from '@/ui/icons';
 import { currentUser, db } from '@/lib/server';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Findings' };
 
-const CATEGORIES = ['verified_issue', 'needs_review', 'configuration_observation', 'suggestion'] as const;
-const LABELS: Record<string, string> = { verified_issue: 'Verified issues', needs_review: 'Needs review', configuration_observation: 'Configuration observations', suggestion: 'Suggestions' };
+const CATEGORIES = FINDING_GROUPS.map((g) => g.key);
+const LABELS: Record<string, string> = Object.fromEntries(FINDING_GROUPS.map((g) => [g.key, g.label]));
 
 export default async function Findings({ searchParams }: { searchParams: Promise<{ category?: string; device?: string }> }) {
   const user = await currentUser();

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { HoundMark, Icon } from '@/ui/icons';
 import { Course } from '@/ui/course';
 import { publicStatus } from '@/lib/status-data';
+import { LIMITS, USD } from '@core/contracts/limits.ts';
 import { loadLandingRun } from '@/lib/landing-data';
 import { currentUser } from '@/lib/server';
 import { TryDemoButton } from './try-demo-button';
@@ -118,7 +119,7 @@ export default async function Landing() {
           <dl>
             <div><dt>Which sites</dt><dd>Only sites you prove you own with a DNS record, a file or a meta tag. Ownership is checked again before every run, and private or internal addresses are refused.</dd></div>
             <div><dt>Which browser</dt><dd>A fresh, sandboxed Chromium for each run, with no Oddhound keys inside. Traffic goes through a filtering proxy, and the machine is destroyed when the run ends.</dd></div>
-            <div><dt>What it costs</dt><dd>Each run reserves at most $2 of model spend before any call. A daily ceiling and a kill switch protect the shared budget.</dd></div>
+            <div><dt>What it costs</dt><dd>Each run reserves at most ${LIMITS.modelSpendPerRunMicros / USD} of model spend before any call. A daily ceiling and a kill switch protect the shared budget.</dd></div>
             <div><dt>What a result means</dt><dd>A verified bug comes with saved replays. &ldquo;No failures&rdquo; means none in the tested scope, never that the app is bug-free.</dd></div>
           </dl>
           <div className="row" style={{ gap: 10 }}>

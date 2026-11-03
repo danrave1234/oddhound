@@ -10,6 +10,7 @@ import { statusLabel } from '@/ui/status';
 import { LIMITS } from '@core/contracts/limits.ts';
 import { TrailMap } from './trail-map';
 import { trailAtTime } from './trail-data';
+import { isVerifiedIssue } from './results-data';
 import { OwnerPreview, type PreviewState } from './owner-preview';
 import { completeReplayEvents } from './replay-data';
 
@@ -120,7 +121,7 @@ export function LiveDeck({ snap, active, replay, onOpenBrowser, onOpenFindings }
     const actionsUsed = atEnd ? Math.max(snap.actions[0]?.seq ?? 0, actionEvents.length) : actionEvents.length;
     return {
       status, lastAction, pages, charters, actionsUsed,
-      candidates: atEnd ? (snap.candidateCount ?? count('finding.candidate')) : count('finding.candidate'), verified: atEnd ? snap.findings.filter((f) => f.category === 'verified_issue' && f.verification === 'verified').length : count('finding.verified'),
+      candidates: atEnd ? (snap.candidateCount ?? count('finding.candidate')) : count('finding.candidate'), verified: atEnd ? snap.findings.filter((f) => isVerifiedIssue(f as { category: string; verification: string })).length : count('finding.verified'),
       signals: atEnd ? (snap.detectedSignals ?? count('signal.detected')) : count('signal.detected'),
       seen,
     };

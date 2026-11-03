@@ -13,25 +13,25 @@ Oddhound is an active exploratory-testing agent for web apps, driven by **Meta M
 
 **Full honest status: [docs/STATUS.md](docs/STATUS.md).** Highlights:
 
-- **Real model:** Muse Spark 1.3 autonomously found and verified all four seeded defects on the demo target, with no click script. On the corrected build every finding flipped to *fixed*.
+- **Real model:** Muse Spark 1.3 autonomously found and verified the demo target's seeded defects (8 verified functional bugs in the Nov 3 Modal run), with no click script. On the corrected build every finding flipped to *fixed*.
 - **Automated tests:**
-  - 70/70 unit and integration tests;
+  - 236 unit tests (26 files) plus the integration suite (vitest), 7 UI tests (node --test);
   - 15/15 end-to-end lab checks;
   - 13/13 HTTP tenant-isolation checks;
   - 10/10 in-container network checks;
   - 9/9 live provider smoke checks.
-- **First real verified site:** `www.danravekeh.com` was verified with a `/.well-known` file and scanned by Muse Spark in observation-only mode. A second real site and the public deployment are still open (see the status doc).
+- **First real verified site:** `www.danravekeh.com` was verified with a `/.well-known` file and scanned by Muse Spark in observation-only mode. The app is deployed on Modal (web, worker, demo targets; per-run browser Sandboxes); see [docs/SUBMISSION.md](docs/SUBMISSION.md) for the URLs and the status doc for what is still open.
 
 ## Layout
 
 ```text
 apps/fixture   demo target (Harbor Table) with five labelled defects and a --fixed build
 apps/browser   secret-free per-run browser image: Playwright server (non-root, sandboxed Chromium), SSRF egress proxy, nftables
-apps/worker    queue consumer (BullMQ 6 on PostgreSQL) + reapers for stale runs and orphan browsers
+apps/worker    queue consumer (BullMQ 6 on PostgreSQL) + reapers for stale runs and orphan browser sandboxes
 apps/web       Next.js 16 UI + API: landing, demo target, replay, projects, verification, run workspace, findings, reports, status
 packages/core  contracts, ledgers (runs/spend/credentials), SSRF policy, ownership verification, Meta adapter,
                agent loop + tools, verifier (scenarios), reports (fix brief, Playwright export), Context7 (MCP v2)
-infra/         Playwright seccomp profile, Fly app configs (untested)
+infra/         Modal deployment (infra/modal/app.py), Playwright seccomp profile, earlier Fly configs (unused)
 tests/         unit + integration (vitest), e2e lab harness, HTTP access checks, provider/Context7 smoke, no-Lucide lint
 docs/spec      the shared planning documents this build follows
 ```

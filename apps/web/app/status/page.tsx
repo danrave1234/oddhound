@@ -13,7 +13,7 @@ export default async function Status() {
   const rows: { icon: IconName; label: string; ok: boolean; detail: string }[] = [
     { icon: 'play', label: 'Live runs', ok: !s.killSwitch, detail: s.killSwitch ? 'Paused by the operator (kill switch on).' : 'Accepting runs.' },
     { icon: 'sniff', label: 'Meta model access', ok: s.metaConfigured, detail: s.metaConfigured ? `Primary profile: Meta ${s.metaModel} (direct API).` : 'No Meta API key configured; live runs are blocked.' },
-    { icon: 'pulse', label: 'Public budget today', ok: s.publicDailyLeftUsd > 0.5, detail: `$${s.publicDailyLeftUsd.toFixed(2)} of ${(LIMITS.publicDailyMicros / 1e6).toFixed(2)} left today (UTC); ${s.publicLifetimeLeftUsd.toFixed(2)} of ${(LIMITS.publicLifetimeMicros / 1e6).toFixed(2)} lifetime.` },
+    { icon: 'pulse', label: 'Public budget today', ok: s.publicDailyLeftUsd > 0.5, detail: `$${s.publicDailyLeftUsd.toFixed(2)} of $${(LIMITS.publicDailyMicros / 1e6).toFixed(2)} left today (UTC); $${s.publicLifetimeLeftUsd.toFixed(2)} of $${(LIMITS.publicLifetimeMicros / 1e6).toFixed(2)} lifetime.` },
     { icon: 'list', label: 'Queue', ok: s.queued < 20, detail: `${s.active} active, ${s.queued} waiting (limit 20).` },
     { icon: 'shield', label: 'Browser isolation', ok: lastBrowser?.sandbox_verdict === 'sandbox_on', detail: lastBrowser ? `Last run: ${lastBrowser.browser_ref}, Chromium sandbox ${lastBrowser.sandbox_verdict}.` : 'No run yet.' },
     { icon: 'eye', label: 'Demo replay', ok: Boolean(s.replayRunId), detail: s.replayRunId ? 'A recorded real run is available.' : 'No recorded run yet.' },

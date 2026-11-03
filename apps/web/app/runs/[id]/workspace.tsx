@@ -6,12 +6,14 @@ import type { GapItem } from '@core/reports/gaps.ts';
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { HoundMark, Icon, type IconName } from '@/ui/icons';
-import { StatusBadge, statusLabel, findingStatus } from '@/ui/status';
+import { StatusBadge, statusLabel, findingStatus, FINDING_GROUPS } from '@/ui/status';
+import { copyText, fetchText } from '@/ui/copy';
+import { RUN_STATUSES, TERMINAL_RUN_STATUSES } from '@core/contracts/status.ts';
 import { WorkflowMap } from './workflow-map';
 import { LiveDeck } from './live-deck';
 import { RunHistory } from './run-history';
 import { ResultsDashboard } from './results-dashboard';
-import type { ResultFinding } from './results-data';
+import { isVerifiedIssue, type ResultFinding } from './results-data';
 import { OwnerPreview, type PreviewState } from './owner-preview';
 import type { NavigationFrontier } from '@core/agent/frontier.ts';
 type DiscoverySummary = ReturnType<NavigationFrontier['summary']>;
@@ -126,11 +128,8 @@ function TestPlan({ plan, active }: { plan: NonNullable<Snapshot['plan']>; activ
   );
 }
 
-const ACTIVE = new Set(['queued', 'provisioning', 'running', 'waiting_for_input', 'stopping', 'finalizing']);
-const GROUPS: { key: string; label: string }[] = [
-  { key: 'verified_issue', label: 'Verified issues' }, { key: 'needs_review', label: 'Needs review' },
-  { key: 'configuration_observation', label: 'Configuration observations' }, { key: 'suggestion', label: 'Suggestions' },
-];
+const ACTIVE = new Set<string>(RUN_STATUSES.filter((s) => !TERMINAL_RUN_STATUSES.includes(s)));
+const GROUPS = FINDING_GROUPS;
 
 function describe(e: Snapshot['events'][number]): string | null {
   const p = e.payload;
@@ -140,7 +139,7 @@ function describe(e: Snapshot['events'][number]): string | null {
     case 'workflow.updated': return `Workflow “${p.name}”: ${statusLabel(p.status)} — ${p.summary}`;
     case 'finding.candidate': return p.source === 'detector' ? `Recorded for replay (${p.ruleId}): ${p.title}` : `Candidate reported against ${p.ruleId}: ${p.title}`;
     case 'finding.verifying': return `Replaying candidate independently: ${p.title}`;
-    case 'finding.verified': return `Verified (${(p.outcomes ?? []).length}/${(p.outcomes ?? []).length} replays failed the rule): ${p.title}`;
+    case 'finding.verified': return `Verified (${((p.outcomes ?? []) as string[]).filter((o) => o === 'failed').length}/${(p.outcomes ?? []).length} replays failed the rule): ${p.title}`;
     case 'finding.dismissed': return `Dismissed — not reproduced: ${p.title}`;
     case 'finding.inconclusive': return `Inconclusive: ${p.title}`;
     case 'finding.observation': return `Configuration observation: ${p.title}`;
@@ -239,21 +238,28 @@ export function RunWorkspace({ initial, controllable, replay, signedIn }: { init
     return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
   }, [run.started_at, run.finished_at, lastUpdate]);
 
+  /** POSTs a run command; a network failure becomes a notice instead of a silent dead button. */
+  async function post(path: string): Promise<{ ok: boolean; body: Record<string, any> } | null> {
+    try {
+      const r = await fetch(`/api/runs/${runId}/${path}`, { method: 'POST' });
+      return { ok: r.ok, body: await r.json().catch(() => ({})) };
+    } catch { setNotice('Could not reach Oddhound. Check your connection and try again.'); return null; }
+  }
   async function stop() {
-    const r = await fetch(`/api/runs/${runId}/stop`, { method: 'POST' });
-    const b = await r.json().catch(() => ({}));
-    setNotice(r.ok ? `Stop accepted. ${b.note}` : b.error ?? 'Could not stop.');
+    const r = await post('stop');
+    if (!r) return;
+    setNotice(r.ok ? `Stop accepted. ${r.body.note}` : r.body.error ?? 'Could not stop.');
     void refresh();
   }
   async function retest() {
-    const r = await fetch(`/api/runs/${runId}/retest`, { method: 'POST' });
-    const b = await r.json().catch(() => ({}));
-    if (r.ok) window.location.assign(`/runs/${b.runId}`); else setNotice(b.error ?? 'Could not start a retest.');
+    const r = await post('retest');
+    if (!r) return;
+    if (r.ok) window.location.assign(`/runs/${r.body.runId}`); else setNotice(r.body.error ?? 'Could not start a retest.');
   }
   async function runAgain() {
-    const r = await fetch(`/api/runs/${runId}/again`, { method: 'POST' });
-    const b = await r.json().catch(() => ({}));
-    if (r.ok) window.location.assign(`/runs/${b.runId}`); else setNotice(b.error ?? 'Could not start the run.');
+    const r = await post('again');
+    if (!r) return;
+    if (r.ok) window.location.assign(`/runs/${r.body.runId}`); else setNotice(r.body.error ?? 'Could not start the run.');
   }
   const [noteState, setNoteState] = useState<'idle' | 'copied' | 'failed'>('idle');
   const retestEvents = snap.retestEvents ?? snap.events.filter((e) => e.type === 'retest.finished' || e.type === 'retest.blocked');
@@ -261,12 +267,12 @@ export function RunWorkspace({ initial, controllable, replay, signedIn }: { init
   async function copyReleaseNote() {
     if (!release) return;
     const text = releaseNoteMarkdown(release, { origin: run.origin, runUrl: `${window.location.origin}/runs/${runId}`, at: new Date(run.finished_at ?? run.started_at ?? Date.now()).toISOString().slice(0, 16).replace('T', ' ') + ' UTC' });
-    try { await navigator.clipboard.writeText(text); setNoteState('copied'); } catch { setNoteState('failed'); }
+    setNoteState(await copyText(text));
   }
   const gaps = snap.gaps ?? [];
 
 
-  const verifiedCount = snap.findings.filter((f) => f.category === 'verified_issue' && f.verification === 'verified').length;
+  const verifiedCount = snap.findings.filter(isVerifiedIssue).length;
   const selectedFinding = snap.findings.find((f) => f.id === selected) ?? null;
   const inspectorRef = useRef<HTMLElement>(null);
   const viewsRef = useRef<HTMLElement>(null);
@@ -452,14 +458,6 @@ export function RunWorkspace({ initial, controllable, replay, signedIn }: { init
   );
 }
 
-function kindOf(type: string): 'bad' | 'ok' | 'warn' | 'accent' | 'plain' {
-  if (['finding.verified', 'run.error', 'provider.error', 'browser.destroy_unconfirmed', 'site.verification_failed', 'site.unreachable', 'site.bot_challenge', 'budget.denied', 'signal.detected'].includes(type)) return 'bad';
-  if (['site.verified', 'browser.ready', 'browser.terminated', 'handoff.completed'].includes(type)) return 'ok';
-  if (['finding.candidate', 'finding.inconclusive', 'scope.denied', 'egress.denied', 'handoff.timed_out', 'handoff.cancelled', 'model.truncated'].includes(type)) return 'warn';
-  if (['state.discovered', 'workflow.updated', 'handoff.started', 'finding.verifying'].includes(type)) return 'accent';
-  return 'plain';
-}
-
 function Empty({ icon, text }: { icon: IconName; text: string }) {
   return <div className="empty empty-sm"><span className="tile tile-neutral"><Icon name={icon} /></span><p>{text}</p></div>;
 }
@@ -492,18 +490,22 @@ function RunDetails({ snap }: { snap: Snapshot }) {
 
 function FindingInspector({ finding: f, controllable, onRetest, runActive, runMode, onBack }: { finding: Record<string, any>; controllable: boolean; onRetest: () => void; runActive: boolean; runMode: string; onBack: () => void }) {
   const [brief, setBrief] = useState<string | null>(null);
-  const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>('idle');
+  // 'unavailable': the text itself could not be loaded, so there is nothing to show or copy.
+  const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed' | 'unavailable'>('idle');
   useEffect(() => { setBrief(null); setCopyState('idle'); }, [f.id]);
   async function copy() {
-    const text: string = brief ?? await fetch(`/api/findings/${f.id}/brief`).then((r) => r.text());
+    let text: string;
+    try { text = brief ?? await fetchText(`/api/findings/${f.id}/brief`); } catch { setCopyState('unavailable'); return; }
     setBrief(text);
-    try { await navigator.clipboard.writeText(text); setCopyState('copied'); } catch { setCopyState('failed'); }
+    setCopyState(await copyText(text));
   }
   const [ticketState, setTicketState] = useState<'idle' | 'copied' | 'failed'>('idle');
   async function copyTicket() {
-    const text: string = await fetch(`/api/findings/${f.id}/brief?format=ticket`).then((r) => r.text());
+    let text: string;
+    try { text = await fetchText(`/api/findings/${f.id}/brief?format=ticket`); } catch { setTicketState('failed'); setCopyState('unavailable'); return; }
     setBrief(text);
-    try { await navigator.clipboard.writeText(text); setTicketState('copied'); setCopyState('idle'); } catch { setTicketState('failed'); setCopyState('failed'); }
+    const state = await copyText(text);
+    setTicketState(state); setCopyState(state === 'copied' ? 'idle' : 'failed');
   }
   return (
     <article style={{ display: 'grid', gap: 16 }} className="fade-in" key={f.id}>
@@ -530,7 +532,7 @@ function FindingInspector({ finding: f, controllable, onRetest, runActive, runMo
         </div>
       )}
       <span role="status" className="status-line" style={{ color: copyState === 'copied' ? 'var(--ok)' : 'var(--warn)', minHeight: copyState === 'idle' ? 0 : undefined }}>
-        {copyState === 'copied' ? <><Icon name="check" /> Fix prompt copied — paste it into your coding AI.</> : copyState === 'failed' ? <><Icon name="alert" /> Clipboard unavailable — select the text below.</> : ''}</span>
+        {copyState === 'copied' ? <><Icon name="check" /> Fix prompt copied — paste it into your coding AI.</> : copyState === 'failed' ? <><Icon name="alert" /> Clipboard unavailable — select the text below.</> : copyState === 'unavailable' ? <><Icon name="alert" /> The text could not be loaded. Try again.</> : ''}</span>
       {brief && <pre className="brief fade-in" tabIndex={0} aria-label="Fix brief">{brief}</pre>}
       {(f.evidence_ids ?? []).length > 0 && (
         <section className="section"><h3 className="section-title" style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Icon name="evidence" /> Evidence ({f.evidence_ids.length})</h3>
