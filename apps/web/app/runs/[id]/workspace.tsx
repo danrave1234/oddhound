@@ -444,15 +444,20 @@ export function RunWorkspace({ initial, controllable, replay, signedIn, canShare
             {view === 'findings' && (
               <>
                 {GROUPS.map((g) => {
-                  const items = snap.findings.filter((f) => f.category === g.key);
+                  // Near-duplicates (same rule, state and title once quoted values and numbers are folded) show as one row with a count.
+                  const all = snap.findings.filter((f) => f.category === g.key);
+                  const fold = (f: Record<string, any>) => `${f.rule_id}|${f.verification}|${String(f.title).replace(/"[^"]*"/g, '"…"').replace(/\d+/g, '#')}`;
+                  const counts = new Map<string, number>();
+                  for (const f of all) counts.set(fold(f), (counts.get(fold(f)) ?? 0) + 1);
+                  const items = all.filter((f, i) => all.findIndex((x) => fold(x) === fold(f)) === i);
                   return (
                     <div className="card fade-in" key={g.key}>
-                      <div className="card-header"><div className="group-head"><StatusBadge value={g.key} /><span className="count">{items.length}</span></div></div>
+                      <div className="card-header"><div className="group-head"><StatusBadge value={g.key} /><span className="count">{all.length}</span></div></div>
                       {items.length ? (
                         <div className="table-wrap"><table className="grid selectable"><thead><tr><th>Title</th><th>Status</th><th className="hide-sm">Impact</th><th className="hide-sm">Device</th><th className="hide-sm">Rule</th></tr></thead><tbody>
                           {items.map((f) => (
                             <tr key={f.id} aria-selected={f.id === selected} tabIndex={0} onClick={() => selectFinding(f.id)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectFinding(f.id); } }}>
-                              <td style={{ fontWeight: 550, minWidth: 160 }}>{f.title}</td><td><StatusBadge value={findingStatus(f as never)} /></td><td className="hide-sm">{f.impact}</td><td className="hide-sm">{f.device}</td><td className="mono hide-sm">{f.rule_id ?? '—'}</td>
+                              <td style={{ fontWeight: 550, minWidth: 160 }}>{f.title}{(counts.get(fold(f)) ?? 1) > 1 && <span className="chip" style={{ marginLeft: 8 }} title="Similar findings collapsed into this row">×{counts.get(fold(f))}</span>}</td><td><StatusBadge value={findingStatus(f as never)} /></td><td className="hide-sm">{f.impact}</td><td className="hide-sm">{f.device}</td><td className="mono hide-sm">{f.rule_id ?? '—'}</td>
                             </tr>))}
                         </tbody></table></div>
                       ) : <p className="muted" style={{ padding: '12px 16px', margin: 0, fontSize: 13 }}>None in this run.</p>}
