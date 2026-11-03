@@ -712,3 +712,18 @@ details.disclosure > .disclosure-body { padding: 4px 14px 16px; display: grid; g
 .release dd { margin: 2px 0 0; font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .release .is-bad dd { color: var(--bad); } .release .is-ok dd { color: var(--ok); } .release .is-warn dd { color: var(--warn); }
 .release-verdict { margin: 0; padding: 6px 16px 12px; font-size: 13.5px; }
+
+/* The ship-without-writing-tests loop: numbered controls on a straight leg, as on a course map */
+.lp-loop { list-style: none; counter-reset: leg; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; }
+.lp-loop li { counter-increment: leg; position: relative; display: grid; align-content: start; gap: 6px; padding: 46px 20px 0 0; }
+.lp-loop li::before { content: counter(leg); position: absolute; top: 0; left: 0; width: 30px; height: 30px; border: 2px solid var(--accent); border-radius: 50%;
+  display: grid; place-items: center; font-family: var(--font-display); font-weight: 700; font-size: 14px; color: var(--accent); background: var(--bg); z-index: 1; }
+.lp-loop li::after { content: ""; position: absolute; top: 15px; left: 32px; right: 0; height: 2px; background: var(--accent); opacity: 0.55; }
+.lp-loop li:last-child::after { display: none; }
+.lp-loop strong { font-family: var(--font-display); font-size: 16px; font-weight: 700; }
+.lp-loop span { color: var(--text-2); font-size: 14.5px; line-height: 1.5; max-width: 26em; }
+@media (max-width: 760px) {
+  .lp-loop { grid-template-columns: 1fr; gap: 22px; }
+  .lp-loop li { padding: 0 0 0 46px; }
+  .lp-loop li::after { top: 32px; left: 15px; right: auto; width: 2px; height: calc(100% + 22px - 32px); }
+}

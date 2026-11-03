@@ -4,6 +4,10 @@
 
 General AI browser agents can report a bug. Oddhound proves one, and proves the fix.
 
+## Why I built it
+
+I ship a lot of small web apps on my own (invoicing, payment records, end-of-day reports, a water-station ledger) and I hate writing tests. So I built the tester I wanted: it explores my apps like a curious user, proves each bug before telling me, hands my coding AI a fix prompt, and after my next deploy replays the exact same check to prove the fix. I use it on my own production sites: this week I proved ownership of seven of them and queued a run on each.
+
 ## The problem
 
 For the first engineer or solo founder at a small SaaS, a vague ticket such as “booking said saved, but it disappeared” can take **1–3 hours** to turn into reproducible steps, and may still end with “can’t reproduce.” Existing test suites cover only anticipated paths. ([Agreed strategy](WIN_PLAN_2026-11-03.md))
@@ -26,6 +30,8 @@ Muse Spark Open has configured Baseten and Fireworks fallback profiles, but reco
 
 ## What is new this week
 
+- **Test every deploy.** A per-project deploy hook for CI: after a production deploy, Oddhound retests every open verified bug with the same hash-pinned checks (two fresh replays each) and the job passes only when all are fixed; with none open, it explores again with the last run's settings and reports new verified bugs without blocking the deploy. The project page hands you a ready GitHub Actions workflow triggered by Vercel's deployment status.
+- **Tester outputs.** Each run marks verified bugs as new or already found last run, lists what it saw but did not test as a manual checklist, and gives each bug a human bug report (steps, expected, actual, evidence) next to the coding-AI fix prompt. A retest ends in a release check: fixed, still failing or undecided.
 - A proof-chain view now brings independent replays, the valid case, retests and the pinned assertion hash together.
 - Findings can produce a copyable Markdown fix receipt.
 - Runs are drawn as orienteering courses, with plain measurements replacing decorative gauges.

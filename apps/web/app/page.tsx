@@ -17,6 +17,15 @@ const BEYOND: { script: string; hound: string }[] = [
   { script: 'Runs at one desktop size', hound: 'Repeats the flow on a 390 px phone and checks the buttons can still be pressed' },
   { script: 'Follows the happy path', hound: 'Double-submits, presses Back mid-checkout, cancels and then edits' },
   { script: 'Reports pass or fail', hound: 'Replays each failure twice in fresh sessions and checks a valid case before calling it a bug' },
+  { script: 'Has to be written, then kept in step with the UI', hound: 'Needs no script: each proven bug becomes a pinned check that runs again after every deploy' },
+];
+
+// The loop a developer who does not want to write tests actually runs. Each step names what they do.
+const LOOP: { title: string; text: string }[] = [
+  { title: 'Prove the site is yours', text: 'Add a DNS record, a file or a meta tag once. Oddhound re-checks it before every run.' },
+  { title: 'Let it explore', text: 'It signs up with made-up accounts, saves, edits and tries the odd inputs. You write no test.' },
+  { title: 'Paste the fix prompt', text: 'Each proven bug comes with steps, evidence and a prompt for your coding AI, plus a bug report for your tracker.' },
+  { title: 'Deploy as usual', text: 'Your CI calls the deploy hook. Oddhound replays the same pinned checks, and the job passes only when every bug is fixed.' },
 ];
 
 const usd = (n: number) => (n < 0.01 && n > 0 ? '< $0.01' : `$${n.toFixed(2)}`);
@@ -112,6 +121,13 @@ export default async function Landing() {
             <thead><tr><th scope="col">Your script</th><th scope="col">Oddhound also</th></tr></thead>
             <tbody>{BEYOND.map((r) => <tr key={r.script}><td>{r.script}</td><td>{r.hound}</td></tr>)}</tbody>
           </table>
+        </section>
+
+        <section className="wrap lp-beyond" aria-labelledby="loop-title">
+          <h2 id="loop-title" className="h1">If you would rather ship than write tests</h2>
+          <ol className="lp-loop">
+            {LOOP.map((s) => <li key={s.title}><strong>{s.title}</strong><span>{s.text}</span></li>)}
+          </ol>
         </section>
 
         <section className="wrap lp-limits" aria-labelledby="limits-title">
