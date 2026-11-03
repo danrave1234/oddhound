@@ -105,7 +105,7 @@ def web():
     node(["scripts/next-with-env.mjs", "start", "--port", "8080", "--hostname", "0.0.0.0"], cwd="/app/apps/web")
 
 
-@app.function(image=web_image, secrets=[web_secret], env=COMMON_ENV, cpu=1.0, memory=2048, max_containers=1, timeout=24 * 3600)  # one site run and one demo/retest at a time; 2 h cut a second run short
+@app.function(image=web_image, secrets=[web_secret], env=COMMON_ENV, cpu=1.0, memory=2048, max_containers=1, timeout=24 * 3600, nonpreemptible=True)  # one site run and one demo/retest at a time; 2 h cut a second run short. Non-preemptible: Modal preempted a worker 51 min into a run on Nov 3 and the run was lost.
 def worker(idle_exit_ms: int = 90_000):
     """Drains both run lanes (site runs; demos and retests), runs the reapers, and exits after idle_exit_ms with no active run."""
     node(["/app/apps/worker/main.ts"], cwd="/app", extra_env={"ODDHOUND_WORKER_IDLE_EXIT_MS": str(int(idle_exit_ms))}, wait=True)
