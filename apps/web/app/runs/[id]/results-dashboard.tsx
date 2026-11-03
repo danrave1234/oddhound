@@ -53,7 +53,7 @@ export function ResultsDashboard({ status, reason, report, reportVerdict, findin
     </dl>
     <p className="muted rs-note">Categories organize saved findings. Zero findings is not a pass; no overall or category score is calculated.</p>
     {comparison && changeCounts && <p className="rs-since" aria-label="Since the previous run">
-      <span>Since the <a href={`/runs/${comparison.previousRunId}`}>previous run</a>{comparison.previousAt ? ` (${new Date(comparison.previousAt).toLocaleDateString()})` : ''}:</span>
+      <span suppressHydrationWarning>Since the <a href={`/runs/${comparison.previousRunId}`}>previous run</a>{comparison.previousAt ? ` (${new Date(comparison.previousAt).toLocaleDateString()})` : ''}:</span>
       <span><strong>{changeCounts.new}</strong> new</span>
       <span><strong>{changeCounts.repeat}</strong> also found then</span>
       <span><strong>{comparison.notSeen.length}</strong> found then, not this time</span>

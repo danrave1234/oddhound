@@ -389,7 +389,7 @@ export function RunWorkspace({ initial, controllable, replay, signedIn }: { init
                   <div className="frame-bar">
                     <Icon name="evidence" />
                     <span className="frame-addr"><span>{snap.latestScreenshot ? snap.latestScreenshot.label : 'No frame yet'}</span></span>
-                    {snap.latestScreenshot && <span className="muted tabular" style={{ fontSize: 12 }}>{new Date(snap.latestScreenshot.created_at).toLocaleTimeString()}</span>}
+                    {snap.latestScreenshot && <span className="muted tabular" style={{ fontSize: 12 }} suppressHydrationWarning>{new Date(snap.latestScreenshot.created_at).toLocaleTimeString()}</span>}
                   </div>
                   {run.mode !== 'demo_target' ? <OwnerPreview runId={run.id} preview={snap.preview ?? null} active={active} /> : snap.latestScreenshot
                     ? <div className="frame-body"><img src={`/api/artifacts/${snap.latestScreenshot.id}`} alt={`Latest browser frame: ${snap.latestScreenshot.label}`} /></div>
@@ -481,7 +481,7 @@ function RunDetails({ snap }: { snap: Snapshot }) {
       <section className="section"><h3 className="section-title">Rules — findings are judged only against these</h3>
         {(r.rules ?? []).length ? <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'grid', gap: 6 }}>{(r.rules ?? []).map((x: { id: string; text: string }) => <li key={x.id} className="row" style={{ alignItems: 'flex-start', flexWrap: 'nowrap', gap: 8 }}><span className="chip mono">{x.id}</span><span>{x.text}</span></li>)}</ul>
           : <p className="muted">No explicit rules were given.</p>}</section>
-      {snap.retests.length > 0 && <section className="section"><h3 className="section-title">Retests</h3>{snap.retests.map((t) => <div key={t.id} className="row" style={{ gap: 8 }}><Link href={`/runs/${t.id}`} className="tabular">{new Date(t.created_at).toLocaleString()}</Link> <StatusBadge value={t.status} /></div>)}</section>}
+      {snap.retests.length > 0 && <section className="section"><h3 className="section-title">Retests</h3>{snap.retests.map((t) => <div key={t.id} className="row" style={{ gap: 8 }}><Link href={`/runs/${t.id}`} className="tabular" suppressHydrationWarning>{new Date(t.created_at).toLocaleString()}</Link> <StatusBadge value={t.status} /></div>)}</section>}
       <div className="well row" style={{ gap: 10, flexWrap: 'nowrap' }}><Icon name="bug" /><span className="muted" style={{ fontSize: 13 }}>Select a finding to see its evidence and fix prompt.</span></div>
     </div>
   );
