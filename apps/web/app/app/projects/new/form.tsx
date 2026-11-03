@@ -34,7 +34,6 @@ export function NewProjectForm({ initialOrigin = '' }: { initialOrigin?: string 
         <label className="field"><span>Site origin</span>
           <input className="input mono" name="origin" required defaultValue={initialOrigin} placeholder="https://staging.example.com" inputMode="url" autoComplete="url" autoFocus aria-describedby="origin-hint" />
           <small id="origin-hint">Paste any page of the site; Oddhound keeps just the address (for example https://example.com). Private or internal addresses are always refused.</small></label>
-        <label className="field"><span>Project name <span className="muted" style={{ fontWeight: 400 }}>— optional, defaults to the hostname</span></span><input className="input" name="name" minLength={2} maxLength={80} placeholder="My booking app (staging)" /></label>
       </div>
 
       <div className="form-section">
@@ -53,12 +52,15 @@ export function NewProjectForm({ initialOrigin = '' }: { initialOrigin?: string 
         </div>
       </div>
 
-      <div className="form-section">
-        <label className="field"><span>What does the site do? <span className="muted" style={{ fontWeight: 400 }}>— shown to the agent</span></span>
-          <textarea className="textarea" name="description" maxLength={1000} placeholder="Visitors create an account, book a table, then view, edit or cancel bookings." /></label>
-        <label className="field"><span>Main framework <span className="muted" style={{ fontWeight: 400 }}>— optional</span></span><input className="input" name="stack" maxLength={60} placeholder="next.js" aria-describedby="stack-hint" />
-          <small id="stack-hint">Only used to attach version-aware docs to fix briefs. Leave empty and briefs stay framework-neutral.</small></label>
-      </div>
+      <details className="disclosure form-section">
+        <summary><span className="chev"><Icon name="chevron" /></span>Optional: describe the site <span className="muted" style={{ marginLeft: 'auto', fontSize: 12.5 }}>Muse Spark drafts this from your home page</span></summary>
+        <div className="disclosure-body">
+          <label className="field"><span>What does the site do? <span className="muted" style={{ fontWeight: 400 }}>— shown to the agent</span></span>
+            <textarea className="textarea" name="description" maxLength={1000} placeholder="Visitors create an account, book a table, then view, edit or cancel bookings." /></label>
+          <label className="field"><span>Main framework</span><input className="input" name="stack" maxLength={60} placeholder="next.js" aria-describedby="stack-hint" />
+            <small id="stack-hint">Only used to attach version-aware docs to fix briefs.</small></label>
+        </div>
+      </details>
 
       {error && <p role="alert" className="status-line" style={{ color: 'var(--bad)', marginBottom: 12 }}><Icon name="fail" /> {error}</p>}
       <div className="sticky-actions">
