@@ -6,7 +6,7 @@ import { migrate } from '../../packages/core/db/migrate.ts';
 import { admitRun, assertLease, claimRun, FencedError, requestStop, reapStaleRuns, appendEvent, eventsAfter } from '../../packages/core/ledger/runs.ts';
 import { reserveSpend, settleSpend, markSpendUnknown, runSpend, setKillSwitch, spendAllowance } from '../../packages/core/ledger/spend.ts';
 import { demoTargetContract } from '../../packages/core/contracts/contract.ts';
-import { USD } from '../../packages/core/contracts/limits.ts';
+import { USD, LIMITS } from '../../packages/core/contracts/limits.ts';
 
 const db = getPool();
 let n = 0;
@@ -37,9 +37,9 @@ describe('spend ledger (SELF-19)', () => {
   it('the public daily ceiling holds across many runs racing at once (SELF-18)', async () => {
     const runs = await Promise.all(Array.from({ length: 6 }, () => newRun({ spendAccount: 'public' })));
     const results = await Promise.all(runs.flatMap((runId) => Array.from({ length: 4 }, (_, i) =>
-      reserveSpend(db, { runId, account: 'public', requestKey: `${runId}:${i}`, micros: 0.5 * USD, provider: 'meta-direct', model: 'muse-spark-1.3' }))));
-    const total = results.filter((r) => r.ok).length * 0.5 * USD;
-    expect(total).toBeLessThanOrEqual(7 * USD);
+      reserveSpend(db, { runId, account: 'public', requestKey: `${runId}:${i}`, micros: 2 * USD, provider: 'meta-direct', model: 'muse-spark-1.3' }))));
+    const total = results.filter((r) => r.ok).length * 2 * USD;
+    expect(total).toBeLessThanOrEqual(LIMITS.publicDailyMicros);
     expect(results.some((r) => !r.ok && r.reason === 'daily_cap')).toBe(true);
   });
   it('unknown usage stays reserved; the same request key cannot reserve twice', async () => {
@@ -67,8 +67,12 @@ describe('spend ledger (SELF-19)', () => {
     const runId = await newRun({ spendAccount: 'public' });
     expect((await reserveSpend(db, { runId, account: 'public', requestKey: 'public-six', micros: 6 * USD, provider: 'p', model: 'm' })).ok).toBe(true);
     await markSpendUnknown(db, 'public-six');
-    const other = await newRun({ spendAccount: 'public' });
-    await reserveSpend(db, { runId: other, account: 'public', requestKey: 'other-public', micros: 0.75 * USD, provider: 'p', model: 'm' });
+    // Competing runs use up the shared day (each within its own run cap) until $0.25 is left.
+    const competing = (LIMITS.publicDailyMicros - 6 * USD - 0.25 * USD) / 2;
+    for (const key of ['other-public-1', 'other-public-2']) {
+      const other = await newRun({ spendAccount: 'public' });
+      expect((await reserveSpend(db, { runId: other, account: 'public', requestKey: key, micros: competing, provider: 'p', model: 'm' })).ok).toBe(true);
+    }
     expect(await spendAllowance(db, runId)).toMatchObject({ configuredCapMicros: 10 * USD, availableMicros: 0.25 * USD, limiting: 'daily_cap' });
     expect(await reserveSpend(db, { runId, account: 'public', requestKey: 'too-much-public', micros: 0.3 * USD, provider: 'p', model: 'm' }))
       .toEqual({ ok: false, reason: 'daily_cap' });
@@ -87,9 +91,15 @@ describe('spend ledger (SELF-19)', () => {
     } finally { await db.query("UPDATE spend_accounts SET lifetime_limit_micros = $1 WHERE id = 'public'", [previous]); }
   });
   it('refuses a newly queued run when outstanding charges exhaust its daily account', async () => {
-    const runId = await newRun({ spendAccount: 'public' });
-    expect((await reserveSpend(db, { runId, account: 'public', requestKey: 'all-daily', micros: 7 * USD, provider: 'p', model: 'm' })).ok).toBe(true);
-    await markSpendUnknown(db, 'all-daily');
+    // Several runs, each within its own cap, together leave the day's account with unknown charges only.
+    let left = LIMITS.publicDailyMicros;
+    for (let i = 0; left > 0; i++) {
+      const runId = await newRun({ spendAccount: 'public' });
+      const micros = Math.min(left, LIMITS.modelSpendPerRunMicros);
+      expect((await reserveSpend(db, { runId, account: 'public', requestKey: `all-daily-${i}`, micros, provider: 'p', model: 'm' })).ok).toBe(true);
+      await markSpendUnknown(db, `all-daily-${i}`);
+      left -= micros;
+    }
     expect(await admitRun(db, { principal: 'test:no-funding', ownerId: null, projectId: null, mode: 'verified_site', contract: contract(), spendAccount: 'public' }))
       .toEqual({ ok: false, reason: 'budget_unavailable' });
   });

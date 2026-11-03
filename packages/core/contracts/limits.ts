@@ -14,7 +14,7 @@ export const LIMITS = {
   browserActionsPerRun: Number.POSITIVE_INFINITY,
   modelTurnsPerRun: Number.POSITIVE_INFINITY,
   modelSpendPerRunMicros: 10 * USD, // Oct 30: owner-approved maximum; shared ledgers still apply.
-  publicDailyMicros: 7 * USD,
+  publicDailyMicros: 25 * USD, // Nov 3: owner-approved for the hackathon (was $7); the $50 lifetime ceiling still applies.
   publicLifetimeMicros: 50 * USD,
   judgingReserveMicros: 15 * USD,
   minActionIntervalMs: 300, // polite pacing for the tested site (was 1 s)

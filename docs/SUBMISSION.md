@@ -56,7 +56,7 @@ Prove ownership, define allowed actions and exclusions, optionally paste a bug r
 
 Sites must be proven through DNS, a well-known file or an HTML meta tag, and ownership is checked again before each run. Browsers are isolated, secret-free, egress-filtered and destroyed after use. Reports are fenced as untrusted input, while assertions and verdicts are evaluated by trusted code. ([System status](STATUS.md), [Modal verification](MODAL_VERIFICATION.md))
 
-Spend is reserved before inference, with a **$2 run cap, $7 public daily ceiling and $50 lifetime ceiling**, plus a kill switch. Verification and retesting require no model calls. ([System status](STATUS.md))
+Spend is reserved before inference, with a **$10 run cap, $25 public daily ceiling and $50 lifetime ceiling**, plus a kill switch. Verification and retesting require no model calls. ([System status](STATUS.md))
 
 ## Honest limits
 
