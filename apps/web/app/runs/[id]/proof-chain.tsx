@@ -81,7 +81,7 @@ export function ProofView({ findingId, chain, heading = 'How this was proven' }:
                 <Mark kind={tone(l)} />
                 <span className="pc-name">{legName(l)}</span>
                 <span className="pc-reading">{l.reading}</span>
-                <time className="pc-time tabular" dateTime={l.at}>{time(l.at)}</time>
+                <time className="pc-time tabular" dateTime={l.at} suppressHydrationWarning>{time(l.at)}</time>
               </button>
               {expanded && (
                 <div className="pc-detail fade-in">
