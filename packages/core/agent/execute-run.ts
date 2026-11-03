@@ -37,7 +37,7 @@ import { findByLabel, usesRef } from './by-label.ts';
 import { blockedReason, disabledReason } from '../browser/click-check.ts';
 import { readSiteMap } from '../browser/site-map.ts';
 import { runHandoff, HandoffEnded } from './handoff.ts';
-import { CLICK_ROLES, controlFor, fieldValue, fillAndSubmit, saveField, submitWithInterruption, newReplaySessions, recordIdsInUrl, replayScenario, scenarioDefect, scenarioHash, type Setup, type AuthRecipe, type Oracle, type ReplayEnv, type Scenario, type TraceStep } from '../verifier/scenario.ts';
+import { CHECK_FIELD, CLICK_ROLES, controlFor, fieldValue, fillAndSubmit, saveField, submitWithInterruption, newReplaySessions, recordIdsInUrl, replayScenario, scenarioDefect, scenarioHash, type Setup, type AuthRecipe, type Oracle, type ReplayEnv, type Scenario, type TraceStep } from '../verifier/scenario.ts';
 import { CLAIM_RETRY_DELAYS_MS, CLAIM_WINDOW_MS, NUMBER_ASSUMPTIONS, claimVisible, distinctiveValues, judgeCrossActor, judgeDifferential, judgeInterruption, judgeInvariant, occurrences, judgePersistence, judgeTwoTabs, readTables, readView, swapId, type ContextControls, type Family, type Interruption, type Invariant, type InvariantVerdict, type PageView } from '../verifier/behavior.ts';
 import { computeReportVerdict, type ReportRunCounts, type ReportVerificationResult } from './report-verdict.ts';
 import { dominantArea, repeatedGoal } from './focus.ts';
@@ -1563,6 +1563,11 @@ ${statusLine()}` };
         const clickedLabel = session.labelOf(args.ref);
         const clickPath = new URL((await session.page()).url()).pathname;
         const authAttempt = pendingAuth;
+        // A consent box ticked during sign-up is part of the form, not its submit: replays must tick it too.
+        const clickedEl = session.lastObservation?.elements.find((e) => e.ref === args.ref);
+        const authToggle = Boolean(authAttempt && clickedLabel && !recorded.auth && clickedEl && !clickedEl.checked
+          && (clickedEl.kind === 'checkbox' && clickedEl.type !== 'radio' || clickedEl.role === 'checkbox' || clickedEl.role === 'switch')
+          && clickPath === new URL(authAttempt.path, contract.target.origin).pathname);
         let text = await runBrowserAction(name, args, `Clicked ${session.describe(args.ref)}`, async () => {
           const off = await disabledReason(loc);
           if (off) throw new Error(off);
@@ -1571,7 +1576,9 @@ ${statusLine()}` };
         });
         await noteSubmit(clickPath, clickedLabel, (lastStep as StepInfo | null)?.seq);
         text += claimHint();
-        if (authAttempt && pendingAuth === authAttempt && clickedLabel && clickPath === new URL(authAttempt.path, contract.target.origin).pathname && Object.values(authAttempt.fields).includes('{password}') && !recorded.auth) {
+        if (authToggle && authAttempt && pendingAuth === authAttempt && !(lastStep as StepInfo | null)?.error) {
+          authAttempt.fields[clickedLabel!.slice(0, 80)] = CHECK_FIELD;
+        } else if (authAttempt && pendingAuth === authAttempt && clickedLabel && clickPath === new URL(authAttempt.path, contract.target.origin).pathname && Object.values(authAttempt.fields).includes('{password}') && !recorded.auth) {
           if ((lastStep as StepInfo | null)?.error) pendingAuth = null;
           else {
             // Keep the original submit across SPA async completion and later observations/navigations.

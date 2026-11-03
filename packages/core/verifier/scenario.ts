@@ -16,6 +16,8 @@ import { ExpectSchema, judgeExpectation, pageFacts } from './expect.ts';
 import { DOUBLE_PRESS_GAP_MS, INTERRUPTION_SETTLE_MS, claimVisible, judgeCrossActor, judgeInterruption, judgeInvariant, judgePersistence, judgeTwoTabs, occurrences, readTables, readView, rejectionShown, type Interruption, type PageView } from './behavior.ts';
 
 const Template = z.string().max(200);
+/** A recorded form value meaning "tick this box" (a consent or terms checkbox), not text to type. */
+export const CHECK_FIELD = '{check}';
 const FieldMap = z.record(z.string().min(1).max(80), Template).refine((m) => Object.keys(m).length > 0 && Object.keys(m).length <= 12, 'between 1 and 12 fields');
 
 export const FormAuthRecipeSchema = z.object({
@@ -294,7 +296,8 @@ export async function fillAndSubmit(page: Page, origin: string, form: { path: st
     if (!filledForm && await ancestor.count()) filledForm = ancestor;
     if (filledForm && await filledForm.locator('*').and(loc).count() !== 1) throw new ReplayBlocked('recorded fields do not share one form');
     fields.push(loc);
-    await loc.fill(expand(template, vars), { timeout: 5_000 });
+    if (template === CHECK_FIELD) await loc.check({ timeout: 5_000 });
+    else await loc.fill(expand(template, vars), { timeout: 5_000 });
   }
   if (filledForm) for (const field of fields) {
     if (await filledForm.locator('*').and(field).count() !== 1) throw new ReplayBlocked('recorded fields do not share one form');
