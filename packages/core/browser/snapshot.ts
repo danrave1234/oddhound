@@ -9,6 +9,7 @@
 // drag hints are combined and misses are accepted. Unexercised elements are pending actions, never
 // proven edges.
 
+import { appPath } from './app-path.ts';
 import type { Page } from 'playwright';
 
 export type ElementKind =
@@ -261,7 +262,7 @@ function instrument(version: number) {
 export async function observe(page: Page, version: number): Promise<Observation> {
   const data = await page.evaluate(instrument, version);
   const url = new URL(page.url());
-  return { version, url: page.url(), path: `${url.pathname}${url.search}`, ...(data as Omit<Observation, 'version' | 'url' | 'path'>) };
+  return { version, url: page.url(), path: appPath(url), ...(data as Omit<Observation, 'version' | 'url' | 'path'>) };
 }
 
 /** A rule the page states about one of its own inputs (or in visible text). Candidate rule, page-stated provenance. */

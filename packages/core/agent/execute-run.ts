@@ -4,6 +4,7 @@
 //   independent verification of candidates → deterministic configuration observations →
 //   finalize, destroy the browser and record the truthful terminal status.
 
+import { appPath, routePaths } from '../browser/app-path.ts';
 import type { Db } from '../db/pool.ts';
 import { LIMITS } from '../contracts/limits.ts';
 import { RunContractSchema, pathHasDeniedKeyword, writesPermitted, BASELINE_IMPACT, BASELINE_RULES, type RunContract } from '../contracts/contract.ts';
@@ -371,7 +372,7 @@ async function agentLoop(a: LoopArgs): Promise<{ stopReason?: string; summary?: 
   type PendingAuth = { kind: 'register' | 'login'; credentialRef?: string; path: string; fields: Record<string, string>;
     submitted?: { label: string; actor: string; device: string; deadline: number } };
   let pendingAuth: PendingAuth | null = null;
-  const currentFormPath = async () => { const u = new URL((await session.page()).url()); return `${u.pathname}${u.search}`; };
+  const currentFormPath = async () => { return appPath((await session.page()).url()); };
   // The pages the site lists about itself, so the plan starts from the whole site, not only what one page links to.
   const allowedPath = (p: string) => {
     const path = new URL(p, contract.target.origin).pathname;
@@ -500,7 +501,7 @@ async function agentLoop(a: LoopArgs): Promise<{ stopReason?: string; summary?: 
     let u: URL;
     try { u = new URL(el.href, pageUrl); } catch { return null; }
     if (u.origin !== session.origin) return 'off_site';
-    if (contract.deniedPathPrefixes.some((p) => u.pathname.startsWith(p)) || pathHasDeniedKeyword(u.pathname, contract.deniedPathKeywords)) return 'denied_by_contract';
+    if (routePaths(u).some((rp) => contract.deniedPathPrefixes.some((p) => rp.startsWith(p)) || pathHasDeniedKeyword(rp, contract.deniedPathKeywords))) return 'denied_by_contract';
     return null;
   });
   const emitCoverage = async () => {
@@ -688,7 +689,7 @@ async function agentLoop(a: LoopArgs): Promise<{ stopReason?: string; summary?: 
     actions++; lastActionAt = Date.now();
     const mySeq = seq;
     const step = toStep(tool, args);
-    const urlBeforePath = (() => { try { const u = new URL(page.url()); return `${u.pathname}${u.search}`; } catch { return '/'; } })();
+    const urlBeforePath = (() => { try { return appPath(page.url()); } catch { return '/'; } })();
     const actedOn = session.turnObservation; // the snapshot whose refs this action used
     const listedNavigation = tool === 'navigate' && exploration.wasListed(args.path, session.discoveryContext);
     let error: string | null = null;
@@ -754,8 +755,8 @@ async function agentLoop(a: LoopArgs): Promise<{ stopReason?: string; summary?: 
     let u: URL;
     try { u = new URL(p, session.origin); } catch { return 'not a valid path'; }
     if (u.origin !== session.origin) return 'outside the verified site';
-    if (contract.deniedPathPrefixes.some((x) => u.pathname.startsWith(x))) return 'denied by the run contract';
-    const w = pathHasDeniedKeyword(u.pathname, contract.deniedPathKeywords);
+    if (routePaths(u).some((rp) => contract.deniedPathPrefixes.some((x) => rp.startsWith(x)))) return 'denied by the run contract';
+    const w = routePaths(u).map((rp) => pathHasDeniedKeyword(rp, contract.deniedPathKeywords)).find(Boolean) ?? null;
     return w ? `denied by the run contract (blocked word "${w}")` : null;
   };
   /** Ledgered navigation taken by Oddhound for a check (same limits, fences and evidence as the model's). */
@@ -786,7 +787,7 @@ async function agentLoop(a: LoopArgs): Promise<{ stopReason?: string; summary?: 
     if (args.revisit_path) { const r = pathRefusal(args.revisit_path); if (r) return `revisit_path ${args.revisit_path} is ${r}.`; }
     w.checked = true;
     const landedUrl = new URL(w.landedUrl);
-    const paths = [...new Set([`${landedUrl.pathname}${landedUrl.search}`, ...(args.revisit_path ? [args.revisit_path] : [])])];
+    const paths = [...new Set([appPath(landedUrl), ...(args.revisit_path ? [args.revisit_path] : [])])];
     await ev('scenario.started', { family: 'claim_vs_truth', claim: args.claim ?? null, fields: checks.map((c) => c.field), paths });
     const started = Date.now();
     let verdict = judgePersistence(checks, []);
@@ -956,7 +957,7 @@ async function agentLoop(a: LoopArgs): Promise<{ stopReason?: string; summary?: 
     const hit = findByLabel(o.elements, 'click', args.submit);
     const button = 'ref' in hit ? o.elements.find((e) => e.ref === hit.ref) : undefined;
     if (!button || button.kind !== 'button') return `No submit button "${args.submit}" on this page.`;
-    const form = { path: `${formUrl.pathname}${formUrl.search}`, fields: Object.fromEntries(values), submit: button.label };
+    const form = { path: appPath(formUrl), fields: Object.fromEntries(values), submit: button.label };
     const count = async (why: string) => { await openPath(args.list_path, why); return occurrences((await view()).text, value); };
     await ev('scenario.started', { family: 'interruption', kind: args.kind, form: form.path, list: args.list_path });
     const before = await count('Interruption check, records before');
@@ -1084,7 +1085,7 @@ async function agentLoop(a: LoopArgs): Promise<{ stopReason?: string; summary?: 
     const inv: Invariant = args.kind === 'sum' ? { kind: 'sum', total: args.total_label, column: args.column! } : { kind: 'count', total: args.total_label, ...(args.column ? { column: args.column } : {}) };
     const explicit = contract.rules.find((r) => r.id === args.rule_id && r.source !== 'baseline');
     const u = new URL(o.url);
-    const w: Watched = { route: routePattern(o.url), path: `${u.pathname}${u.search}`, actor: session.actor, device: session.device, inv, evidence: args.evidence, ...(explicit ? { explicit: { id: explicit.id } } : {}), failed: false };
+    const w: Watched = { route: routePattern(o.url), path: appPath(u), actor: session.actor, device: session.device, inv, evidence: args.evidence, ...(explicit ? { explicit: { id: explicit.id } } : {}), failed: false };
     const v = await judgeHere(w);
     await ev('scenario.finished', { family: 'invariant', outcome: v.outcome, route: w.route, invariant: inv, values: v.values, rule: explicit?.id ?? null });
     if (v.outcome === 'inconclusive') return `Cannot check that invariant here: ${v.detail}. Not registered.`;

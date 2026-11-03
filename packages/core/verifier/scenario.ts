@@ -5,6 +5,7 @@
 // fresh contexts with fresh synthetic identities and evaluates the assertion with trusted code.
 // The saved scenario (and its hash) is immutable: a retest replays exactly the same JSON.
 
+import { appPath } from '../browser/app-path.ts';
 import { z } from 'zod';
 import { randomBytes } from 'node:crypto';
 import type { BrowserContext, Page, Locator } from 'playwright';
@@ -712,7 +713,7 @@ async function replayBatch(
 type ClaimScenario = Extract<Scenario, { kind: 'claim_check' }>;
 type Opener = (device: 'desktop' | 'mobile', role?: string, auth?: AuthRecipe) => Promise<Page>;
 const pause = (ms: number) => new Promise((r) => setTimeout(r, ms));
-const pathAndQuery = (url: string) => { const u = new URL(url); return `${u.pathname}${u.search}`; };
+const pathAndQuery = (url: string) => appPath(url);
 
 /** The pauses of family 1's bounded window: one look now, two more later, summing to the window. */
 export function claimDelays(windowMs: number): number[] {
