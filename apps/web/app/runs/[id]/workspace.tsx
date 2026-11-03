@@ -361,11 +361,13 @@ export function RunWorkspace({ initial, controllable, replay, signedIn, canShare
 
           <div className="pane-body">
             {run.mode !== 'retest' && !sharedView && <RunTour />}
+            {/* A replay opens on its player, playing from the start; the results sit below it. */}
+            {replay && run.mode !== 'retest' && <LiveDeck snap={snap} active={active} replay={replay} onOpenBrowser={() => setView('browser')} onOpenFindings={() => setView('findings')} />}
             {!active && view !== 'results' && run.mode !== 'retest' && <div className="banner banner-info"><Icon name="report" /><span>This run has ended. Its results and coverage gaps are ready.</span><button className="btn btn-sm" onClick={() => setView('results')}>View results</button></div>}
             {view === 'results' && !active && run.mode !== 'retest' && <ResultsDashboard status={run.status} reason={run.stop_reason} report={run.mode !== 'retest' ? run.report ?? null : null} reportVerdict={snap.reportVerdict ?? null} comparison={snap.comparison ?? null} gaps={gaps} origin={run.origin} runId={runId} findings={snap.findings} rules={run.rules ?? []} states={snap.graph.states} coverage={snap.coverage} discovery={snap.exploration?.summary}
               onSelectFinding={id => { setView('findings'); selectFinding(id); }} onOpenCoverage={() => { setWfMode('list'); setView('workflows'); }} />}
             {controllable && run.status === 'waiting_for_input' && run.handoff_enabled && <HandoffPanel runId={runId} onStop={stop} />}
-            {(active || run.mode !== 'retest') && <LiveDeck snap={snap} active={active} replay={replay} onOpenBrowser={() => setView('browser')} onOpenFindings={() => setView('findings')} />}
+            {!replay && (active || run.mode !== 'retest') && <LiveDeck snap={snap} active={active} replay={replay} onOpenBrowser={() => setView('browser')} onOpenFindings={() => setView('findings')} />}
             {run.mode === 'retest' && (
               <div className="card">
                 {!active && release && release.rows.length > 0 && (
