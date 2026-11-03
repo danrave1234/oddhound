@@ -12,7 +12,7 @@ export type BriefInput = {
   };
   target: { origin: string; environment: string };
   scenario: { id: string; assertion: Scenario; assertionHash: string } | null;
-  control: { assertion: Scenario } | null;
+  control: { assertion: Scenario; outcome?: string } | null;
   executions: { kind: string; outcome: string; at: string }[];
   evidenceCount: number;
   evidenceIds?: string[];

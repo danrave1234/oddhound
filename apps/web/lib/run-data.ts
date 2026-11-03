@@ -25,7 +25,7 @@ export async function loadRunSnapshot(runId: string) {
       provider, model, queued_at, started_at, finished_at, expires_at, parent_run_id, contract->'goals' AS goals, contract->>'report' AS report, contract->'rules' AS rules, contract->'devices' AS devices, COALESCE((contract->'handoff'->>'enabled')::boolean, false) AS handoff_enabled
     FROM runs WHERE id = $1`, [runId])).rows[0];
   if (!run) return null;
-  const [workflows, states, transitions, findings, events, actions, shot, spend, children, plan, detected, coverage, mode, exploration, preview, allowance, candidateCount, reportVerdict] = await Promise.all([
+  const [workflows, states, transitions, findings, events, actions, shot, spend, children, plan, detected, coverage, mode, exploration, preview, allowance, candidateCount, reportVerdict, retestEvents, parentVerified] = await Promise.all([
     pool.query('SELECT name, status, summary, updated_at FROM workflows WHERE run_id = $1 ORDER BY updated_at', [runId]),
     pool.query('SELECT id, route, title, actor, device, first_seen_at FROM graph_states WHERE run_id = $1 ORDER BY first_seen_at, id', [runId]),
     pool.query('SELECT id, from_state, to_state, label FROM graph_transitions WHERE run_id = $1', [runId]),
@@ -48,6 +48,9 @@ export async function loadRunSnapshot(runId: string) {
     pool.query(`SELECT count(*)::int AS n FROM run_events WHERE run_id=$1 AND type='finding.candidate'`, [runId]),
     // Trusted outcome of a bug-report reproduction, written by the run worker (never model text).
     pool.query(`SELECT payload FROM run_events WHERE run_id = $1 AND type = 'report.verdict' ORDER BY seq DESC LIMIT 1`, [runId]),
+    // Every retest result, whatever else the run logged (the events window above is capped).
+    pool.query(`SELECT seq, at, type, payload FROM run_events WHERE run_id = $1 AND type IN ('retest.finished', 'retest.blocked') ORDER BY seq`, [runId]),
+    pool.query<{ n: number }>(`SELECT count(*)::int AS n FROM findings WHERE run_id = $1 AND verification = 'verified' AND category = 'verified_issue'`, [run.parent_run_id ?? '00000000-0000-0000-0000-000000000000']),
   ]);
   // The previous completed run of the same site, so results can say what is new since then.
   let comparison: Comparison | null = null;
@@ -84,5 +87,7 @@ export async function loadRunSnapshot(runId: string) {
     coverage: (coverage.rows[0]?.payload ?? null) as Coverage | null,
     agentMode: (mode.rows[0]?.payload?.mode ?? null) as string | null,
     reportVerdict: (reportVerdict.rows[0]?.payload ?? null) as ReportVerdict | null,
+    retestEvents: retestEvents.rows,
+    parentVerifiedCount: run.parent_run_id ? (parentVerified.rows[0]?.n ?? 0) : null,
   };
 }

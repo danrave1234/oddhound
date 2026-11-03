@@ -4,10 +4,10 @@
 //   independent verification of candidates → deterministic configuration observations →
 //   finalize, destroy the browser and record the truthful terminal status.
 
-import { appPath, routePaths } from '../browser/app-path.ts';
+import { appPath, routePath, routePaths } from '../browser/app-path.ts';
 import type { Db } from '../db/pool.ts';
 import { LIMITS } from '../contracts/limits.ts';
-import { RunContractSchema, pathHasDeniedKeyword, writesPermitted, BASELINE_IMPACT, BASELINE_RULES, type RunContract } from '../contracts/contract.ts';
+import { RunContractSchema, pathHasDeniedKeyword, pathDeniedByPrefix, writesPermitted, BASELINE_IMPACT, BASELINE_RULES, type RunContract } from '../contracts/contract.ts';
 import { describeSignal, signalKey, type Signal } from '../browser/sentinels.ts';
 import type { RunStatus } from '../contracts/status.ts';
 import { appendEvent, assertLease, claimRun, FencedError, setRunStatus, refundIfNeverStarted } from '../ledger/runs.ts';
@@ -374,10 +374,7 @@ async function agentLoop(a: LoopArgs): Promise<{ stopReason?: string; summary?: 
   let pendingAuth: PendingAuth | null = null;
   const currentFormPath = async () => { return appPath((await session.page()).url()); };
   // The pages the site lists about itself, so the plan starts from the whole site, not only what one page links to.
-  const allowedPath = (p: string) => {
-    const path = new URL(p, contract.target.origin).pathname;
-    return !contract.deniedPathPrefixes.some((d) => path.startsWith(d)) && !pathHasDeniedKeyword(path, contract.deniedPathKeywords);
-  };
+  const allowedPath = (p: string) => !routePaths(new URL(p, contract.target.origin)).some((rp) => pathDeniedByPrefix(rp, contract.deniedPathPrefixes) || pathHasDeniedKeyword(rp, contract.deniedPathKeywords));
   const siteMap = await readSiteMap(await session.page(), contract.target.origin, allowedPath).catch(() => null);
   let sitemapQueue = siteMap?.remainingSitemaps ?? [];
   let readSitemaps = siteMap?.sitemaps ?? [];
@@ -501,7 +498,7 @@ async function agentLoop(a: LoopArgs): Promise<{ stopReason?: string; summary?: 
     let u: URL;
     try { u = new URL(el.href, pageUrl); } catch { return null; }
     if (u.origin !== session.origin) return 'off_site';
-    if (routePaths(u).some((rp) => contract.deniedPathPrefixes.some((p) => rp.startsWith(p)) || pathHasDeniedKeyword(rp, contract.deniedPathKeywords))) return 'denied_by_contract';
+    if (routePaths(u).some((rp) => pathDeniedByPrefix(rp, contract.deniedPathPrefixes) || pathHasDeniedKeyword(rp, contract.deniedPathKeywords))) return 'denied_by_contract';
     return null;
   });
   const emitCoverage = async () => {
@@ -755,7 +752,7 @@ async function agentLoop(a: LoopArgs): Promise<{ stopReason?: string; summary?: 
     let u: URL;
     try { u = new URL(p, session.origin); } catch { return 'not a valid path'; }
     if (u.origin !== session.origin) return 'outside the verified site';
-    if (routePaths(u).some((rp) => contract.deniedPathPrefixes.some((x) => rp.startsWith(x)))) return 'denied by the run contract';
+    if (routePaths(u).some((rp) => pathDeniedByPrefix(rp, contract.deniedPathPrefixes))) return 'denied by the run contract';
     const w = routePaths(u).map((rp) => pathHasDeniedKeyword(rp, contract.deniedPathKeywords)).find(Boolean) ?? null;
     return w ? `denied by the run contract (blocked word "${w}")` : null;
   };
@@ -1346,7 +1343,7 @@ async function agentLoop(a: LoopArgs): Promise<{ stopReason?: string; summary?: 
               callArgs[k] = r;
             }
             if (refError) { surprise = 'stale element'; lines.push(`step ${i + 1} ${tool}: not run (${refError})`); break; }
-            const pathBefore = new URL((await session.page()).url()).pathname;
+            const pathBefore = routePath((await session.page()).url());
             const ident = labelOfStep(st as Record<string, any>) ?? ['path', 'key', 'to', 'direction', 'value', 'ref'].map((k) => (st as Record<string, any>)[k]).filter((x) => x !== undefined).join(' ');
             const failKey = stepKey(session.lastObservation ?? modelObs, tool, ident);
             const prior = failedSteps.get(failKey);
@@ -1535,8 +1532,8 @@ async function agentLoop(a: LoopArgs): Promise<{ stopReason?: string; summary?: 
       case 'navigate': {
         const target = new URL(args.path, session.origin);
         if (target.origin !== session.origin) return { text: 'Navigation outside the verified site is not allowed.' };
-        if (contract.deniedPathPrefixes.some((p) => target.pathname.startsWith(p))) return { text: 'That path is denied by the run contract.' };
-        const word = pathHasDeniedKeyword(target.pathname, contract.deniedPathKeywords);
+        if (routePaths(target).some((rp) => pathDeniedByPrefix(rp, contract.deniedPathPrefixes))) return { text: 'That path is denied by the run contract.' };
+        const word = routePaths(target).map((rp) => pathHasDeniedKeyword(rp, contract.deniedPathKeywords)).find(Boolean) ?? null;
         if (word) return { text: `That path is denied by the run contract (blocked word "${word}").` };
         return { text: await runBrowserAction(name, args, `Opened ${target.pathname}`, async () => { await (await session.page()).goto(target.toString(), { waitUntil: 'domcontentloaded' }); }) };
       }
@@ -2144,10 +2141,13 @@ async function executeRetest(deps: ExecuteDeps, run: RunRow, contract: RunContra
       replays.push(r);
       if (r.outcome !== 'passed' && r.outcome !== 'failed') break; // blocked or inconclusive: a second try cannot decide
     }
+    // Two passes prove a fix; one failure of the pinned assertion shows the bug is still there; a blocked
+    // replay never erases a failure; a pass and a failure disagree.
     const outcomes = replays.map((r) => r.outcome);
-    const outcome = outcomes.every((o) => o === 'passed') && replays.length === 2 ? 'passed'
-      : outcomes.every((o) => o === 'failed') && replays.length === 2 ? 'failed'
-      : outcomes.includes('passed') && outcomes.includes('failed') ? 'inconclusive' : outcomes.at(-1)!;
+    const decisive = outcomes.filter((o) => o === 'passed' || o === 'failed');
+    const outcome = decisive.length === 2 && decisive.every((o) => o === 'passed') ? 'passed'
+      : decisive.includes('failed') && !decisive.includes('passed') ? 'failed'
+      : decisive.includes('passed') && decisive.includes('failed') ? 'inconclusive' : outcomes.at(-1)!;
     let controlOutcome = 'not_run';
     if (f.control_scenario_id) {
       const cs = await loadPinned(f.control_scenario_id);

@@ -16,7 +16,7 @@
 
 import type { BrowserContext, Route, Request } from 'playwright';
 import type { RunContract } from '../contracts/contract.ts';
-import { deniedKeywordsInPath, keywordsBlockRead, writesPermitted } from '../contracts/contract.ts';
+import { deniedKeywordsInPath, keywordsBlockRead, pathDeniedByPrefix, writesPermitted } from '../contracts/contract.ts';
 
 export type ScopeDecision = { allowed: boolean; reason: string; method: string; url: string; resourceType: string };
 
@@ -53,7 +53,7 @@ export function decide(policy: ScopePolicy, req: { url: string; method: string; 
   const isPrimary = origin === policy.primaryOrigin;
   const isApi = policy.apiOrigins.has(origin);
 
-  if ((isPrimary || isApi) && policy.deniedPathPrefixes.some((p) => url.pathname.startsWith(p))) {
+  if ((isPrimary || isApi) && pathDeniedByPrefix(url.pathname, policy.deniedPathPrefixes)) {
     return { ...base, allowed: false, reason: 'denied_path' };
   }
   if (isPrimary || isApi) {

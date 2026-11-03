@@ -128,13 +128,24 @@ export function pathHasDeniedKeyword(pathname: string, keywords: readonly string
   return deniedKeywordsInPath(pathname, keywords)[0] ?? null;
 }
 
+/** A path as a contract rule sees it: percent-decoded, lower-cased, duplicate slashes collapsed. */
+export function normalisePath(pathname: string): string {
+  let decoded = pathname;
+  try { decoded = decodeURIComponent(pathname); } catch { /* keep raw */ }
+  return decoded.toLowerCase().replace(/\/{2,}/g, '/');
+}
+
+/** True when the path falls under a denied prefix ('/D%61shboard//x' is under '/dashboard'). */
+export function pathDeniedByPrefix(pathname: string, prefixes: readonly string[]): boolean {
+  const p = normalisePath(pathname);
+  return prefixes.some((d) => p.startsWith(normalisePath(d)));
+}
+
 /** Every denied keyword that appears as a path segment or a dash/underscore/dot part of one. */
 export function deniedKeywordsInPath(pathname: string, keywords: readonly string[]): string[] {
   if (!keywords.length) return [];
-  let decoded = pathname;
-  try { decoded = decodeURIComponent(pathname); } catch { /* keep raw */ }
   const found = new Set<string>();
-  for (const segment of decoded.toLowerCase().split('/').filter(Boolean)) {
+  for (const segment of normalisePath(pathname).split('/').filter(Boolean)) {
     const parts = new Set([segment, ...segment.split(/[-_.]/).filter(Boolean)]);
     for (const k of keywords) if (parts.has(k)) found.add(k);
   }

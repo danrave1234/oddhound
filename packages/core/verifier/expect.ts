@@ -8,6 +8,7 @@
 import { z } from 'zod';
 import type { Page } from 'playwright';
 import { observe, type Observation } from '../browser/snapshot.ts';
+import { routePath } from '../browser/app-path.ts';
 
 export const ExpectSchema = z.object({
   /** accepted: no error or invalid field, and the page moved on or showed a success message.
@@ -30,7 +31,8 @@ export type ExpectFacts = {
 /** ok: every check held. unclear: a failed check could not be decided (e.g. nothing visible happened). */
 export type ExpectVerdict = { ok: boolean; unclear: boolean; detail: string };
 
-const pathOf = (url: string) => { try { return new URL(url).pathname; } catch { return url; } };
+/** The in-app path (hash routes kept), the same form the model sees in observations. */
+const pathOf = (url: string) => { try { return routePath(url); } catch { return url; } };
 
 /** Regular expression source for an expected path (":id" = one segment, trailing "*" = any rest). */
 export function pathRegexSource(pattern: string): string {

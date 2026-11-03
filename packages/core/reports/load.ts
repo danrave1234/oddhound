@@ -8,7 +8,8 @@ export async function loadBriefInput(db: Db, findingId: string): Promise<BriefIn
   const f = (await db.query(`SELECT f.*, r.origin, r.environment, COALESCE(p.stack, '') AS stack FROM findings f JOIN runs r ON r.id = f.run_id LEFT JOIN projects p ON p.id = r.project_id WHERE f.id = $1`, [findingId])).rows[0];
   if (!f) return null;
   const scenario = f.scenario_id ? (await db.query<{ id: string; assertion: Scenario; assertion_hash: string }>('SELECT id, assertion, assertion_hash FROM scenarios WHERE id = $1', [f.scenario_id])).rows[0] : undefined;
-  const control = f.control_scenario_id ? (await db.query<{ assertion: Scenario }>('SELECT assertion FROM scenarios WHERE id = $1', [f.control_scenario_id])).rows[0] : undefined;
+  const control = f.control_scenario_id ? (await db.query<{ assertion: Scenario; outcome: string | null }>(
+    `SELECT s.assertion, (SELECT e.outcome FROM scenario_executions e WHERE e.scenario_id = s.id AND e.kind = 'verify' ORDER BY e.at DESC LIMIT 1) AS outcome FROM scenarios s WHERE s.id = $1`, [f.control_scenario_id])).rows[0] : undefined;
   const executions = f.scenario_id ? (await db.query<{ kind: string; outcome: string; at: Date }>('SELECT kind, outcome, at FROM scenario_executions WHERE scenario_id = $1 ORDER BY at', [f.scenario_id])).rows : [];
   return {
     finding: {
@@ -17,7 +18,7 @@ export async function loadBriefInput(db: Db, findingId: string): Promise<BriefIn
     },
     target: { origin: f.origin, environment: f.environment },
     scenario: scenario ? { id: scenario.id, assertion: scenario.assertion, assertionHash: scenario.assertion_hash } : null,
-    control: control ? { assertion: control.assertion } : null,
+    control: control ? { assertion: control.assertion, outcome: control.outcome ?? undefined } : null,
     executions: executions.map((e) => ({ kind: e.kind, outcome: e.outcome, at: e.at.toISOString() })),
     evidenceCount: (f.evidence_ids as string[]).length,
     evidenceIds: f.evidence_ids as string[],

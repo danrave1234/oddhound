@@ -29,6 +29,7 @@ export async function publicStatus() {
     active: active.rows[0].n as number,
     replayRunId: (replay.rows[0]?.id as string | undefined) ?? null,
     metaConfigured: Boolean(process.env.META_API_KEY),
+    metaModel: process.env.META_MODEL ?? 'muse-spark-1.3',
     demoConfigured: Boolean(process.env.DEMO_TARGET_ORIGIN),
   };
 }

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { HoundMark, Icon, type IconName } from '@/ui/icons';
 import { publicStatus } from '@/lib/status-data';
 import { db } from '@/lib/server';
+import { LIMITS } from '@core/contracts/limits.ts';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: 'Status' };
@@ -11,8 +12,8 @@ export default async function Status() {
   const lastBrowser = (await db().query(`SELECT sandbox_verdict, browser_ref, finished_at FROM runs WHERE sandbox_verdict IS NOT NULL ORDER BY created_at DESC LIMIT 1`)).rows[0];
   const rows: { icon: IconName; label: string; ok: boolean; detail: string }[] = [
     { icon: 'play', label: 'Live runs', ok: !s.killSwitch, detail: s.killSwitch ? 'Paused by the operator (kill switch on).' : 'Accepting runs.' },
-    { icon: 'sniff', label: 'Meta model access', ok: s.metaConfigured, detail: s.metaConfigured ? 'Primary profile: Meta muse-spark-1.3 (direct API).' : 'No Meta API key configured; live runs are blocked.' },
-    { icon: 'pulse', label: 'Public budget today', ok: s.publicDailyLeftUsd > 0.5, detail: `$${s.publicDailyLeftUsd.toFixed(2)} of $7.00 left today (UTC); $${s.publicLifetimeLeftUsd.toFixed(2)} of $50.00 lifetime.` },
+    { icon: 'sniff', label: 'Meta model access', ok: s.metaConfigured, detail: s.metaConfigured ? `Primary profile: Meta ${s.metaModel} (direct API).` : 'No Meta API key configured; live runs are blocked.' },
+    { icon: 'pulse', label: 'Public budget today', ok: s.publicDailyLeftUsd > 0.5, detail: `$${s.publicDailyLeftUsd.toFixed(2)} of ${(LIMITS.publicDailyMicros / 1e6).toFixed(2)} left today (UTC); ${s.publicLifetimeLeftUsd.toFixed(2)} of ${(LIMITS.publicLifetimeMicros / 1e6).toFixed(2)} lifetime.` },
     { icon: 'list', label: 'Queue', ok: s.queued < 20, detail: `${s.active} active, ${s.queued} waiting (limit 20).` },
     { icon: 'shield', label: 'Browser isolation', ok: lastBrowser?.sandbox_verdict === 'sandbox_on', detail: lastBrowser ? `Last run: ${lastBrowser.browser_ref}, Chromium sandbox ${lastBrowser.sandbox_verdict}.` : 'No run yet.' },
     { icon: 'eye', label: 'Demo replay', ok: Boolean(s.replayRunId), detail: s.replayRunId ? 'A recorded real run is available.' : 'No recorded run yet.' },

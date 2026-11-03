@@ -20,6 +20,8 @@ type Snapshot = {
   run: Record<string, any>;
   comparison?: Comparison | null;
   gaps?: GapItem[];
+  retestEvents?: { seq: number; at: string; type: string; payload: Record<string, any> }[];
+  parentVerifiedCount?: number | null;
   workflows: { name: string; status: string; summary: string; updated_at: string }[];
   graph: { states: { id: string; route: string; title: string; actor: string; device: string }[]; transitions: { id: string; from_state: string | null; to_state: string; label: string }[] };
   findings: (ResultFinding & Record<string, any>)[];
@@ -254,7 +256,8 @@ export function RunWorkspace({ initial, controllable, replay, signedIn }: { init
     if (r.ok) window.location.assign(`/runs/${b.runId}`); else setNotice(b.error ?? 'Could not start the run.');
   }
   const [noteState, setNoteState] = useState<'idle' | 'copied' | 'failed'>('idle');
-  const release = run.mode === 'retest' ? releaseCheck(snap.events.filter((e) => e.type === 'retest.finished' || e.type === 'retest.blocked')) : null;
+  const retestEvents = snap.retestEvents ?? snap.events.filter((e) => e.type === 'retest.finished' || e.type === 'retest.blocked');
+  const release = run.mode === 'retest' ? releaseCheck(retestEvents, snap.parentVerifiedCount ?? undefined) : null;
   async function copyReleaseNote() {
     if (!release) return;
     const text = releaseNoteMarkdown(release, { origin: run.origin, runUrl: `${window.location.origin}/runs/${runId}`, at: new Date(run.finished_at ?? run.started_at ?? Date.now()).toISOString().slice(0, 16).replace('T', ' ') + ' UTC' });
@@ -350,10 +353,10 @@ export function RunWorkspace({ initial, controllable, replay, signedIn }: { init
                   </>
                 )}
                 <div className="table-wrap"><table className="grid"><thead><tr><th>Finding</th><th>Original check</th><th>Valid control</th><th>Result</th></tr></thead><tbody>
-                  {snap.events.filter((e) => e.type === 'retest.finished' || e.type === 'retest.blocked').map((e) => (
+                  {retestEvents.map((e) => (
                     <tr key={e.seq}><td>{e.payload.title ?? e.payload.findingId}</td><td><StatusBadge value={e.payload.outcome ?? 'blocked'} /></td>
                       <td><StatusBadge value={e.payload.control ?? 'not_run'} /></td><td><StatusBadge value={e.payload.lifecycle ?? 'blocked'} /></td></tr>))}
-                  {!snap.events.some((e) => e.type === 'retest.finished') && <tr><td colSpan={4} className="empty-cell">{active ? 'Replaying saved scenarios…' : 'No retest results recorded.'}</td></tr>}
+                  {!retestEvents.some((e) => e.type === 'retest.finished') && <tr><td colSpan={4} className="empty-cell">{active ? 'Replaying saved scenarios…' : 'No retest results recorded.'}</td></tr>}
                 </tbody></table></div>
               </div>
             )}

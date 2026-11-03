@@ -33,7 +33,8 @@ const fixed = process.argv.includes('--fixed') || process.env.FIXTURE_MODE === '
 const port = Number(process.env.FIXTURE_PORT ?? (fixed ? 4311 : 4310));
 const host = process.env.FIXTURE_HOST ?? '127.0.0.1';
 const verifyToken = process.env.ODDHOUND_FIXTURE_VERIFY_TOKEN ?? 'oddhound-demo-target-local-token';
-const resetToken = process.env.ODDHOUND_FIXTURE_RESET_TOKEN ?? 'local-lab-reset';
+// The default reset token exists only for a loopback lab; a public demo must configure its own or has no reset.
+const resetToken = process.env.ODDHOUND_FIXTURE_RESET_TOKEN ?? (host === '127.0.0.1' || host === 'localhost' ? 'local-lab-reset' : null);
 
 type User = { id: number; name: string; email: string; salt: string; hash: string };
 type Booking = { id: number; ownerId: number; guestName: string; partySize: number; date: string; notes: string; status: 'confirmed' | 'cancelled'; version: number };
@@ -171,7 +172,7 @@ const server = createServer(async (req, res) => {
       return res.end(`${verifyToken}\n`);
     }
     if (path === '/__lab/reset' && req.method === 'POST') {
-      if (req.headers['x-lab-reset-token'] !== resetToken) return send(res, 403, 'forbidden');
+      if (!resetToken || req.headers['x-lab-reset-token'] !== resetToken) return send(res, 403, 'forbidden');
       reset();
       res.writeHead(204); return res.end();
     }

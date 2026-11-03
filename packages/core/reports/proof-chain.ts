@@ -86,9 +86,13 @@ export function buildProofChain(input: {
   const controlOk = verify.some((l) => l.role === 'control' && l.outcome === 'passed');
   const lastRetest = [...legs].reverse().find((l) => l.stage === 'retest' && l.role === 'replay');
   const lastRetestControl = lastRetest && legs.filter((l) => l.stage === 'retest' && l.role === 'control' && l.runId === lastRetest.runId).at(-1);
-  // A retest replays twice; the verdict needs the replays of that run to agree.
+  // A retest replays twice. Passes must agree to prove a fix; one failure shows the bug is still there;
+  // a blocked replay never erases a failure; a pass and a failure disagree.
   const retestReplays = lastRetest ? legs.filter((l) => l.stage === 'retest' && l.role === 'replay' && l.runId === lastRetest.runId) : [];
-  const replaysAgree = retestReplays.every((l) => l.outcome === lastRetest!.outcome);
+  const decisive = retestReplays.map((l) => l.outcome).filter((o) => o === 'passed' || o === 'failed');
+  const retestOutcome = !decisive.length ? (lastRetest?.outcome ?? 'inconclusive')
+    : decisive.includes('passed') && decisive.includes('failed') ? 'disagreed'
+    : decisive[0]!;
 
   let verdict: ProofChain['verdict'];
   if (f.verification !== 'verified') {
@@ -97,19 +101,19 @@ export function buildProofChain(input: {
     verdict = { state: 'verified', text: `Verified: the rule broke in ${verifyFails} fresh ${verifyFails === 1 ? 'replay' : 'replays'}${controlOk ? ' while a valid case still passed' : ''}. No retest yet.` };
   } else if (!unchanged) {
     verdict = { state: 'retest_inconclusive', text: 'The assertion changed after verification, so this retest does not count.' };
-  } else if (!replaysAgree) {
+  } else if (retestOutcome === 'disagreed') {
     verdict = { state: 'retest_inconclusive', text: `The retest's fresh replays disagreed (${retestReplays.map((l) => l.outcome).join(', ')}), so the fix is not confirmed.` };
-  } else if (lastRetest.outcome === 'passed' && f.control_scenario_id && !lastRetestControl) {
+  } else if (retestOutcome === 'passed' && f.control_scenario_id && !lastRetestControl) {
     // The retest ended (or died) before it replayed the valid case, so "fixed" is not yet earned.
     verdict = { state: 'retest_inconclusive', text: 'The retest ended before the valid case was replayed, so the fix is not confirmed yet.' };
-  } else if (lastRetest.outcome === 'passed' && (!lastRetestControl || lastRetestControl.outcome === 'passed')) {
+  } else if (retestOutcome === 'passed' && (!lastRetestControl || lastRetestControl.outcome === 'passed')) {
     verdict = { state: 'fixed', text: 'Fixed: the same, unchanged assertion now holds' + (lastRetestControl ? ' and the valid case still passes.' : '.') };
-  } else if (lastRetest.outcome === 'failed') {
+  } else if (retestOutcome === 'failed') {
     verdict = f.lifecycle === 'regressed'
       ? { state: 'regressed', text: 'Regressed: the unchanged assertion fails again after an earlier fix.' }
       : { state: 'still_failing', text: 'Still failing: the unchanged assertion breaks the rule on the retested build.' };
   } else {
-    verdict = { state: 'retest_inconclusive', text: `The retest could not judge the fix (${lastRetest.outcome}${lastRetestControl && lastRetestControl.outcome !== 'passed' ? `; valid case ${lastRetestControl.outcome}` : ''}).` };
+    verdict = { state: 'retest_inconclusive', text: `The retest could not judge the fix (${retestOutcome}${lastRetestControl && lastRetestControl.outcome !== 'passed' ? `; valid case ${lastRetestControl.outcome}` : ''}).` };
   }
 
   return {

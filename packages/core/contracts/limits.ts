@@ -6,6 +6,7 @@ export const LIMITS = {
   concurrentRunsGlobal: 1,
   pendingRunsGlobal: 20,
   pendingRunsPerPrincipal: 1,
+  demoRunsPerHour: 12, // anonymous demo runs and retests admitted per hour, all visitors together
   // Oct 28, 2026 (owner decision): the agent runs free inside the cost cap and the rules. Turns and actions are
   // not capped; the clock is only a backstop for a stuck run (browser machine time costs money too).
   runWallClockMs: 60 * 60_000,

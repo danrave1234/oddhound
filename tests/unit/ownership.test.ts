@@ -109,6 +109,9 @@ describe('DNS verification', () => {
       '_oddhound-verify.api.studyboost.com', '_oddhound-verify.studyboost.com',
     ]);
     expect(dnsVerificationNames('example.com')).toEqual(['_oddhound-verify.example.com', 'example.com']);
+    // A public suffix is never consulted: a record on vercel.app or github.io must not verify every site under it.
+    expect(dnsVerificationNames('tapos-ebon.vercel.app')).toEqual(['_oddhound-verify.tapos-ebon.vercel.app', 'tapos-ebon.vercel.app']);
+    expect(dnsVerificationNames('docs.team.github.io')).toEqual(['_oddhound-verify.docs.team.github.io', 'docs.team.github.io', '_oddhound-verify.team.github.io']);
     expect(dnsVerificationNames('203.0.113.5')).toEqual(['_oddhound-verify.203.0.113.5', '203.0.113.5']);
     expect(suggestedDomainRecord('preview.studyboost.com')).toBe('_oddhound-verify.studyboost.com');
     expect(suggestedDomainRecord('app.shop.co.uk')).toBe('_oddhound-verify.shop.co.uk');

@@ -58,11 +58,17 @@ export async function admitRun(db: Db, input: AdmissionInput): Promise<Admission
     const pendingAll = await tx.query(`SELECT count(*)::int AS n FROM runs WHERE status = 'queued'`);
     if (pendingAll.rows[0].n >= LIMITS.pendingRunsGlobal) return { ok: false, reason: 'queue_full' };
 
-    if (input.mode === 'demo_target') {
-      const recent = await tx.query(`SELECT count(*)::int AS n FROM runs WHERE principal = $1 AND mode = 'demo_target' AND created_at > now() - interval '1 hour'`, [input.principal]);
+    // Anonymous demo runs and their retests: one per visitor per hour, and a shared hourly ceiling so
+    // a visitor who discards the cookie cannot queue the public budget away from everyone else.
+    if (input.mode === 'demo_target' || (input.mode === 'retest' && !input.ownerId)) {
+      const recent = await tx.query(`SELECT count(*)::int AS n FROM runs WHERE principal = $1 AND mode = $2 AND created_at > now() - interval '1 hour'`, [input.principal, input.mode]);
       if (recent.rows[0].n >= 1) return { ok: false, reason: 'demo_hourly_limit' };
-      const activeDemo = await tx.query(`SELECT count(*)::int AS n FROM runs WHERE mode = 'demo_target' AND status IN ${ACTIVE}`);
-      if (activeDemo.rows[0].n >= 1) return { ok: false, reason: 'demo_busy' };
+      const recentAll = await tx.query(`SELECT count(*)::int AS n FROM runs WHERE owner_id IS NULL AND mode IN ('demo_target', 'retest') AND created_at > now() - interval '1 hour'`);
+      if (recentAll.rows[0].n >= LIMITS.demoRunsPerHour) return { ok: false, reason: 'demo_hourly_limit' };
+      if (input.mode === 'demo_target') {
+        const activeDemo = await tx.query(`SELECT count(*)::int AS n FROM runs WHERE mode = 'demo_target' AND status IN ${ACTIVE}`);
+        if (activeDemo.rows[0].n >= 1) return { ok: false, reason: 'demo_busy' };
+      }
     }
     // No per-user daily run count (removed Oct 28, 2026, owner decision): signed-in developers run as often as they
     // choose. Money stays bounded by the per-run cap and the daily/lifetime spend ceilings, and one run per user is

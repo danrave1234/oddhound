@@ -1,7 +1,7 @@
 // SELF-02, SELF-16, SELF-17: what the page may do inside the browser.
 import { describe, it, expect } from 'vitest';
 import { decide, policyFromContract } from '../../packages/core/browser/scope.ts';
-import { demoTargetContract, DEFAULT_DENIED_PATH_KEYWORDS, SIGN_OUT_KEYWORDS, pathHasDeniedKeyword } from '../../packages/core/contracts/contract.ts';
+import { demoTargetContract, DEFAULT_DENIED_PATH_KEYWORDS, SIGN_OUT_KEYWORDS, pathHasDeniedKeyword, pathDeniedByPrefix } from '../../packages/core/contracts/contract.ts';
 
 const active = policyFromContract(demoTargetContract('https://shop.example'));
 const observe = policyFromContract({ ...demoTargetContract('https://shop.example'), testMode: 'observation_only' });
@@ -31,6 +31,11 @@ describe('scope decisions', () => {
   });
   it('denied paths are blocked even for GET', () => {
     expect(decide(active, req('https://shop.example/__lab/reset')).reason).toBe('denied_path');
+  });
+  it('denied prefixes match percent-encoded, upper-case and double-slash spellings of the same path', () => {
+    for (const path of ['/__l%61b/reset', '/__LAB/reset', '//__lab//reset']) expect(decide(active, req(`https://shop.example${path}`)).reason).toBe('denied_path');
+    expect(pathDeniedByPrefix('/D%61shboard//settings', ['/dashboard'])).toBe(true);
+    expect(pathDeniedByPrefix('/dashboards-public', ['/dashboard/'])).toBe(false);
   });
   it('frames may not submit anywhere, and odd schemes are refused', () => {
     expect(decide(active, req('https://shop.example/x', 'POST', { isNavigation: true, isMainFrame: false })).reason).toBe('frame_write_blocked');

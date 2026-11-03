@@ -9,6 +9,13 @@ export function appPath(url: string | URL): string {
   return `${u.pathname}${u.search}${hash}`;
 }
 
+/** The route only: pathname plus a hash route, without query strings (what an expectation's `path` is judged against). */
+export function routePath(url: string | URL): string {
+  const u = typeof url === 'string' ? new URL(url) : url;
+  const hash = /^#!?\//.test(u.hash) ? u.hash.split('?')[0]! : '';
+  return `${u.pathname}${hash}`;
+}
+
 /** The paths a contract rule must be checked against: the pathname and, for a hash route, the route inside the fragment. */
 export function routePaths(url: string | URL): string[] {
   const u = typeof url === 'string' ? new URL(url) : url;

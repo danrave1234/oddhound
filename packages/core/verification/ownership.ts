@@ -7,6 +7,7 @@ import { randomBytes, timingSafeEqual } from 'node:crypto';
 import { resolveTxt } from 'node:dns/promises';
 import { isIP } from 'node:net';
 import { parse } from 'parse5';
+import { getDomain } from 'tldts';
 import { safeFetch, SafeFetchError, type SafeFetchOptions } from '../net/safe-fetch.ts';
 
 export const VERIFICATION_METHODS = ['dns_txt', 'well_known_file', 'meta_tag'] as const;
@@ -64,16 +65,21 @@ export const dnsVerificationName = (host: string) => `_oddhound-verify.${host}`;
 export function dnsVerificationNames(host: string): string[] {
   const names = [dnsVerificationName(host), host];
   if (isIP(host.replace(/^\[|\]$/g, ''))) return names;
+  // Never climb into a public suffix: a record on `vercel.app` or a shared dynamic-DNS zone must not
+  // verify every site hosted under it. The registrable domain (eTLD+1) is the highest name consulted.
+  const apex = getDomain(host, { allowPrivateDomains: true }) ?? host;
   const labels = host.split('.');
-  for (let i = 1; labels.length - i >= 2; i++) names.push(dnsVerificationName(labels.slice(i).join('.')));
+  for (let i = 1; labels.length - i >= 2; i++) {
+    const parent = labels.slice(i).join('.');
+    if (parent !== apex && !parent.endsWith(`.${apex}`)) break;
+    names.push(dnsVerificationName(parent));
+  }
   return names;
 }
 
-/** A suggested domain-wide record name (eTLD+1 by a simple heuristic; display only, never trusted). */
+/** The domain-wide record name: the registrable domain (eTLD+1), from the public suffix list. */
 export function suggestedDomainRecord(host: string): string {
-  const labels = host.split('.');
-  const twoPartSuffix = labels.length >= 3 && labels.at(-1)!.length === 2 && /^(co|com|org|net|ac|gov|edu)$/.test(labels.at(-2)!);
-  return dnsVerificationName(labels.slice(twoPartSuffix ? -3 : -2).join('.'));
+  return dnsVerificationName(getDomain(host, { allowPrivateDomains: true }) ?? host);
 }
 
 /** `tokens`: the origin's own token, plus (for an API host) its project's site token. */

@@ -12,9 +12,11 @@ export async function loadGaps(pool: Db, runId: string, routes: CoverageRoute[] 
   ]);
   const latest = new Map<string, Change>();
   for (const u of updates.rows) for (const c of u.payload.changes ?? []) if (c.kind === 'route' && !c.excluded) latest.set(c.id, c); // last delta per entry wins
-  const reasons = new Map(deferred.rows.map((d) => [d.payload.path, d.payload]));
+  // The agent may defer '/orders/?x=1' while the frontier stored '/orders'; compare by pathname only.
+  const key = (p: string) => { try { return new URL(p, 'http://x').pathname.replace(/\/+$/, '') || '/'; } catch { return p; } };
+  const reasons = new Map(deferred.rows.map((d) => [key(d.payload.path), d.payload]));
   const entries: DiscoveryEntry[] = [...latest.values()].map((c) => {
-    const d = reasons.get(c.path);
+    const d = reasons.get(key(c.path));
     return { path: c.path, visited: c.visited, ...(d ? { disposition: d.status, reason: d.reason } : c.status === 'blocked' ? { disposition: 'blocked' as const, reason: c.reason ?? 'blocked by the run contract' } : {}) };
   });
   return untestedChecklist({ entries, routes });

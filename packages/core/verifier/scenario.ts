@@ -5,7 +5,7 @@
 // fresh contexts with fresh synthetic identities and evaluates the assertion with trusted code.
 // The saved scenario (and its hash) is immutable: a retest replays exactly the same JSON.
 
-import { appPath } from '../browser/app-path.ts';
+import { appPath, routePath } from '../browser/app-path.ts';
 import { z } from 'zod';
 import { randomBytes } from 'node:crypto';
 import type { BrowserContext, Page, Locator } from 'playwright';
@@ -681,7 +681,7 @@ async function replayBatch(
   const checks: { step: number; ok: boolean; detail: string }[] = [];
   for (let i = 0; i < last; i++) {
     const { step, expect } = s.steps[i]!;
-    const pathBefore = new URL(page.url()).pathname;
+    const pathBefore = routePath(page.url());
     try { await runStep(page, env.origin, step, vars); }
     catch (e) {
       if (e instanceof ReplayBlocked) throw new ReplayBlocked(`step ${i + 1} (${step.op}): ${e.message}`);

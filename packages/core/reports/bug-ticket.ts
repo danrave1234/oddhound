@@ -36,7 +36,8 @@ export function bugTicketMarkdown(b: BriefInput, meta: { runUrl: string; appOrig
   lines.push(oneLine(f.observed, 600));
   lines.push('');
   lines.push('## Evidence');
-  if (verify.length) lines.push(`- Independent replays in fresh sessions: ${replays} of ${verify.length} broke the rule${b.control ? '; a valid neighbouring case still passed' : ''}.`);
+  const control = b.control?.outcome === 'passed' ? '; a valid neighbouring case still passed' : b.control?.outcome ? `; the valid neighbouring case ${b.control.outcome.replace(/_/g, ' ')}` : '';
+  if (verify.length) lines.push(`- Independent replays in fresh sessions: ${replays} of ${verify.length} broke the rule${control}.`);
   else lines.push('- No replay record saved for this finding.');
   if (retests.length) lines.push(`- Retests so far: ${retests.map((e) => e.outcome).join(', ')} (same assertion, hash-pinned).`);
   if (b.scenario) lines.push(`- Assertion hash \`${b.scenario.assertionHash.slice(0, 12)}\` (a retest after the fix replays exactly this check).`);
