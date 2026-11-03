@@ -15,6 +15,7 @@ export type BriefInput = {
   control: { assertion: Scenario } | null;
   executions: { kind: string; outcome: string; at: string }[];
   evidenceCount: number;
+  evidenceIds?: string[];
   docs?: { library: string; excerpt: string } | null;
 };
 
@@ -29,7 +30,8 @@ export function fenceUntrusted(text: string): string {
   return text.replace(/```/g, "'''").replace(/<\/?(system|assistant|user|instructions?)>/gi, '[tag removed]').slice(0, 2000);
 }
 
-function reproduction(s: Scenario): string[] {
+/** Reproduction steps written only from the pinned scenario (shared by the fix brief and the bug ticket). */
+export function reproduction(s: Scenario): string[] {
   const steps: string[] = [];
   const auth = 'auth' in s ? s.auth : undefined;
   if (auth?.kind === 'handoff') steps.push('Sign in to the site as a normal user (Oddhound used the owner\'s own sign-in for this check).');

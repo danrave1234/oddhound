@@ -20,6 +20,7 @@ export async function loadBriefInput(db: Db, findingId: string): Promise<BriefIn
     control: control ? { assertion: control.assertion } : null,
     executions: executions.map((e) => ({ kind: e.kind, outcome: e.outcome, at: e.at.toISOString() })),
     evidenceCount: (f.evidence_ids as string[]).length,
+    evidenceIds: f.evidence_ids as string[],
     // Documentation only for an owner-declared stack, and only for verified issues; failure → null.
     docs: f.stack && scenario && f.category === 'verified_issue' ? await fetchDocs(f.stack, topicFor(scenario.assertion.kind)) : null,
   };

@@ -4,6 +4,10 @@ import { runSpend, spendAllowance } from '@core/ledger/spend.ts';
 
 export type RunSnapshot = Awaited<ReturnType<typeof loadRunSnapshot>>;
 
+import { compareFindings, type CompareFinding, type Comparison } from '@core/reports/run-compare.ts';
+import { loadGaps } from './gaps-data';
+export type { Comparison };
+
 export type ReportVerdict =
   | { verdict: 'reproduced'; findingId: string; title: string }
   | { verdict: 'not_reproduced'; text: string; actions?: number; pages?: number; candidates?: number; replayed?: number };
@@ -25,7 +29,7 @@ export async function loadRunSnapshot(runId: string) {
     pool.query('SELECT name, status, summary, updated_at FROM workflows WHERE run_id = $1 ORDER BY updated_at', [runId]),
     pool.query('SELECT id, route, title, actor, device, first_seen_at FROM graph_states WHERE run_id = $1 ORDER BY first_seen_at, id', [runId]),
     pool.query('SELECT id, from_state, to_state, label FROM graph_transitions WHERE run_id = $1', [runId]),
-    pool.query(`SELECT id, title, category, verification, lifecycle, impact, confidence, rule_id, rule_source, expected, observed, device, actor, limitations, evidence_ids, scenario_id, created_at, updated_at
+    pool.query(`SELECT id, title, category, verification, lifecycle, impact, confidence, rule_id, rule_source, expected, observed, device, actor, limitations, evidence_ids, scenario_id, fingerprint, created_at, updated_at
       FROM findings WHERE run_id = $1 ORDER BY CASE category WHEN 'verified_issue' THEN 0 WHEN 'needs_review' THEN 1 WHEN 'configuration_observation' THEN 2 ELSE 3 END, created_at`, [runId]),
     pool.query('SELECT seq, at, type, payload FROM run_events WHERE run_id = $1 ORDER BY seq DESC LIMIT 301', [runId]),
     pool.query('SELECT seq, actor, device, tool, state, url_after, intended_at FROM actions WHERE run_id = $1 ORDER BY seq DESC LIMIT 61', [runId]),
@@ -45,8 +49,23 @@ export async function loadRunSnapshot(runId: string) {
     // Trusted outcome of a bug-report reproduction, written by the run worker (never model text).
     pool.query(`SELECT payload FROM run_events WHERE run_id = $1 AND type = 'report.verdict' ORDER BY seq DESC LIMIT 1`, [runId]),
   ]);
+  // The previous completed run of the same site, so results can say what is new since then.
+  let comparison: Comparison | null = null;
+  if (run.mode === 'verified_site' && run.project_id && run.status === 'completed') {
+    const prev = (await pool.query<{ id: string; finished_at: Date | null }>(
+      `SELECT id, finished_at FROM runs WHERE project_id = $1 AND mode = 'verified_site' AND status = 'completed' AND id <> $2 AND queued_at < $3 ORDER BY queued_at DESC LIMIT 1`,
+      [run.project_id, runId, run.queued_at])).rows[0];
+    if (prev) {
+      const before = (await pool.query<CompareFinding>('SELECT id, title, category, verification, fingerprint, rule_id, rule_source, impact FROM findings WHERE run_id = $1', [prev.id])).rows;
+      comparison = compareFindings(findings.rows as CompareFinding[], before, { previousRunId: prev.id, previousAt: prev.finished_at ? new Date(prev.finished_at).toISOString() : null });
+    }
+  }
+  const cov = (coverage.rows[0]?.payload ?? null) as Coverage | null;
+  const gaps = run.status !== 'queued' && run.mode !== 'retest' ? await loadGaps(pool, runId, cov?.routes ?? null) : [];
   return {
     run,
+    comparison,
+    gaps,
     workflows: workflows.rows,
     graph: { states: states.rows, transitions: transitions.rows },
     findings: findings.rows,

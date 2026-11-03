@@ -1,6 +1,8 @@
 'use client';
 import { ProofChain } from './proof-chain';
-import type { ReportVerdict } from '@/lib/run-data';
+import type { ReportVerdict, Comparison } from '@/lib/run-data';
+import { releaseCheck, releaseNoteMarkdown } from '@core/reports/release-check.ts';
+import type { GapItem } from '@core/reports/gaps.ts';
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { HoundMark, Icon, type IconName } from '@/ui/icons';
@@ -16,6 +18,8 @@ type DiscoverySummary = ReturnType<NavigationFrontier['summary']>;
 
 type Snapshot = {
   run: Record<string, any>;
+  comparison?: Comparison | null;
+  gaps?: GapItem[];
   workflows: { name: string; status: string; summary: string; updated_at: string }[];
   graph: { states: { id: string; route: string; title: string; actor: string; device: string }[]; transitions: { id: string; from_state: string | null; to_state: string; label: string }[] };
   findings: (ResultFinding & Record<string, any>)[];
@@ -244,6 +248,19 @@ export function RunWorkspace({ initial, controllable, replay, signedIn }: { init
     const b = await r.json().catch(() => ({}));
     if (r.ok) window.location.assign(`/runs/${b.runId}`); else setNotice(b.error ?? 'Could not start a retest.');
   }
+  async function runAgain() {
+    const r = await fetch(`/api/runs/${runId}/again`, { method: 'POST' });
+    const b = await r.json().catch(() => ({}));
+    if (r.ok) window.location.assign(`/runs/${b.runId}`); else setNotice(b.error ?? 'Could not start the run.');
+  }
+  const [noteState, setNoteState] = useState<'idle' | 'copied' | 'failed'>('idle');
+  const release = run.mode === 'retest' ? releaseCheck(snap.events.filter((e) => e.type === 'retest.finished' || e.type === 'retest.blocked')) : null;
+  async function copyReleaseNote() {
+    if (!release) return;
+    const text = releaseNoteMarkdown(release, { origin: run.origin, runUrl: `${window.location.origin}/runs/${runId}`, at: new Date(run.finished_at ?? run.started_at ?? Date.now()).toISOString().slice(0, 16).replace('T', ' ') + ' UTC' });
+    try { await navigator.clipboard.writeText(text); setNoteState('copied'); } catch { setNoteState('failed'); }
+  }
+  const gaps = snap.gaps ?? [];
 
 
   const verifiedCount = snap.findings.filter((f) => f.category === 'verified_issue' && f.verification === 'verified').length;
@@ -285,6 +302,7 @@ export function RunWorkspace({ initial, controllable, replay, signedIn }: { init
         <span className="row" style={{ gap: 8 }}>
           {controllable && active && <button className="btn btn-danger" onClick={stop} title="Blocks new actions immediately; cannot undo completed actions"><Icon name="stop" /> Stop run</button>}
           {controllable && !active && run.mode !== 'retest' && !run.handoff_enabled && verifiedCount > 0 && <button className="btn btn-primary" onClick={retest}><Icon name="retest" /> {run.mode === 'demo_target' ? 'Retest on corrected build' : 'Retest after fix'}</button>}
+          {controllable && !active && run.mode === 'verified_site' && <button className="btn" onClick={runAgain} title="A new run with exactly these goals, rules, limits, devices and accounts"><Icon name="replay" /> Run again</button>}
           {run.parent_run_id && <Link className="btn" href={`/runs/${run.parent_run_id}`}><Icon name="back" /> Original run</Link>}
         </span>
       </header>
@@ -313,13 +331,24 @@ export function RunWorkspace({ initial, controllable, replay, signedIn }: { init
 
           <div className="pane-body">
             {!active && view !== 'results' && <div className="banner banner-info"><Icon name="report" /><span>This run has ended. Its results and coverage gaps are ready.</span><button className="btn btn-sm" onClick={() => setView('results')}>View results</button></div>}
-            {view === 'results' && !active && <ResultsDashboard status={run.status} reason={run.stop_reason} report={run.mode !== 'retest' ? run.report ?? null : null} reportVerdict={snap.reportVerdict ?? null} findings={snap.findings} rules={run.rules ?? []} states={snap.graph.states} coverage={snap.coverage} discovery={snap.exploration?.summary}
+            {view === 'results' && !active && <ResultsDashboard status={run.status} reason={run.stop_reason} report={run.mode !== 'retest' ? run.report ?? null : null} reportVerdict={snap.reportVerdict ?? null} comparison={snap.comparison ?? null} gaps={gaps} origin={run.origin} runId={runId} findings={snap.findings} rules={run.rules ?? []} states={snap.graph.states} coverage={snap.coverage} discovery={snap.exploration?.summary}
               onSelectFinding={id => { setView('findings'); selectFinding(id); }} onOpenCoverage={() => { setWfMode('list'); setView('workflows'); }} />}
             {controllable && run.status === 'waiting_for_input' && run.handoff_enabled && <HandoffPanel runId={runId} onStop={stop} />}
             <LiveDeck snap={snap} active={active} replay={replay} onOpenBrowser={() => setView('browser')} onOpenFindings={() => setView('findings')} />
             {run.mode === 'retest' && (
               <div className="card">
-                <div className="card-header"><h2 className="h3"><Icon name="replay" /> Retest results</h2><span className="muted" style={{ fontSize: 12.5 }}>Saved assertions replayed unchanged</span></div>
+                <div className="card-header"><h2 className="h3"><Icon name="replay" /> Retest results</h2><span className="muted" style={{ fontSize: 12.5 }}>Saved assertions replayed unchanged</span>
+                  {!active && release && release.rows.length > 0 && <button className="btn btn-sm" style={{ marginLeft: 'auto' }} onClick={copyReleaseNote}><Icon name={noteState === 'copied' ? 'tick' : 'copy'} /> {noteState === 'copied' ? 'Release note copied' : 'Copy release note'}</button>}</div>
+                {!active && release && release.rows.length > 0 && (
+                  <>
+                    <dl className="release" aria-label="Release check">
+                      <div className={release.fixed ? 'is-ok' : undefined}><dt>Fixed</dt><dd>{release.fixed}</dd></div>
+                      <div className={release.stillFailing ? 'is-bad' : undefined}><dt>Still failing</dt><dd>{release.stillFailing}</dd></div>
+                      <div className={release.undecided ? 'is-warn' : undefined}><dt>Undecided</dt><dd>{release.undecided}</dd></div>
+                    </dl>
+                    <p className="release-verdict">{release.ready ? <><Icon name="check" /> Every verified finding of the original run is fixed: each unchanged assertion held twice in fresh sessions.</> : <><Icon name="alert" /> Not ready to call fixed. {release.stillFailing ? `${release.stillFailing} still break the rule. ` : ''}{release.undecided ? `${release.undecided} could not be decided; open each row for the reason.` : ''}</>}</p>
+                  </>
+                )}
                 <div className="table-wrap"><table className="grid"><thead><tr><th>Finding</th><th>Original check</th><th>Valid control</th><th>Result</th></tr></thead><tbody>
                   {snap.events.filter((e) => e.type === 'retest.finished' || e.type === 'retest.blocked').map((e) => (
                     <tr key={e.seq}><td>{e.payload.title ?? e.payload.findingId}</td><td><StatusBadge value={e.payload.outcome ?? 'blocked'} /></td>
@@ -467,6 +496,12 @@ function FindingInspector({ finding: f, controllable, onRetest, runActive, runMo
     setBrief(text);
     try { await navigator.clipboard.writeText(text); setCopyState('copied'); } catch { setCopyState('failed'); }
   }
+  const [ticketState, setTicketState] = useState<'idle' | 'copied' | 'failed'>('idle');
+  async function copyTicket() {
+    const text: string = await fetch(`/api/findings/${f.id}/brief?format=ticket`).then((r) => r.text());
+    setBrief(text);
+    try { await navigator.clipboard.writeText(text); setTicketState('copied'); setCopyState('idle'); } catch { setTicketState('failed'); setCopyState('failed'); }
+  }
   return (
     <article style={{ display: 'grid', gap: 16 }} className="fade-in" key={f.id}>
       <button className="btn btn-ghost btn-sm mobile-only" onClick={onBack} style={{ justifySelf: 'start' }}><Icon name="back" /> Back to findings</button>
@@ -486,6 +521,7 @@ function FindingInspector({ finding: f, controllable, onRetest, runActive, runMo
       {f.scenario_id && (
         <div className="row" style={{ gap: 8 }}>
           <button className="btn btn-primary" onClick={copy}>{copyState === 'copied' ? <span className="pop-in" style={{ display: 'inline-flex' }}><Icon name="tick" /></span> : <Icon name="brief" />} {copyState === 'copied' ? 'Copied' : 'Copy fix prompt'}</button>
+          <button className="btn" onClick={copyTicket} title="A bug report for people: steps, expected, actual and evidence, for Jira or GitHub"><Icon name={ticketState === 'copied' ? 'tick' : 'report'} /> {ticketState === 'copied' ? 'Bug report copied' : 'Copy bug report'}</button>
           <a className="btn" href={`/api/findings/${f.id}/export`}><Icon name="download" /> Playwright test</a>
           {controllable && !runActive && runMode !== 'retest' && f.category === 'verified_issue' && <button className="btn" onClick={onRetest}><Icon name="retest" /> Retest</button>}
         </div>

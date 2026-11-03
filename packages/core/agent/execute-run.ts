@@ -553,6 +553,14 @@ async function agentLoop(a: LoopArgs): Promise<{ stopReason?: string; summary?: 
   };
 
   /** Steps for a trace ending at `toSeq`, starting at `fromSeq` (or at the last navigation before it). */
+  // The agent tends to re-report one bug under new wording; the same title is the same candidate.
+  const normTitle = (t: string) => t.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+  const sameTitleCandidate = (title: string, reportMatch?: boolean): string | null => {
+    const dup = candidates.find((c) => c.source === 'agent' && normTitle(c.title) === normTitle(title));
+    if (!dup) return null;
+    if (reportMatch === true) dup.reportMatch = true;
+    return `Already recorded: "${dup.title}" (${dup.ruleId}, ${dup.scenario.kind}). Oddhound will verify it once. If this is a different bug, give it a title that says what differs; otherwise move on to the next charter.`;
+  };
   const traceFor = (toSeq: number, fromSeq?: number): { start: string; steps: TraceStep[]; device: 'desktop' | 'mobile'; actor: string; usesPassword: boolean } | string => {
     const end = stepLog.find((s) => s.seq === toSeq);
     if (!end) return `Action #${toSeq} is not a recorded browser action.`;
@@ -1436,6 +1444,8 @@ async function agentLoop(a: LoopArgs): Promise<{ stopReason?: string; summary?: 
           const scenario: Scenario = { kind: 'batch', device: logs[0]!.device, ...(auth ? { auth } : {}), ...(rp.setup ? { setup: rp.setup } : {}), start: rp.start, steps: rp.steps, oracleStep };
           const stated = [...new Set(rec.steps.slice(0, k).map((x) => x.stated).filter(Boolean))].join(', ') || undefined;
           const knownRule = contract.rules.some((r) => r.id === args.rule_id) || BASELINE_RULES.some((r) => r.id === args.rule_id);
+          const dupTitle = sameTitleCandidate(args.title, args.report_match);
+          if (dupTitle) return { text: dupTitle };
           candidates.push({ title: args.title, ruleId: args.rule_id, impact: args.impact, observed: args.observed, reportMatch: args.report_match, scenario, actor: logs[0]!.actor, device: logs[0]!.device, source: 'agent', ...(stated ? { stated } : {}) });
           await ev('finding.candidate', { title: args.title, ruleId: args.rule_id, kind: 'batch', source: 'agent', steps: steps.length, batch: rec.no });
           return { text: knownRule ? `Candidate recorded (batch ${rec.no}, ${steps.length} replay steps from ${start}, step ${oracleStep} is the check). Oddhound will replay it in a fresh session.` : `Recorded as needs-review: "${args.rule_id}" is not an owner or baseline rule.` };
@@ -1450,6 +1460,8 @@ async function agentLoop(a: LoopArgs): Promise<{ stopReason?: string; summary?: 
           const rp = withRecordSetup(t.start, t.steps.map((step) => ({ step })), recorded);
           const scenario: Scenario = { kind: 'trace', device: t.device, ...(auth ? { auth } : {}), ...(rp.setup ? { setup: rp.setup } : {}), start: rp.start, steps: rp.steps.map((x) => x.step), oracle: args.scenario.oracle };
           const knownRule = contract.rules.some((r) => r.id === args.rule_id) || BASELINE_RULES.some((r) => r.id === args.rule_id);
+          const dupTitle = sameTitleCandidate(args.title, args.report_match);
+          if (dupTitle) return { text: dupTitle };
           candidates.push({ title: args.title, ruleId: args.rule_id, impact: args.impact, observed: args.observed, reportMatch: args.report_match, scenario, actor: t.actor, device: t.device, source: 'agent' });
           await ev('finding.candidate', { title: args.title, ruleId: args.rule_id, kind: 'trace', source: 'agent', steps: t.steps.length });
           return { text: knownRule ? `Candidate recorded (${t.steps.length} replay steps from ${t.start}). Oddhound will replay it in a fresh session.` : `Recorded as needs-review: "${args.rule_id}" is not an owner or baseline rule.` };
@@ -1461,6 +1473,8 @@ async function agentLoop(a: LoopArgs): Promise<{ stopReason?: string; summary?: 
           if (args.report_match === true) same.reportMatch = true;
           return { text: `Already recorded: "${same.title}" (${same.ruleId}, ${same.scenario.kind}). Oddhound will verify it; move on to the next charter.` };
         }
+        const dupTitle = sameTitleCandidate(args.title, args.report_match);
+        if (dupTitle) return { text: dupTitle };
         // Ground the scenario in what Oddhound actually observed, then reject anything still unknown,
         // telling the model the real labels so it can correct the report in its next turn.
         const grounded = groundCandidate({ title: args.title, ruleId: args.rule_id, impact: args.impact, observed: args.observed, reportMatch: args.report_match, scenario: args.scenario, controlValues: args.control_values, actor: session.actor, device: session.device }, recorded);

@@ -2,7 +2,8 @@
 import { useState } from 'react';
 import { Icon, type IconName } from '@/ui/icons';
 import { StatusBadge, findingStatus } from '@/ui/status';
-import type { ReportVerdict } from '@/lib/run-data';
+import type { ReportVerdict, Comparison } from '@/lib/run-data';
+import { checklistMarkdown, type GapItem } from '@core/reports/gaps.ts';
 import { RESULT_DOMAINS, resultCounts, resultDomain, type ResultDomain, type ResultFinding } from './results-data';
 
 const ICONS: Record<ResultDomain, IconName> = { functional: 'workflow', security: 'shield', seo: 'globe', ux: 'desktop', other: 'list' };
@@ -13,11 +14,18 @@ type Props = {
   states: { route: string; device: string }[];
   coverage?: { exercised: number; total: number; outcomeChecked?: number; blocked: number } | null;
   discovery?: { pendingRoutes: number; pendingControls: number; excluded: number } | null;
+  comparison?: Comparison | null; gaps?: GapItem[]; origin?: string; runId?: string;
   onSelectFinding: (id: string) => void; onOpenCoverage: () => void;
 };
 
-export function ResultsDashboard({ status, reason, report, reportVerdict, findings, rules, states, coverage, discovery, onSelectFinding, onOpenCoverage }: Props) {
+export function ResultsDashboard({ status, reason, report, reportVerdict, findings, rules, states, coverage, discovery, comparison, gaps = [], origin = '', runId = '', onSelectFinding, onOpenCoverage }: Props) {
   const [filter, setFilter] = useState<ResultDomain | 'all'>('all');
+  const [listState, setListState] = useState<'idle' | 'copied' | 'failed'>('idle');
+  const changeCounts = comparison ? Object.values(comparison.changes).reduce((n, c) => ({ ...n, [c]: n[c] + 1 }), { new: 0, repeat: 0 }) : null;
+  async function copyChecklist() {
+    const text = checklistMarkdown(gaps, { origin, runUrl: `${window.location.origin}/runs/${runId}` });
+    try { await navigator.clipboard.writeText(text); setListState('copied'); } catch { setListState('failed'); }
+  }
   const totals = resultCounts(findings);
   const grouped = RESULT_DOMAINS.map(domain => ({ ...domain, findings: findings.filter(f => resultDomain(f, rules) === domain.key) }));
   const visible = filter === 'all' ? findings : grouped.find(d => d.key === filter)!.findings;
@@ -44,6 +52,14 @@ export function ResultsDashboard({ status, reason, report, reportVerdict, findin
       <div><dt>Suggestions</dt><dd className="tabular">{totals.suggestions}</dd></div>
     </dl>
     <p className="muted rs-note">Categories organize saved findings. Zero findings is not a pass; no overall or category score is calculated.</p>
+    {comparison && changeCounts && <p className="rs-since" aria-label="Since the previous run">
+      <span>Since the <a href={`/runs/${comparison.previousRunId}`}>previous run</a>{comparison.previousAt ? ` (${new Date(comparison.previousAt).toLocaleDateString()})` : ''}:</span>
+      <span><strong>{changeCounts.new}</strong> new</span>
+      <span><strong>{changeCounts.repeat}</strong> also found then</span>
+      <span><strong>{comparison.notSeen.length}</strong> found then, not this time</span>
+      {comparison.notSeen.length > 0 && <details><summary>Not found this time is not fixed: only a retest replays the saved check.</summary>
+        <ul>{comparison.notSeen.map((n, i) => <li key={i}>{n.title}{n.ruleId ? ` (${n.ruleId})` : ''}</li>)}</ul></details>}
+    </p>}
 
     <div className="segmented rs-filter" role="group" aria-label="Result categories">
       <button aria-pressed={filter === 'all'} aria-label="All categories" onClick={() => setFilter('all')}>All <span className="rs-count">{findings.length}</span></button>
@@ -57,6 +73,7 @@ export function ResultsDashboard({ status, reason, report, reportVerdict, findin
     {visible.length ? <ul className="rs-findings">{visible.map(f => <li key={f.id}><button onClick={() => onSelectFinding(f.id)}>
         <StatusBadge value={findingStatus({ ...f, lifecycle: f.lifecycle ?? null })} />
         <span className="rs-title"><strong>{f.title}</strong><span className="muted">{RESULT_DOMAINS.find(d => d.key === resultDomain(f, rules))!.label}{f.impact ? `, ${f.impact} impact` : ''}</span></span>
+        {comparison?.changes[f.id] && <span className={`rs-change rs-change-${comparison.changes[f.id]}`}>{comparison.changes[f.id] === 'new' ? 'New' : 'Also last run'}</span>}
         <Icon name="chevron" /></button></li>)}</ul>
       : <p className="muted">No findings recorded here. This does not establish that the category was tested or passed.</p>}
 
@@ -68,6 +85,16 @@ export function ResultsDashboard({ status, reason, report, reportVerdict, findin
         <div><dt>Still pending</dt><dd>{discovery ? `${discovery.pendingRoutes} discovered routes and ${discovery.pendingControls} controls not yet tried; ${discovery.excluded} entries excluded by the run contract.` : 'No discovery backlog recorded.'}</dd></div>
       </dl>
       <p className="muted rs-note">Reached pages and successful clicks do not establish correct behavior. SEO and UI/UX need their own recorded checks; this page does not run additional audits.</p>
+    </section>
+
+    <section className="rs-gaps" aria-labelledby="rs-gaps-title">
+      <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
+        <h2 id="rs-gaps-title" className="h3">Not tested: take these by hand</h2>
+        {gaps.length > 0 && <button className="btn btn-sm" onClick={copyChecklist}><Icon name={listState === 'copied' ? 'tick' : 'copy'} /> {listState === 'copied' ? 'Checklist copied' : 'Copy as checklist'}</button>}
+      </div>
+      {gaps.length
+        ? <ul>{gaps.slice(0, 12).map((g, i) => <li key={i}><span className="mono">{g.path}</span>{g.text.slice(g.path.length)}</li>)}{gaps.length > 12 && <li className="muted">{gaps.length - 12} more in the copied checklist.</li>}</ul>
+        : <p className="muted">No gaps were recorded. This does not mean everything was tested; the run left no pending pages or untried controls.</p>}
     </section>
   </section>;
 }
