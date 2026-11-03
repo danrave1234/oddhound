@@ -33,6 +33,7 @@ export function VerifyPanel({ projectId, origin, token, verified, lastReason, la
   // never has to come back and press a button. Paused while the tab is hidden.
   const [watching, setWatching] = useState(false);
   const tries = useRef(0);
+  const [pings, setPings] = useState(0);
   async function check(quiet = false) {
     if (!quiet) setBusy(true);
     const res = await fetch(`/api/projects/${projectId}/verify`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(apiOrigin ? { method, origin } : { method }) });
@@ -49,6 +50,7 @@ export function VerifyPanel({ projectId, origin, token, verified, lastReason, la
     const id = setInterval(() => {
       if (document.visibilityState !== 'visible') return;
       if (++tries.current > 18) { setWatching(false); return; }
+      setPings((n) => n + 1);
       void check(true);
     }, 10_000);
     return () => clearInterval(id);
@@ -92,7 +94,7 @@ export function VerifyPanel({ projectId, origin, token, verified, lastReason, la
       </div>
       <div className="row">
         <button className="btn btn-primary" onClick={() => check()} disabled={busy} aria-busy={busy || undefined}><Icon name="shield" /> {busy ? 'Checking…' : 'Check now'}</button>
-        {watching && !verified && <span className="status-line muted fade-in" style={{ fontSize: 12.5 }}><span className="pulse-dot" aria-hidden /> Watching for it: checking every 10 seconds. <button type="button" className="link-btn" onClick={() => setWatching(false)}>Stop</button></span>}
+        {watching && !verified && <span className="status-line muted fade-in" style={{ fontSize: 12.5 }}><svg key={pings} className="watch-ring" viewBox="0 0 20 20" aria-hidden><circle cx="10" cy="10" r="7" /><circle className="watch-ring-fill" cx="10" cy="10" r="7" /></svg> Watching for it: checking every 10 seconds. <button type="button" className="link-btn" onClick={() => setWatching(false)}>Stop</button></span>}
         {shown && <p role="status" className="status-line fade-in" key={shown.reason} style={{ color: shown.verified ? 'var(--ok)' : 'var(--bad)' }}>
           <Icon name={shown.verified ? 'check' : 'fail'} /> {reasons[shown.reason] ?? `Not verified (${shown.reason.replace(/_/g, ' ')}).`}</p>}
       </div>
