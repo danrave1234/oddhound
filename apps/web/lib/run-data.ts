@@ -68,7 +68,7 @@ export async function loadRunSnapshot(runId: string) {
   ]);
   const comparison = await previousRunComparison(pool, run, findings.rows as CompareFinding[]);
   const cov = (coverage.rows[0]?.payload ?? null) as Coverage | null;
-  const gaps = run.status !== 'queued' && run.mode !== 'retest' ? await loadGaps(pool, runId, cov?.routes ?? null) : [];
+  const gaps = run.status !== 'queued' && run.mode !== 'retest' ? await loadGaps(pool, runId, cov?.routes ?? null, run.mode === 'verified_site' ? run.origin : null) : [];
   return {
     run,
     comparison,
