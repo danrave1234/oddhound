@@ -17,6 +17,7 @@ import { isVerifiedIssue, type ResultFinding } from './results-data';
 import { OwnerPreview, type PreviewState } from './owner-preview';
 import { RunTour } from './run-tour';
 import type { NavigationFrontier } from '@core/agent/frontier.ts';
+import { stopReasonText } from '@/ui/stop-reason';
 type DiscoverySummary = ReturnType<NavigationFrontier['summary']>;
 
 type Snapshot = {
@@ -315,7 +316,7 @@ export function RunWorkspace({ initial, controllable, replay, signedIn, canShare
         <span className="vsep" aria-hidden />
         {replay && <span className="badge badge-info"><Icon name="eye" />Demo replay — recorded run</span>}
         <StatusBadge value={run.status} />
-        {run.stop_reason && <span className="muted" style={{ fontSize: 12.5 }}>{String(run.stop_reason).replace(/_/g, ' ')}</span>}
+        {run.stop_reason && <span className="muted" style={{ fontSize: 12.5 }}>{stopReasonText(run.stop_reason)}</span>}
         {elapsed && <span className="pill-stat tabular" title="Elapsed time"><Icon name="clock" /><span className="sr-only">Elapsed </span><span suppressHydrationWarning>{elapsed}</span></span>}
         <span className="toolbar-spacer" />
         <span className="conn">
@@ -341,7 +342,7 @@ export function RunWorkspace({ initial, controllable, replay, signedIn, canShare
       <div className="workspace" style={{ ['--inspector-w' as string]: `${inspectorW}px` }}>
         <section className="pane" aria-label="Run views" ref={viewsRef}>
           <div className="pane-head">
-            <div className="segmented" role="group" aria-label="View">
+            {run.mode === 'retest' ? <h2 className="h3" style={{ margin: 0 }}>Release check</h2> : <div className="segmented" role="group" aria-label="View">
               {VIEWS.map((v) => (
                 <button key={v.key} aria-pressed={view === v.key} data-tour={v.key === 'findings' ? 'findings' : undefined} onClick={() => { setView(v.key); if (v.key === 'activity') setNewEvents(0); }}>
                   <Icon name={v.icon} /> {v.label}
@@ -349,8 +350,8 @@ export function RunWorkspace({ initial, controllable, replay, signedIn, canShare
                   {v.key === 'activity' && newEvents > 0 && view !== 'activity' && <span className="count count-new tabular pop-in">{newEvents}<span className="sr-only"> new</span></span>}
                 </button>
               ))}
-            </div>
-            {view === 'workflows' && (
+            </div>}
+            {view === 'workflows' && run.mode !== 'retest' && (
               <div className="segmented" role="group" aria-label="Workflow layout" style={{ marginLeft: 'auto' }}>
                 <button aria-pressed={wfMode === 'list'} onClick={() => setWfMode('list')}><Icon name="list" /> List</button>
                 <button aria-pressed={wfMode === 'map'} onClick={() => setWfMode('map')}><Icon name="map" /> Map</button>
@@ -359,15 +360,22 @@ export function RunWorkspace({ initial, controllable, replay, signedIn, canShare
           </div>
 
           <div className="pane-body">
-            {!active && view !== 'results' && <div className="banner banner-info"><Icon name="report" /><span>This run has ended. Its results and coverage gaps are ready.</span><button className="btn btn-sm" onClick={() => setView('results')}>View results</button></div>}
+            {run.mode !== 'retest' && !sharedView && <RunTour />}
+            {!active && view !== 'results' && run.mode !== 'retest' && <div className="banner banner-info"><Icon name="report" /><span>This run has ended. Its results and coverage gaps are ready.</span><button className="btn btn-sm" onClick={() => setView('results')}>View results</button></div>}
             {view === 'results' && !active && run.mode !== 'retest' && <ResultsDashboard status={run.status} reason={run.stop_reason} report={run.mode !== 'retest' ? run.report ?? null : null} reportVerdict={snap.reportVerdict ?? null} comparison={snap.comparison ?? null} gaps={gaps} origin={run.origin} runId={runId} findings={snap.findings} rules={run.rules ?? []} states={snap.graph.states} coverage={snap.coverage} discovery={snap.exploration?.summary}
               onSelectFinding={id => { setView('findings'); selectFinding(id); }} onOpenCoverage={() => { setWfMode('list'); setView('workflows'); }} />}
             {controllable && run.status === 'waiting_for_input' && run.handoff_enabled && <HandoffPanel runId={runId} onStop={stop} />}
             {(active || run.mode !== 'retest') && <LiveDeck snap={snap} active={active} replay={replay} onOpenBrowser={() => setView('browser')} onOpenFindings={() => setView('findings')} />}
             {run.mode === 'retest' && (
               <div className="card">
+                {!active && release && release.rows.length > 0 && (
+                  <div className="release-hero">
+                    <span className={`pc-stamp pc-stamp-${release.ready ? 'fixed' : 'still_failing'}`}>{release.ready ? 'Fixed' : 'Not ready'}</span>
+                    <p className="release-hero-line">{release.ready ? 'Safe to ship: every bug from the original run held its fix.' : 'Not ready to ship yet.'}</p>
+                  </div>
+                )}
                 <div className="card-header"><h2 className="h3"><Icon name="replay" /> Retest results</h2><span className="muted" style={{ fontSize: 12.5 }}>Saved assertions replayed unchanged</span>
-                  {!active && release && release.rows.length > 0 && <button className="btn btn-sm" style={{ marginLeft: 'auto' }} onClick={copyReleaseNote}><Icon name={noteState === 'copied' ? 'tick' : 'copy'} /> {noteState === 'copied' ? 'Release note copied' : 'Copy release note'}</button>}</div>
+                  {!active && release && release.rows.length > 0 && <button className="btn btn-primary btn-sm" style={{ marginLeft: 'auto' }} onClick={copyReleaseNote}><Icon name={noteState === 'copied' ? 'tick' : 'copy'} /> {noteState === 'copied' ? 'Release note copied' : 'Copy release note'}</button>}</div>
                 {!active && release && release.rows.length > 0 && (
                   <>
                     <dl className="release" aria-label="Release check">
@@ -384,6 +392,7 @@ export function RunWorkspace({ initial, controllable, replay, signedIn, canShare
                       <td><StatusBadge value={e.payload.control ?? 'not_run'} /></td><td><StatusBadge value={e.payload.lifecycle ?? 'blocked'} /></td></tr>))}
                   {!retestEvents.some((e) => e.type === 'retest.finished') && <tr><td colSpan={4} className="empty-cell">{active ? 'Replaying saved scenarios…' : 'No retest results recorded.'}</td></tr>}
                 </tbody></table></div>
+                {retestEvents.some((e) => (e.payload.control ?? 'not_run') === 'not_run') && <p className="muted" style={{ margin: '10px 0 0', fontSize: 12.5 }}>Valid control “Not run”: no valid neighbouring case was recorded for that check, so only the broken behaviour was replayed.</p>}
               </div>
             )}
 
@@ -473,7 +482,6 @@ export function RunWorkspace({ initial, controllable, replay, signedIn, canShare
           </div>
         </aside>
       </div>
-      {run.mode !== 'retest' && <RunTour />}
       <div aria-live="polite" className="sr-only">{release ? `Retest ${statusLabel(run.status)}. ${release.fixed} fixed, ${release.stillFailing} still failing, ${release.undecided} undecided.` : `Run ${statusLabel(run.status)}. ${verifiedCount} verified issues.`}</div>
     </div>
   );
@@ -531,7 +539,8 @@ function FindingInspector({ finding: f, controllable, onRetest, runActive, runMo
   return (
     <article style={{ display: 'grid', gap: 16 }} className="fade-in" key={f.id}>
       <button className="btn btn-ghost btn-sm mobile-only" onClick={onBack} style={{ justifySelf: 'start' }}><Icon name="back" /> Back to findings</button>
-      <div className="kv-strip"><StatusBadge value={f.category} />{f.category === 'configuration_observation' ? <StatusBadge value="observed" /> : <><StatusBadge value={f.verification} />{f.lifecycle && <StatusBadge value={f.lifecycle} />}</>}</div>
+      {/* One status chip: the lifecycle once verified (Open, Fixed...), else the verification state; the category is context, not a second badge. */}
+      <div className="kv-strip"><StatusBadge value={f.category === 'configuration_observation' ? 'observed' : f.verification === 'verified' && f.lifecycle ? f.lifecycle : f.verification} /><span className="muted" style={{ fontSize: 12.5 }}>{String(f.category).replace(/_/g, ' ')}</span></div>
       <h2 className="finding-title">{f.title}</h2>
       <div className="kv-strip">
         <span className="chip">Impact {f.impact}</span><span className="chip">Confidence {f.confidence}</span>

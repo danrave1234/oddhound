@@ -5,6 +5,7 @@ import { HoundMark, Icon } from '@/ui/icons';
 import { currentUser, db, mayScanVerifiedSites } from '@/lib/server';
 import { publicStatus } from '@/lib/status-data';
 import { QuickDemoTile } from './quick-demo';
+import { stopReasonText } from '@/ui/stop-reason';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,10 +15,21 @@ export const metadata = { title: 'Projects' };
 export default async function Projects() {
   const user = await currentUser();
   if (!user) redirect('/login?next=/app');
+  // Each site with its latest exploration's outcome, so the page says where attention is needed.
   const projects = (await db().query(`SELECT p.id, p.name, p.origin, p.environment,
       (SELECT verified FROM site_verifications sv WHERE sv.project_id = p.id AND sv.origin = p.origin ORDER BY revision DESC LIMIT 1) AS verified,
-      (SELECT max(created_at) FROM runs r WHERE r.project_id = p.id) AS last_run
-    FROM projects p WHERE p.owner_id = $1 ORDER BY p.created_at DESC`, [user.id])).rows;
+      (SELECT max(created_at) FROM runs r WHERE r.project_id = p.id) AS last_run,
+      lr.id AS lr_id, lr.status AS lr_status, lr.stop_reason AS lr_reason,
+      (SELECT count(*) FROM findings f WHERE f.run_id = lr.id AND f.verification = 'verified' AND f.category = 'verified_issue' AND f.lifecycle IN ('open','regressed'))::int AS open,
+      (SELECT count(*) FROM findings f WHERE f.run_id = lr.id AND f.verification = 'verified' AND f.category = 'verified_issue' AND f.lifecycle = 'fixed')::int AS fixed
+    FROM projects p
+    LEFT JOIN LATERAL (SELECT id, status, stop_reason FROM runs r WHERE r.project_id = p.id AND r.mode = 'verified_site' ORDER BY created_at DESC LIMIT 1) lr ON true
+    WHERE p.owner_id = $1 ORDER BY p.created_at DESC`, [user.id])).rows;
+  const needs = projects.flatMap((p) => [
+    ...(p.open > 0 ? [{ key: `${p.id}-open`, href: `/runs/${p.lr_id}`, tone: 'bad', icon: 'bug' as const, title: `${p.name}: ${p.open} verified ${p.open === 1 ? 'bug' : 'bugs'} open`, text: 'Copy the fix prompt, ship the fix, then retest.' }] : []),
+    ...(p.lr_status === 'failed' ? [{ key: `${p.id}-failed`, href: `/app/projects/${p.id}`, tone: 'warn', icon: 'alert' as const, title: `${p.name}: last run failed`, text: `It ${stopReasonText(p.lr_reason) || 'ended early'}. Start it again.` }] : []),
+    ...(!p.verified ? [{ key: `${p.id}-verify`, href: `/app/projects/${p.id}`, tone: 'warn', icon: 'shield' as const, title: `${p.name}: not verified yet`, text: 'Publish the token once; Oddhound checks it for you.' }] : []),
+  ]);
   const allowed = mayScanVerifiedSites(user);
   const status = await publicStatus();
   return (
@@ -43,6 +55,15 @@ export default async function Projects() {
           : <div className="quick-tile"><span className="tile tile-neutral"><Icon name="eye" /></span><span className="qt-body"><strong>No replay yet</strong><span>A recorded run will appear here</span></span></div>}
       </div>
 
+      {needs.length > 0 && (
+        <section className="needs" aria-labelledby="needs-h">
+          <h2 id="needs-h" className="h3">Needs you</h2>
+          <ul>{needs.map((n) => (
+            <li key={n.key}><Link href={n.href} className={`needs-item needs-${n.tone}`}><span className="tile"><Icon name={n.icon} /></span>
+              <span className="qt-body"><strong>{n.title}</strong><span>{n.text}</span></span><span className="chev"><Icon name="chevron" /></span></Link></li>))}</ul>
+        </section>
+      )}
+
       {projects.length === 0 ? (
         <div className="card empty">
           <span className="empty-mark"><HoundMark size={36} /></span>
@@ -67,7 +88,8 @@ export default async function Projects() {
                   <span className="chip">{p.environment === 'production' ? 'Production' : 'Staging'}</span>
                 </span>
                 <span className="proj-foot">
-                  <span className="row" style={{ gap: 6 }}><Icon name="clock" />{p.last_run ? `Last run ${new Date(p.last_run).toLocaleDateString()}` : 'No runs yet'}</span>
+                  <span className="row" style={{ gap: 6 }}><Icon name="clock" />{p.last_run ? `Last run ${new Date(p.last_run).toLocaleDateString()}` : 'No runs yet'}
+                    {p.lr_id && (p.open || p.fixed) ? <span className="tabular">· {p.open} open · {p.fixed} fixed</span> : p.lr_status === 'failed' ? <span>· last run failed</span> : null}</span>
                   <span style={{ color: 'var(--accent-text)', fontWeight: 600 }}>{p.verified ? 'Start a run' : 'Verify'}</span>
                 </span>
               </Link>

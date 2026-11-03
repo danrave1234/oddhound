@@ -15,6 +15,7 @@ const domainRecord = (host: string) => (isIP(host.replace(/^\[|\]$/g, '')) || !h
 import { RunSetup } from './run-setup';
 import { DeployHook } from './deploy-hook';
 import { publicStatus } from '@/lib/status-data';
+import { stopReasonText } from '@/ui/stop-reason';
 
 export const dynamic = 'force-dynamic';
 
@@ -55,15 +56,29 @@ export default async function Project({ params }: { params: Promise<{ id: string
             <span className={`step-num${sv.verified ? ' done' : ''}`} aria-hidden>{sv.verified ? <Icon name="tick" /> : 2}</span>
             <div style={{ minWidth: 0 }}>
               <h2 id="verify-h" className="h2 break">Prove you own {host}</h2>
-              <p className="muted" style={{ margin: '4px 0 0', fontSize: 13.5 }}>Pick one method, publish the value, then check. Unverified sites can never be scanned.</p>
+              {!sv.verified && <p className="muted" style={{ margin: '4px 0 0', fontSize: 13.5 }}>Pick one method and publish the value. Oddhound keeps checking once you copy it. Unverified sites can never be scanned.</p>}
             </div>
           </div>
+          {sv.verified ? (
+            <details className="disclosure">
+              <summary><span className="chev"><Icon name="chevron" /></span><Icon name="shield" /> Verified. Oddhound checks it again before every run. <span className="muted" style={{ marginLeft: 'auto', fontSize: 12.5 }}>Method, token and API hosts</span></summary>
+              <div className="disclosure-body">
+              <VerifyPanel projectId={id} origin={project.origin} token={sv.token} verified={sv.verified} lastReason={sv.last_reason} lastChecked={sv.last_checked_at ? new Date(sv.last_checked_at).toISOString() : null}
+              domainRecord={domainRecord(host)} />
+                {<ApiOrigins projectId={id} siteOrigin={project.origin} siteToken={sv.token} apis={apis.map((a) => ({
+              origin: a.origin as string, token: a.token as string, verified: Boolean(a.verified), lastReason: a.last_reason as string | null,
+              lastChecked: a.last_checked_at ? new Date(a.last_checked_at).toISOString() : null,
+              domainRecord: domainRecord(new URL(a.origin).hostname) }))} />}
+              </div>
+            </details>
+          ) : (<>
           <VerifyPanel projectId={id} origin={project.origin} token={sv.token} verified={sv.verified} lastReason={sv.last_reason} lastChecked={sv.last_checked_at ? new Date(sv.last_checked_at).toISOString() : null}
             domainRecord={domainRecord(host)} />
           {<ApiOrigins projectId={id} siteOrigin={project.origin} siteToken={sv.token} apis={apis.map((a) => ({
             origin: a.origin as string, token: a.token as string, verified: Boolean(a.verified), lastReason: a.last_reason as string | null,
             lastChecked: a.last_checked_at ? new Date(a.last_checked_at).toISOString() : null,
             domainRecord: domainRecord(new URL(a.origin).hostname) }))} />}
+          </>)}
         </section>
 
         <section className="card card-pad" aria-labelledby="setup-h" aria-disabled={!sv.verified || undefined}>
@@ -74,7 +89,7 @@ export default async function Project({ params }: { params: Promise<{ id: string
               <p className="muted" style={{ margin: '4px 0 0', fontSize: 13.5 }}>{sv.verified ? 'Safe defaults are filled in. Adjust anything, then start the run.' : 'Unlocks once the site is verified.'}</p>
             </div>
           </div>
-          {sv.verified && <RunSetup projectId={id} environment={project.environment} availableRunUsd={budget?.availableRunUsd ?? 0} />}
+          {sv.verified && <RunSetup projectId={id} environment={project.environment} availableRunUsd={budget?.availableRunUsd ?? 0} autoDraft />}
         </section>
 
         {sv.verified && (
@@ -91,7 +106,7 @@ export default async function Project({ params }: { params: Promise<{ id: string
               <table className="grid"><thead><tr><th>Started</th><th>Type</th><th>Status</th><th>Verified issues</th></tr></thead><tbody>
                 {runs.map((r) => (
                   <tr key={r.id}><td><Link href={`/runs/${r.id}`} className="tabular">{new Date(r.created_at).toLocaleString()}</Link></td><td>{r.mode === 'retest' ? 'Retest' : 'Exploration'}</td>
-                    <td><span className="row" style={{ gap: 6 }}><StatusBadge value={r.status} />{r.stop_reason && <span className="muted" style={{ fontSize: 12.5 }}>{String(r.stop_reason).replace(/_/g, ' ')}</span>}</span></td>
+                    <td><span className="row" style={{ gap: 6 }}><StatusBadge value={r.status} />{r.stop_reason && <span className="muted" style={{ fontSize: 12.5 }}>{stopReasonText(r.stop_reason)}</span>}</span></td>
                     <td className="tabular">{r.issues}</td></tr>
                 ))}
               </tbody></table>

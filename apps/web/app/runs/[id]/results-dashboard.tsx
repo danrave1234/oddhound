@@ -6,6 +6,7 @@ import { StatusBadge, findingStatus } from '@/ui/status';
 import type { ReportVerdict, Comparison } from '@/lib/run-data';
 import { checklistMarkdown, type GapItem } from '@core/reports/gaps.ts';
 import { RESULT_DOMAINS, resultCounts, resultDomain, type ResultDomain, type ResultFinding } from './results-data';
+import { stopReasonText } from '@/ui/stop-reason';
 
 const ICONS: Record<ResultDomain, IconName> = { functional: 'workflow', security: 'shield', seo: 'globe', ux: 'desktop', other: 'list' };
 type Props = {
@@ -35,7 +36,7 @@ export function ResultsDashboard({ status, reason, report, reportVerdict, findin
   return <section className="results-dashboard rs" aria-label="Results dashboard">
     <header className="rs-head">
       <div className="row" style={{ gap: 10, alignItems: 'center' }}><h1 className="h1">Run results</h1><StatusBadge value={status} /></div>
-      <p className="text-2" style={{ margin: 0 }}>{status === 'completed' ? 'Results from the tested scope.' : 'Partial results. This run did not complete its exploration.'}{reason ? ` Reason: ${reason.replace(/_/g, ' ')}.` : ''}</p>
+      <p className="text-2" style={{ margin: 0 }}>{status === 'completed' ? 'Results from the tested scope.' : 'Partial results. This run did not complete its exploration.'}{reason ? ` It ${stopReasonText(reason)}.` : ''}</p>
     </header>
     {report && <section className="rs-report" aria-labelledby="rs-report-title">
       <h2 id="rs-report-title" className="h3">Bug report to reproduce</h2>

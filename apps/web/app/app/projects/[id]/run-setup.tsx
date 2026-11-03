@@ -1,5 +1,5 @@
 'use client';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Icon, type IconName } from '@/ui/icons';
 import { BASELINE_RULES, DEFAULT_DENIED_PATH_KEYWORDS, DEFAULT_DENIED_OPERATIONS } from '@core/contracts/contract.ts';
@@ -22,7 +22,7 @@ function Option({ name, icon, title, desc, defaultChecked, checked, onChange, ch
   );
 }
 
-export function RunSetup({ projectId, environment, availableRunUsd }: { projectId: string; environment: 'staging' | 'production'; availableRunUsd: number }) {
+export function RunSetup({ projectId, environment, availableRunUsd, autoDraft = false }: { projectId: string; environment: 'staging' | 'production'; availableRunUsd: number; autoDraft?: boolean }) {
   const router = useRouter();
   const [mode, setMode] = useState<'active' | 'observation_only'>(environment === 'production' ? 'observation_only' : 'active');
   const [ack, setAck] = useState(false);
@@ -41,6 +41,14 @@ export function RunSetup({ projectId, environment, availableRunUsd }: { projectI
     fill(rulesRef.current, body.rules ?? []);
     setDraft({ state: 'done', summary: body.summary, cost: body.costUsd });
   }
+  // First visit after verification: draft the plan without a click (once per site per browser, so model calls stay rare).
+  useEffect(() => {
+    if (!autoDraft) return;
+    const key = `oh_drafted_${projectId}`;
+    try { if (localStorage.getItem(key)) return; localStorage.setItem(key, '1'); } catch { return; }
+    if (!goalsRef.current?.value.trim() && !rulesRef.current?.value.trim()) void draftPlan();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoDraft, projectId]);
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setBusy(true); setError(null);
