@@ -63,6 +63,36 @@ export async function reserveSpend(db: Db, req: ReserveRequest): Promise<Reserve
 }
 
 /** Records actual usage. Actual cost is capped at the reservation: a provider over-run is flagged, not hidden. */
+/** A model call outside any run (drafting a test plan). Same kill switch and account ceilings as runs,
+ *  a fixed small cap per call, and a daily count per person. Settle/release/mark by request key as usual. */
+export async function reserveSideSpend(db: Db, req: { account: SpendAccount; requestKey: string; micros: number; provider: string; model: string; purpose: 'plan_draft'; principal: string }):
+  Promise<{ ok: true; reservationId: string } | { ok: false; reason: 'kill_switch' | 'call_cap' | 'principal_daily' | 'daily_cap' | 'lifetime_cap' | 'invalid_amount' }> {
+  if (!Number.isSafeInteger(req.micros) || req.micros <= 0) return { ok: false, reason: 'invalid_amount' };
+  if (req.micros > LIMITS.planDraftMicros) return { ok: false, reason: 'call_cap' };
+  return withTx(db, async (tx) => {
+    await tx.query('SELECT id FROM spend_accounts WHERE id = $1 FOR UPDATE', [req.account]);
+    const existing = await tx.query<{ id: string }>('SELECT id FROM spend_reservations WHERE request_key = $1', [req.requestKey]);
+    if (existing.rows[0]) return { ok: true, reservationId: existing.rows[0].id };
+    if (await killSwitchOn(tx)) return { ok: false, reason: 'kill_switch' };
+    const day = utcDay();
+    const mine = Number((await tx.query(`SELECT count(*)::int AS n FROM spend_reservations WHERE principal = $1 AND day_bucket = $2 AND purpose = $3`, [req.principal, day, req.purpose])).rows[0].n);
+    if (mine >= LIMITS.planDraftsPerPrincipalPerDay) return { ok: false, reason: 'principal_daily' };
+    const acct = (await tx.query<{ lifetime_limit_micros: string; daily_limit_micros: string | null }>(
+      'SELECT lifetime_limit_micros, daily_limit_micros FROM spend_accounts WHERE id = $1', [req.account])).rows[0]!;
+    if (acct.daily_limit_micros !== null) {
+      const dayExposure = Number((await tx.query(`SELECT ${EXPOSURE} AS v FROM spend_reservations WHERE account = $1 AND day_bucket = $2`, [req.account, day])).rows[0].v);
+      if (dayExposure + req.micros > Number(acct.daily_limit_micros)) return { ok: false, reason: 'daily_cap' };
+    }
+    const lifeExposure = Number((await tx.query(`SELECT ${EXPOSURE} AS v FROM spend_reservations WHERE account = $1`, [req.account])).rows[0].v);
+    if (lifeExposure + req.micros > Number(acct.lifetime_limit_micros)) return { ok: false, reason: 'lifetime_cap' };
+    const inserted = await tx.query<{ id: string }>(
+      `INSERT INTO spend_reservations (request_key, run_id, account, day_bucket, reserved_micros, state, provider, model, purpose, principal)
+       VALUES ($1, NULL, $2, $3, $4, 'reserved', $5, $6, $7, $8) RETURNING id`,
+      [req.requestKey, req.account, day, req.micros, req.provider, req.model, req.purpose, req.principal]);
+    return { ok: true, reservationId: inserted.rows[0]!.id };
+  });
+}
+
 export async function settleSpend(db: Db, requestKey: string, actualMicros: number, usage: unknown): Promise<void> {
   await db.query(
     `UPDATE spend_reservations SET state = 'settled', actual_micros = $2, usage = $3, settled_at = now()

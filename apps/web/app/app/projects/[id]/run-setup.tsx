@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Icon, type IconName } from '@/ui/icons';
 import { BASELINE_RULES, DEFAULT_DENIED_PATH_KEYWORDS, DEFAULT_DENIED_OPERATIONS } from '@core/contracts/contract.ts';
@@ -29,6 +29,18 @@ export function RunSetup({ projectId, environment, availableRunUsd }: { projectI
   const [handoff, setHandoff] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const goalsRef = useRef<HTMLTextAreaElement>(null), rulesRef = useRef<HTMLTextAreaElement>(null);
+  const [draft, setDraft] = useState<{ state: 'idle' | 'busy' | 'done' | 'error'; summary?: string; cost?: number; error?: string }>({ state: 'idle' });
+  async function draftPlan() {
+    setDraft({ state: 'busy' });
+    const res = await fetch(`/api/projects/${projectId}/draft-plan`, { method: 'POST' }).catch(() => null);
+    const body = res ? await res.json().catch(() => ({})) : {};
+    if (!res?.ok) { setDraft({ state: 'error', error: body.error ?? 'Could not draft a plan.' }); return; }
+    const fill = (el: HTMLTextAreaElement | null, add: string[]) => { if (!el) return; const have = lines(el.value); el.value = [...have, ...add.filter((x) => !have.includes(x))].join('\n'); el.rows = Math.max(2, Math.min(8, lines(el.value).length)); };
+    fill(goalsRef.current, body.goals ?? []);
+    fill(rulesRef.current, body.rules ?? []);
+    setDraft({ state: 'done', summary: body.summary, cost: body.costUsd });
+  }
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setBusy(true); setError(null);
@@ -93,6 +105,16 @@ export function RunSetup({ projectId, environment, availableRunUsd }: { projectI
       <div className="form-section">
         <h3 className="h3">What Oddhound checks</h3>
         <p className="muted" style={{ margin: 0, fontSize: 13.5 }}>The agent maps your site, writes its own risk-ranked test plan and works through it. Nothing to fill in here unless you want to steer it.</p>
+        <div className="draft-card">
+          <button type="button" className="btn" onClick={draftPlan} disabled={draft.state === 'busy'} aria-busy={draft.state === 'busy' || undefined}>
+            <Icon name="sniff" /> {draft.state === 'busy' ? 'Reading your home page…' : draft.state === 'done' ? 'Draft again' : 'Draft focus areas and rules from my site'}</button>
+          <span role="status" className="muted" style={{ fontSize: 12.5 }}>
+            {draft.state === 'idle' && 'Muse Spark reads your public home page and suggests what to test. You can edit every line.'}
+            {draft.state === 'busy' && 'One model call, usually under half a minute.'}
+            {draft.state === 'done' && <span className="fade-in">Read as: <strong>{draft.summary}</strong> Suggestions were added below{typeof draft.cost === 'number' ? ` (model cost $${draft.cost.toFixed(4)})` : ''}. Edit or delete any line.</span>}
+            {draft.state === 'error' && <span style={{ color: 'var(--bad)' }}>{draft.error}</span>}
+          </span>
+        </div>
         <details className="well" style={{ fontSize: 13.5 }}>
           <summary style={{ cursor: 'pointer', fontWeight: 600 }}>Baseline rules checked on every site ({BASELINE_RULES.length})</summary>
           <ul style={{ margin: '10px 0 0', paddingLeft: 18, display: 'grid', gap: 4 }}>
@@ -100,10 +122,10 @@ export function RunSetup({ projectId, environment, availableRunUsd }: { projectI
           </ul>
         </details>
         <label className="field"><span>Focus areas <span className="muted" style={{ fontWeight: 400 }}>— optional, one per line</span></span>
-          <textarea className="textarea" name="goals" rows={2} placeholder="The checkout-free booking flow. The new notes editor." aria-describedby="goals-hint" />
+          <textarea ref={goalsRef} className="textarea" name="goals" rows={2} placeholder="The checkout-free booking flow. The new notes editor." aria-describedby="goals-hint" />
           <small id="goals-hint">Tested early. They set priorities; they never limit what the agent tests.</small></label>
         <label className="field"><span>Your own rules <span className="muted" style={{ fontWeight: 400 }}>— optional, one per line</span></span>
-          <textarea className="textarea" name="rules" rows={2} placeholder="A booking must have between 1 and 8 guests." aria-describedby="rules-hint" />
+          <textarea ref={rulesRef} className="textarea" name="rules" rows={2} placeholder="A booking must have between 1 and 8 guests." aria-describedby="rules-hint" />
           <small id="rules-hint">Business rules only you know. Findings are judged against these and the baseline rules.</small></label>
       </div>
 

@@ -18,6 +18,9 @@ export const LIMITS = {
   publicDailyMicros: 25 * USD, // Nov 3: owner-approved for the hackathon (was $7); the $50 lifetime ceiling still applies.
   publicLifetimeMicros: 50 * USD,
   judgingReserveMicros: 15 * USD,
+  // Drafting a test plan from a site's public page: one model call, outside any run (Nov 4).
+  planDraftMicros: Math.round(0.05 * USD),
+  planDraftsPerPrincipalPerDay: 20,
   minActionIntervalMs: 300, // polite pacing for the tested site (was 1 s)
   registrationIdentitiesPerRun: 3,
   targetRequestsPerRun: 30_000,
