@@ -30,7 +30,12 @@ export function ResultsDashboard({ status, reason, report, reportVerdict, findin
   }
   const totals = resultCounts(findings);
   const grouped = RESULT_DOMAINS.map(domain => ({ ...domain, findings: findings.filter(f => resultDomain(f, rules) === domain.key) }));
-  const visible = filter === 'all' ? findings : grouped.find(d => d.key === filter)!.findings;
+  const shown = filter === 'all' ? findings : grouped.find(d => d.key === filter)!.findings;
+  // Near-duplicates (same rule, state and title once quoted values and numbers are folded) show once, with a count.
+  const fold = (f: ResultFinding) => `${f.rule_id}|${f.verification}|${String(f.title).replace(/"[^"]*"/g, '"…"').replace(/\d+/g, '#')}`;
+  const counts = new Map<string, number>();
+  for (const f of shown) counts.set(fold(f), (counts.get(fold(f)) ?? 0) + 1);
+  const visible = shown.filter((f, i) => shown.findIndex((x) => fold(x) === fold(f)) === i);
   const mobile = states.some(s => s.device === 'mobile');
   const current = filter === 'all' ? null : grouped.find(d => d.key === filter)!;
   return <section className="results-dashboard rs" aria-label="Results dashboard">
@@ -74,7 +79,7 @@ export function ResultsDashboard({ status, reason, report, reportVerdict, findin
     </div>
     {visible.length ? <ul className="rs-findings">{visible.map(f => <li key={f.id}><button onClick={() => onSelectFinding(f.id)}>
         <StatusBadge value={findingStatus({ ...f, lifecycle: f.lifecycle ?? null })} />
-        <span className="rs-title"><strong>{f.title}</strong><span className="muted">{RESULT_DOMAINS.find(d => d.key === resultDomain(f, rules))!.label}{f.impact ? `, ${f.impact} impact` : ''}</span></span>
+        <span className="rs-title"><strong>{f.title}{(counts.get(fold(f)) ?? 1) > 1 && <span className="chip" style={{ marginLeft: 8 }} title="Similar findings collapsed into this row">×{counts.get(fold(f))}</span>}</strong><span className="muted">{RESULT_DOMAINS.find(d => d.key === resultDomain(f, rules))!.label}{f.impact ? `, ${f.impact} impact` : ''}</span></span>
         {comparison?.changes[f.id] && <span className={`rs-change rs-change-${comparison.changes[f.id]}`}>{comparison.changes[f.id] === 'new' ? 'New' : 'Also last run'}</span>}
         <Icon name="chevron" /></button></li>)}</ul>
       : <p className="muted">No findings recorded here. This does not establish that the category was tested or passed.</p>}
