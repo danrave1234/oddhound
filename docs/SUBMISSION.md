@@ -18,7 +18,7 @@ For the first engineer or solo founder at a small SaaS, a vague ticket such as â
 
 ## How Meta models are used
 
-Owner-site scans use **Muse Spark 1.3 Standard**, keeping customer page text away from the data-contributing tier. The synthetic demo target uses **Muse Spark 1.3 Contributor** to reduce cost without exposing owner data. ([Model split](WIN_PLAN_2026-11-03.md))
+Owner-site scans are configured for **Muse Spark 1.3 Standard**, keeping customer page text away from the data-contributing tier; the synthetic demo target uses **Muse Spark 1.3 Contributor** to reduce cost. During the hackathon week the owner chose the contributor tier for runs on their own sites as well (Nov 3), to spend less credit. ([Model split](WIN_PLAN_2026-11-03.md))
 
 Muse Code contributed to product strategy and reviewed the bug-report trust boundary during development. ChatGPT/Codex implemented the trusted report-reproduction core, while Claude led strategy, built and integrated the interface, reviewed the merge and drafted the submission. ([Team plan](WIN_PLAN_2026-11-03.md))
 

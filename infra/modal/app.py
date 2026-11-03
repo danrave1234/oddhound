@@ -57,7 +57,9 @@ COMMON_ENV = {
     "ODDHOUND_ADMIN_EMAILS": "danravekeh123@gmail.com",
     "META_REASONING_EFFORT": "low",
     # Owners' sites use the standard tier; only the synthetic demo target uses the contributor tier.
-    "META_MODEL": "muse-spark-1.3",
+    # Nov 3: owner chose the contributor tier for runs on their own sites during the hackathon (about
+    # 12x cheaper; Meta may use that data). Set back to "muse-spark-1.3" for customer sites.
+    "META_MODEL": "muse-spark-1.3-contributor",
     "META_MODEL_DEMO": "muse-spark-1.3-contributor",
     "BETTER_AUTH_URL": url("oddhound-web"),
     "DEMO_TARGET_ORIGIN": url("oddhound-demo"),
