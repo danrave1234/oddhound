@@ -1,87 +1,89 @@
-# Oddhound
+# Oddhound: find what you didn't test
 
-## Pitch
+**General AI browser agents can report a bug. Oddhound proves one, and proves the fix.**
 
-General AI browser agents can report a bug. Oddhound proves one, and proves the fix.
+- Live app: https://danravekeh123--oddhound-web.us-east.modal.run
+- Source (public): https://github.com/danrave1234/oddhound
+- Demo video: _(link added at upload)_
 
 ## Why I built it
 
-I ship a lot of small web apps on my own (invoicing, payment records, end-of-day reports, a water-station ledger) and I hate writing tests. So I built the tester I wanted: it explores my apps like a curious user, proves each bug before telling me, hands my coding AI a fix prompt, and after my next deploy replays the exact same check to prove the fix. I use it on my own production sites: this week I proved ownership of seven of them and queued a run on each.
+I ship small web apps on my own (payments, invoices, a memorial site, a water-station ledger) and I hate writing tests. So I built the tester I wanted. You paste your site. Oddhound reads it and drafts what to test, then a Meta Muse Spark agent explores it in a fresh sandboxed browser like a curious user: it signs up, saves, edits, and tries the odd inputs. It only calls something a bug after two fresh replays break a rule, and it hands my coding AI a fix prompt. After my next deploy, it replays the exact same check to prove the fix.
 
-## The problem
+## Try it as a judge (no sign-in needed)
 
-For the first engineer or solo founder at a small SaaS, a vague ticket such as “booking said saved, but it disappeared” can take **1–3 hours** to turn into reproducible steps, and may still end with “can’t reproduce.” Existing test suites cover only anticipated paths. ([Agreed strategy](WIN_PLAN_2026-11-03.md))
+1. **A real bug on a real production site, found and proven fixed.** Open the owner's read-only share link (given in
+   the submission form; share links are not published in the repository).
+   On the Alaala memorial site, one condolence made of a single 1,200-character word made the memorial page
+   **10,465 px wide on a 390 px phone**. Oddhound verified it with two fresh replays, the owner shipped a 16-line fix,
+   and the retest (open it from the run) replayed the unchanged check twice: **Fixed**, no model call, $0.00.
+2. **Run it yourself on the demo app.** On the home page press **Try the demo target**. It is Oddhound's own booking
+   app with labelled defects; a run takes about 15 minutes. A signed-out run on Nov 3 verified 5 bugs (party size 0
+   accepted, a whitespace-only name accepted, another account's booking visible by ID, a wrong guest total, a missing
+   phone button) and 3 configuration issues, for $0.04 of model credit.
+3. **Watch a recorded run play back:** the home page's **Watch a demo replay**, or
+   https://danravekeh123--oddhound-web.us-east.modal.run/runs/69451626-a084-4c0c-9b48-56ec85dc8288?replay=1
 
-## What Oddhound does
+Scanning your own site needs sign-in with GitHub and is invite-only during judging, because each run spends shared
+model credit and reads the site's pages.
 
-- Autonomously explores an owner-verified website instead of following a prepared click script.
-- Tries a pasted bug report first while continuing broader exploration.
-- Treats the report as untrusted data, never as instructions.
-- Verifies a candidate only after two fresh replays break the rule and a valid neighbouring case still passes. ([Verification design](STATUS.md))
-- Produces a proof chain, coding prompt, Playwright regression test and fix receipt tied to an unchanged assertion. ([Agreed strategy](WIN_PLAN_2026-11-03.md))
+## What it does
+
+- **Drafts the test plan from your site.** Muse Spark reads the verified site's public home page and suggests focus
+  areas and business rules. For Alaala it proposed "Pasiyam date is 9 days after burial date" and "Abuloy total equals
+  sum of ledger entries", for $0.0004.
+- **Explores without a script.** Registers synthetic accounts, creates, edits and cancels records, tries boundary
+  values, a second account, and a 390 px phone, inside an owner-approved contract.
+- **Proves before reporting.** A finding is verified only when two fresh replays break the rule and, where one exists,
+  a valid neighbouring case still passes. The assertion is pinned by its hash.
+- **Hands off the fix.** Each bug comes with steps, evidence, a fix prompt for your coding AI, a bug report for your
+  tracker, a Playwright test and a read-only share link.
+- **Proves the fix.** Retest replays the same pinned check twice on the redeployed site. A per-project deploy hook
+  runs this after every deploy in CI and fails the job until every open bug is fixed.
+- **Tells you what it could not reach.** Results lead with setup hints (an app on another subdomain, Google sign-in, a
+  CAPTCHA) and a checklist of what it saw but did not test.
 
 ## How Meta models are used
 
-Owner-site scans are configured for **Muse Spark 1.3 Standard**, keeping customer page text away from the data-contributing tier; the synthetic demo target uses **Muse Spark 1.3 Contributor** to reduce cost. During the hackathon week the owner chose the contributor tier for runs on their own sites as well (Nov 3), to spend less credit. ([Model split](WIN_PLAN_2026-11-03.md))
+Muse Spark 1.3 through Meta's API plans every exploration step through validated tool calls and drafts the test
+plan from the home page. Trusted code, not the model, decides every verdict and builds the fix prompts, and
+verification and retests make no model calls. Owner-site scans are designed for the Standard tier; during the
+hackathon week the owner chose the Contributor tier for runs on their own sites to spend less credit. Muse Spark Open
+fallbacks (Baseten, Fireworks) are configured but were not exercised.
 
-Muse Code contributed to product strategy and reviewed the bug-report trust boundary during development. ChatGPT/Codex implemented the trusted report-reproduction core, while Claude led strategy, built and integrated the interface, reviewed the merge and drafted the submission. ([Team plan](WIN_PLAN_2026-11-03.md))
+## Real results this week
 
-Muse Spark Open has configured Baseten and Fireworks fallback profiles, but recorded real-site runs used Direct Meta without fallback; the fallback has not yet been exercised. ([Provider configuration](../packages/core/providers/openai-compatible.ts), [provider evidence](PROVIDER_SMOKE_TESTS.md))
-
-## What is new this week
-
-- **Test every deploy.** A per-project deploy hook for CI: after a production deploy, Oddhound retests every open verified bug with the same hash-pinned checks (two fresh replays each) and the job passes only when all are fixed; with none open, it explores again with the last run's settings and reports new verified bugs without blocking the deploy. The project page hands you a ready GitHub Actions workflow triggered by Vercel's deployment status.
-- **It tells you what to test.** After you verify a site, one button has Muse Spark read its public home page and draft focus areas and business rules you can edit. For the Alaala memorial site it proposed, among others, "Pasiyam date is 9 days after burial date" and "Abuloy total equals sum of ledger entries", for $0.0004. The page text is fenced as untrusted data, and the call is reserved under the same kill switch and public ceilings as runs (5 cents at most per draft, 20 drafts per person per day).
-- **Less to do at the start.** Paste your site on the landing page and it is carried through sign-in; once you copy the ownership token, Oddhound keeps checking until it sees it; a three-step tour explains the run page on first visit; and a proof now plays in step by step and ends with a Verified or Fixed stamp.
-- **Share the proof.** An owner can send a read-only link to a run and its retests, so a teammate or client without an account sees the bug, its replays, the fix prompt and the retest result. Only a hash of the link is stored, a new link replaces the old one, and runs made with the owner's own sign-in cannot be shared.
-- **Keeps exploring instead of circling.** On a real invoicing site the agent spent 308 of 344 actions on one form, re-checking a rule the site already enforced about 80 times. Oddhound now refuses a batch whose goal repeats five recent ones and tells the agent when one area has taken most of its recent actions. Replaying that run's recorded goals, the check would have stopped 53 of its 151 batches.
-- **Tells you what setup it needs.** When the app continues on another subdomain, hands sign-in to Google or GitHub, or guards forms with a CAPTCHA, the results now say so first (for example "verify app.example.com as its own site" or "start the next run with I'll sign in myself first"), built from what the run recorded.
-- **Demos and retests never wait.** Hour-long site runs and quick runs (demos, retests) have separate queues, so pressing **Try the demo** starts without waiting even while a site run is in progress (checked on the deployment, Nov 3).
-- **Tester outputs.** Each run marks verified bugs as new or already found last run, lists what it saw but did not test as a manual checklist, and gives each bug a human bug report (steps, expected, actual, evidence) next to the coding-AI fix prompt. A retest ends in a release check: fixed, still failing or undecided.
-- A proof-chain view now brings independent replays, the valid case, retests and the pinned assertion hash together.
-- Findings can produce a copyable Markdown fix receipt.
-- Runs are drawn as orienteering courses, with plain measurements replacing decorative gauges.
-- Results use a category-filtered list instead of a card grid.
-- Owners can paste a bug report and receive either a verified linked finding or an honest “not reproduced within the tested scope” verdict. ([Agreed strategy](WIN_PLAN_2026-11-03.md), [report design](REPORT_REPRODUCTION.md))
-
-## How to try it as a judge
-
-**Try the demo target:** https://danravekeh123--oddhound-web.us-east.modal.run (press **Try the demo target**, no sign-in)  
-Start a synthetic run and watch the route, actions and evidence develop.
-
-**Inspect a recorded run:** https://danravekeh123--oddhound-web.us-east.modal.run/runs/69451626-a084-4c0c-9b48-56ec85dc8288  
-Open a completed run to inspect its proof chain, unchanged assertion, retest evidence and fix receipt.
-
-**Scan your site:** https://danravekeh123--oddhound-web.us-east.modal.run (sign in with GitHub, then **Scan your site**)  
-Prove ownership, define allowed actions and exclusions, optionally paste a bug report, and start the run.
+- **Alaala (memorial pages):** 1 verified bug (phone overflow), fixed by a 16-line commit, proven by retest.
+- **SolarMatch (solar directory):** its home, browse and services pages show an error screen to every visitor.
+  Oddhound flagged it; Vercel's logs trace it to two database migrations missing in production. A rerun to verify it
+  formally is in progress.
+- **PayTsek, Agos:** verified configuration issues (no Content-Security-Policy, pages can be framed).
+- **EstabWeb, Billis:** no verified bugs. EstabWeb's app lives on another subdomain behind Google sign-in, which
+  Oddhound now tells the owner up front. Billis exposed an agent loop that Oddhound now prevents.
 
 ## Architecture
 
-- A Next.js web app handles projects, ownership checks, live activity and evidence review.
-- PostgreSQL stores contracts, events, findings, leases, queues and spend reservations.
-- A worker plans exploration, records actions and routes candidates into verification.
-- Direct Meta inference supplies browser planning; trusted code, not the model, decides verdicts.
-- Each run gets a fresh Modal VM browser sandbox with filtered egress and no platform secrets.
-- Independent replay evaluates typed assertions and rejects retests whose assertion hash changed. ([Runtime evidence](MODAL_VERIFICATION.md), [system status](STATUS.md))
+Next.js web app, PostgreSQL (contracts, events, findings, leases, queues, spend ledger), a worker with separate lanes
+for hour-long site runs and quick demos/retests, Direct Meta inference, and a fresh Modal sandbox per run with an
+egress-filtered, secret-free Chromium that is destroyed afterwards.
 
-## Safety and cost controls
+## Safety and cost
 
-Sites must be proven through DNS, a well-known file or an HTML meta tag, and ownership is checked again before each run. Browsers are isolated, secret-free, egress-filtered and destroyed after use. Reports are fenced as untrusted input, while assertions and verdicts are evaluated by trusted code. ([System status](STATUS.md), [Modal verification](MODAL_VERIFICATION.md))
-
-Spend is reserved before inference, with a **$10 run cap, $25 public daily ceiling and $50 lifetime ceiling**, plus a kill switch. Verification and retesting require no model calls. ([System status](STATUS.md))
+Sites must be proven through DNS, a well-known file or a meta tag, and are re-checked before every run; private and
+internal addresses are refused. Page text and pasted reports are fenced as untrusted data. Spend is reserved before
+every model call: $10 per run, $25 public per day, $50 public lifetime, and a kill switch.
 
 ## Honest limits
 
-**On a real production site (Alaala, Nov 3).** A run on the owner's live memorial app (run d001eaf5) verified that one condolence made of a single 1,200-character word widened a memorial page to 10,462 px, so every phone visitor had to scroll sideways (rule B5, two fresh replays). A 16-line fix was written from the finding's evidence and deployed, and Oddhound's retest (run 127cfabd) replayed the unchanged assertion twice on the redeployed site: **Fixed**, with no model call. That check had no neighbouring valid case, so its control is recorded as not run.
+- "No failures" means none in the tested scope, never a bug-free app.
+- Verified-site scanning is invite-only during judging.
+- The Alaala check had no neighbouring valid case, so its control is recorded as not run.
+- The demo target cannot redeploy itself, so its retests run against a separately hosted corrected build.
+- One hosted SolarMatch run was lost when Modal preempted the worker; the worker now runs non-preemptible.
 
-The current build is deployed on Modal. On Nov 3 a signed-out demo run there (run 69451626, Muse Spark 1.3 contributor tier, Modal sandbox) verified 8 functional bugs. A golden recording for the video is still to be made.
+## Built during the event, and with whom
 
-The bug-report flow passed end to end once on the local demo target with real Meta inference: the pasted ticket was **reproduced** and linked to a verified finding, and 9 of 10 verified issues flipped to fixed on the corrected build ($0.15, 34 minutes). That run used Chromium on the developer machine rather than the Modal sandbox; a hosted reported run is still pending. ([Report reproduction evidence](REPORT_REPRODUCTION.md))
-
-The latest broad StudyBoost evaluation stopped before completing coverage. It found **zero independently verified functional issues**; its persistence candidates remained inconclusive, and mobile coverage was unproven. ([StudyBoost evaluation](STUDYBOOST_EVALUATION.md))
-
-Its retest on Modal (run 45350674) marked all 8 **fixed** on the corrected demo build with every assertion hash unchanged. The demo target cannot redeploy itself, so its retests run against a separately hosted corrected build; on an owner site they run against the same origin after the owner ships a fix.
-
-## Built with
-
-Claude led the agreed strategy and handled interface work, integration, review and submission drafting. ChatGPT/Codex contributed to strategy and implemented verified report reproduction. Muse Code contributed strategy and adversarial security review of report-to-finding trust. ([Agreed team plan](WIN_PLAN_2026-11-03.md))
+Built Oct 27 to Nov 4, 2026 (see the commit history). Claude (Anthropic) led strategy and implemented most of the app,
+the agent loop changes, the UI and the demo film; ChatGPT/Codex implemented the bug-report reproduction core; Muse Code
+contributed strategy and an adversarial review of the report trust boundary. The demo film uses only recordings of
+the deployed app and the live Alaala site, with a locally generated music bed.
