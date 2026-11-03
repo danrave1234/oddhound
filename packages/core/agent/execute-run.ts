@@ -2000,6 +2000,20 @@ async function verifyCandidates(v: { db: Db; runId: string; generation: number; 
     }
     seen.set(hash, c);
     await assertLease(db, runId, v.generation);
+    // An owner rule is one behaviour: once a run has verified it broken, a second scenario for the same rule
+    // (the agent's batch next to Oddhound's own form check) is the same bug, not another one. Baseline rules
+    // (another account's record, a lying save message...) can break on many pages, so they are not merged.
+    const ownerRule = contract.rules.some((r) => r.id === c.ruleId);
+    const already = ownerRule ? (await db.query<{ id: string; title: string }>(
+      `SELECT id, title FROM findings WHERE run_id = $1 AND rule_id = $2 AND verification = 'verified' AND category = 'verified_issue' LIMIT 1`, [runId, c.ruleId])).rows[0] : undefined;
+    if (already) {
+      await ev('finding.candidate_merged', { title: c.title, into: already.title, ruleId: c.ruleId, kind: c.scenario.kind, reason: 'rule_already_verified' });
+      if (c.reportMatch === true) {
+        const r = v.results.find((x) => x.findingId === already.id);
+        if (r) r.reportMatch = true;
+      }
+      continue;
+    }
     const known = contract.rules.find((r) => r.id === c.ruleId) ?? BASELINE_RULES.find((r) => r.id === c.ruleId);
     const fingerprint = `${c.ruleId}|${c.scenario.kind}|${hash.slice(0, 16)}`;
     // A family check without an explicit rule is still replayed for evidence, against its stated hypothesis.

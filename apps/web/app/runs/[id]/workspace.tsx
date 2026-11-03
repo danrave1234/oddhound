@@ -139,6 +139,7 @@ function describe(e: Snapshot['events'][number]): string | null {
     case 'workflow.updated': return `Workflow “${p.name}”: ${statusLabel(p.status)} — ${p.summary}`;
     case 'finding.candidate': return p.source === 'detector' ? `Recorded for replay (${p.ruleId}): ${p.title}` : `Candidate reported against ${p.ruleId}: ${p.title}`;
     case 'finding.verifying': return `Replaying candidate independently: ${p.title}`;
+    case 'finding.candidate_merged': return `Same bug as “${p.into}”: “${p.title}” was not filed again`;
     case 'finding.verified': return `Verified (${((p.outcomes ?? []) as string[]).filter((o) => o === 'failed').length}/${(p.outcomes ?? []).length} replays failed the rule): ${p.title}`;
     case 'finding.dismissed': return `Dismissed — not reproduced: ${p.title}`;
     case 'finding.inconclusive': return `Inconclusive: ${p.title}`;
