@@ -6,6 +6,9 @@ import { auth } from './auth';
 
 export const db = () => getPool();
 
+/** The public origin for links in API responses. Behind Modal the request URL is the container's own address. */
+export const publicOrigin = (req: Request) => (process.env.BETTER_AUTH_URL ?? new URL(req.url).origin).replace(/\/+$/, '');
+
 export type AppUser = { id: string; name: string; email: string; isAdmin: boolean; allowlisted: boolean; revoked: boolean };
 
 export async function currentUser(): Promise<AppUser | null> {

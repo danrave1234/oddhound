@@ -1,4 +1,4 @@
-import { canViewRun, currentUser, db, isUuid, json, loadRunForAccess } from '@/lib/server';
+import { canViewRun, currentUser, db, isUuid, json, loadRunForAccess, publicOrigin } from '@/lib/server';
 import { fixReceiptMarkdown, loadProofChain } from '@core/reports/proof-chain.ts';
 import { withBuildNames } from '@/lib/proof';
 
@@ -13,7 +13,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
   if (!loaded) return json({ error: 'Not found' }, 404);
   const chain = withBuildNames(loaded);
   if (new URL(req.url).searchParams.get('format') === 'receipt') {
-    const runUrl = new URL(`/runs/${f.run_id}`, req.url).toString();
+    const runUrl = `${publicOrigin(req)}/runs/${f.run_id}`;
     return new Response(fixReceiptMarkdown(chain, { run: runUrl }), { headers: { 'content-type': 'text/markdown; charset=utf-8', 'cache-control': 'no-store' } });
   }
   return json(chain);

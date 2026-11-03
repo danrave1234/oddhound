@@ -2,7 +2,7 @@
 // with none open, explores again with the last run's contract). GET ?run=<id>: the pass/fail verdict.
 // Authorization: Bearer <project hook token>. The token reaches only its own project's runs.
 import { z } from 'zod';
-import { db, isUuid, json } from '@/lib/server';
+import { db, isUuid, json, publicOrigin } from '@/lib/server';
 import { startRetest, startRunAgain } from '@/lib/admission';
 import { chooseDeployAction, hookFromRequest, hookRunGate } from '@/lib/deploy-hook';
 
@@ -12,7 +12,7 @@ const Body = z.object({
   sha: z.string().trim().regex(/^[A-Za-z0-9._-]{4,80}$/).optional(),
 }).default({ mode: 'auto' });
 
-const runUrl = (req: Request, id: string) => `${new URL(req.url).origin}/runs/${id}`;
+const runUrl = (req: Request, id: string) => `${publicOrigin(req)}/runs/${id}`;
 
 export async function POST(req: Request) {
   const hook = await hookFromRequest(req);
