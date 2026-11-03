@@ -15,5 +15,8 @@ export default async function RunPage({ params, searchParams }: { params: Promis
   const snapshot = await loadRunSnapshot(id);
   if (!snapshot) notFound();
   const controllable = !replay && (await canControlRun(user, access));
-  return <RunWorkspace initial={JSON.parse(JSON.stringify(snapshot))} controllable={controllable} replay={Boolean(replay)} signedIn={Boolean(user)} />;
+  const owner = Boolean(user && (user.isAdmin || access.owner_id === user.id));
+  const ownerSite = access.mode !== 'demo_target' && access.parent_mode !== 'demo_target';
+  return <RunWorkspace initial={JSON.parse(JSON.stringify(snapshot))} controllable={controllable} replay={Boolean(replay)} signedIn={Boolean(user)}
+    canShare={owner && ownerSite && !replay} sharedView={Boolean(access.shared) && !owner} />;
 }

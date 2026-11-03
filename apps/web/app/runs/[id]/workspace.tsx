@@ -186,7 +186,7 @@ function describe(e: Snapshot['events'][number]): string | null {
   }
 }
 
-export function RunWorkspace({ initial, controllable, replay, signedIn }: { initial: Snapshot; controllable: boolean; replay: boolean; signedIn: boolean }) {
+export function RunWorkspace({ initial, controllable, replay, signedIn, canShare = false, sharedView = false }: { initial: Snapshot; controllable: boolean; replay: boolean; signedIn: boolean; canShare?: boolean; sharedView?: boolean }) {
   const [snap, setSnap] = useState<Snapshot>(initial);
   const [view, setView] = useState<'results' | 'workflows' | 'browser' | 'findings' | 'activity'>(!ACTIVE.has(initial.run.status) ? 'results' : 'workflows');
   const [wfMode, setWfMode] = useState<'list' | 'map'>('list');
@@ -265,6 +265,19 @@ export function RunWorkspace({ initial, controllable, replay, signedIn }: { init
   const [noteState, setNoteState] = useState<'idle' | 'copied' | 'failed'>('idle');
   const retestEvents = snap.retestEvents ?? snap.events.filter((e) => e.type === 'retest.finished' || e.type === 'retest.blocked');
   const release = run.mode === 'retest' ? releaseCheck(retestEvents, snap.parentVerifiedCount ?? undefined) : null;
+  const [share, setShare] = useState<{ state: 'idle' | 'busy' | 'copied' | 'stopped' | 'error'; url?: string; error?: string }>({ state: 'idle' });
+  async function createShare() {
+    setShare({ state: 'busy' });
+    const r = await fetch(`/api/runs/${runId}/share`, { method: 'POST' }).catch(() => null);
+    const body = r ? await r.json().catch(() => ({})) : {};
+    if (!r?.ok || !body.url) { setShare({ state: 'error', error: body.error ?? 'Could not create a share link.' }); return; }
+    await navigator.clipboard.writeText(body.url).catch(() => undefined);
+    setShare({ state: 'copied', url: body.url });
+  }
+  async function stopShare() {
+    const r = await fetch(`/api/runs/${runId}/share`, { method: 'DELETE' }).catch(() => null);
+    setShare(r?.ok ? { state: 'stopped' } : { state: 'error', error: 'Could not stop sharing.' });
+  }
   async function copyReleaseNote() {
     if (!release) return;
     const text = releaseNoteMarkdown(release, { origin: run.origin, runUrl: `${window.location.origin}/runs/${runId}`, at: new Date(run.finished_at ?? run.started_at ?? Date.now()).toISOString().slice(0, 16).replace('T', ' ') + ' UTC' });
@@ -313,9 +326,14 @@ export function RunWorkspace({ initial, controllable, replay, signedIn }: { init
           {controllable && active && <button className="btn btn-danger" onClick={stop} title="Blocks new actions immediately; cannot undo completed actions"><Icon name="stop" /> Stop run</button>}
           {controllable && !active && run.mode !== 'retest' && !run.handoff_enabled && verifiedCount > 0 && <button className="btn btn-primary" onClick={retest}><Icon name="retest" /> {run.mode === 'demo_target' ? 'Retest on corrected build' : 'Retest after fix'}</button>}
           {controllable && !active && run.mode === 'verified_site' && <button className="btn" onClick={runAgain} title="A new run with exactly these goals, rules, limits, devices and accounts"><Icon name="replay" /> Run again</button>}
+          {canShare && !run.handoff_enabled && <button className="btn" onClick={createShare} disabled={share.state === 'busy'} title="A read-only link to this run and its retests; making a new one turns off the old one"><Icon name={share.state === 'copied' ? 'tick' : 'copy'} /> {share.state === 'copied' ? 'Share link copied' : 'Share read-only link'}</button>}
           {run.parent_run_id && <Link className="btn" href={`/runs/${run.parent_run_id}`}><Icon name="back" /> Original run</Link>}
         </span>
       </header>
+      {share.state === 'copied' && <p role="status" className="banner banner-info fade-in"><Icon name="info" /> <span>Anyone with the link can view this run and its retests, read-only. They cannot start, stop or retest it. <span className="mono break">{share.url}</span></span><button className="btn btn-sm" onClick={stopShare}>Stop sharing</button></p>}
+      {share.state === 'stopped' && <p role="status" className="banner banner-info fade-in"><Icon name="info" /> Sharing stopped. The link no longer opens this run.</p>}
+      {share.state === 'error' && <p role="alert" className="banner banner-warn fade-in"><Icon name="alert" /> {share.error}</p>}
+      {sharedView && <p role="note" className="banner banner-info"><Icon name="eye" /> Shared read-only view. The site owner shared this run with you.</p>}
       {notice && <p role="status" className="banner banner-warn fade-in"><Icon name="info" /> {notice}</p>}
       {run.provider === 'test-double' && <p role="note" className="banner banner-info"><Icon name="info" /> This run used the offline test double, not Meta inference.</p>}
 

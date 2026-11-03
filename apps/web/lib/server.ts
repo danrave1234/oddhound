@@ -1,6 +1,6 @@
 import 'server-only';
 import { headers, cookies } from 'next/headers';
-import { randomBytes } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import { getPool } from '@core/db/pool.ts';
 import { auth } from './auth';
 
@@ -44,12 +44,13 @@ export async function anonymousPrincipal(): Promise<string> {
   return `anon:${id}:${ip}`;
 }
 
-type RunAccessRow = { owner_id: string | null; mode: string; principal: string; parent_mode?: string | null };
+type RunAccessRow = { owner_id: string | null; mode: string; principal: string; parent_mode?: string | null; shared?: boolean };
 
 /** Demo-target runs contain synthetic data only and are public; everything else is owner/admin only. */
 export function canViewRun(user: AppUser | null, run: RunAccessRow): boolean {
   if (run.mode === 'demo_target') return true;
   if (run.mode === 'retest' && run.parent_mode === 'demo_target') return true; // retest of a public demo run
+  if (run.shared) return true; // the viewer opened the owner's read-only share link for this run or its parent
   return Boolean(user && (user.isAdmin || run.owner_id === user.id));
 }
 
@@ -73,7 +74,34 @@ export async function loadRunForAccess(runId: string) {
   const r = await db().query<RunAccessRow & { id: string; project_id: string | null; status: string; origin: string; parent_run_id: string | null }>(
     `SELECT r.id, r.owner_id, r.mode, r.principal, r.project_id, r.status, r.origin, r.parent_run_id, p.mode AS parent_mode
      FROM runs r LEFT JOIN runs p ON p.id = r.parent_run_id WHERE r.id = $1`, [runId]);
-  return r.rows[0] ?? null;
+  const row = r.rows[0];
+  if (!row) return null;
+  const tokens = await shareTokens();
+  if (tokens.length) {
+    const hit = await db().query(`SELECT 1 FROM run_shares WHERE token_hash = ANY($1) AND revoked_at IS NULL AND run_id = ANY($2) LIMIT 1`,
+      [tokens.map(hashShareToken), [row.id, row.parent_run_id].filter(Boolean)]);
+    row.shared = hit.rows.length > 0;
+  }
+  return row;
+}
+
+// ---- Read-only share links. The token is shown once; only its hash is stored. Opening /s/<token>
+// remembers it in an httpOnly cookie, which then lets that browser view the run and its retests.
+const SHARE_COOKIE = 'oh_share';
+export const hashShareToken = (t: string) => createHash('sha256').update(t).digest('hex');
+export const newShareToken = () => `ohs_${randomBytes(24).toString('base64url')}`;
+const isShareToken = (t: string) => /^ohs_[A-Za-z0-9_-]{32}$/.test(t);
+
+async function shareTokens(): Promise<string[]> {
+  const raw = (await cookies()).get(SHARE_COOKIE)?.value ?? '';
+  return raw.split('.').filter(isShareToken).slice(0, 10);
+}
+
+/** Remembers a share token in this browser (most recent first, at most ten). */
+export async function rememberShareToken(token: string): Promise<void> {
+  if (!isShareToken(token)) return;
+  const kept = [token, ...(await shareTokens()).filter((t) => t !== token)].slice(0, 10);
+  (await cookies()).set(SHARE_COOKIE, kept.join('.'), { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', path: '/', maxAge: 60 * 60 * 24 * 30 });
 }
 
 export const json = (data: unknown, status = 200) => Response.json(data, { status, headers: { 'cache-control': 'no-store' } });
