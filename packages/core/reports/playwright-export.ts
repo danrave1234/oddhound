@@ -63,6 +63,10 @@ function traceBody(s: Trace, signedIn: boolean): string {
   lines.push('  const failures: string[] = [];');
   lines.push("  page.on('pageerror', (e) => failures.push('pageerror: ' + e.message));");
   lines.push("  page.on('response', (r) => failures.push('status ' + r.status() + ' ' + r.request().method() + ' ' + new URL(r.url()).pathname));");
+  if (s.oracle.type === 'http_status') {
+    // A streamed page that failed on the server after HTTP 200: Next.js reports it in the console.
+    lines.push("  page.on('console', (m) => { if (m.type() === 'error' && /An error occurred in the Server Components render/.test(m.text())) failures.push('status 500 GET ' + new URL(page.url()).pathname + ' server-render-error'); });");
+  }
   lines.push(`  const vars: Record<string, string> = ${vars};`);
   lines.push(...setupLines(s));
   lines.push(`  await page.goto(new URL(fill(${j(s.start)}, vars), BASE_URL).toString());`);

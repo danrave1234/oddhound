@@ -656,7 +656,10 @@ async function replayTrace(
   let hit: string | null = null;
   if (o.type === 'http_status') {
     const r = signals.find((x) => (x.kind === 'http_5xx' || x.kind === 'http_404') && x.status >= o.min && x.status <= o.max
-      && (!o.method || (x.kind === 'http_5xx' ? x.method : 'GET') === o.method) && routeMatches(o.route, x.url));
+      && (!o.method || (x.kind === 'http_5xx' ? x.method : 'GET') === o.method) && routeMatches(o.route, x.url))
+      // A streamed page that failed on the server after sending 200 is the same 5xx-class failure on that route.
+      ?? signals.find((x) => x.kind === 'server_render_error' && o.min <= 500 && o.max >= 500
+        && (!o.method || o.method.toUpperCase() === 'GET') && routeMatches(o.route, x.url));
     if (r) hit = describeSignal(r);
   } else if (o.type === 'page_error') {
     const r = signals.find((x) => x.kind === 'page_error' && (!o.contains || x.message.includes(o.contains)));

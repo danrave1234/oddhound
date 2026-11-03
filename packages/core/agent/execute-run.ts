@@ -597,6 +597,7 @@ async function agentLoop(a: LoopArgs): Promise<{ stopReason?: string; summary?: 
       const t = traceFor(actionSeq);
       if (typeof t === 'string') { await ev('signal.not_replayable', { rule: sig.rule, reason: t }); continue; }
       const oracle: Oracle = sig.kind === 'http_5xx' ? { type: 'http_status', min: 500, max: 599, method: sig.method, route: sig.route }
+        : sig.kind === 'server_render_error' ? { type: 'http_status', min: 500, max: 599, method: 'GET', route: sig.route }
         : sig.kind === 'http_404' ? { type: 'http_status', min: 404, max: 404, method: 'GET', route: sig.route }
         : sig.kind === 'page_error' ? { type: 'page_error', contains: sig.message.slice(0, 60) }
         : sig.kind === 'markup_rendered' ? { type: 'markup_rendered' }
@@ -1868,6 +1869,7 @@ export function notebookMessages(contract: RunContract, mode: AgentMode, noteboo
 function titleForSignal(s: Signal): string {
   switch (s.kind) {
     case 'http_5xx': return `Server error (HTTP ${s.status}) on ${s.method} ${s.route}`;
+    case 'server_render_error': return `Server error while rendering ${s.route} (error screen shown)`;
     case 'page_error': return `Uncaught JavaScript error: ${s.message.slice(0, 80)}`;
     case 'markup_rendered': return `Typed HTML is rendered as markup on ${s.path.split('?')[0]}`;
     case 'error_text': return `Internal error details shown on ${s.path.split('?')[0]}`;

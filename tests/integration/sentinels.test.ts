@@ -33,6 +33,9 @@ beforeAll(async () => {
       case '/wide': return void send(200, html('<div style="width:1200px">wide table</div>'));
       case '/narrow': return void send(200, html('<div style="max-width:100%">fits</div>'));
       case '/throw': return void send(200, html('<p>x</p>', '<script>window.addEventListener("load", () => { null.boom(); });</script>'));
+      // Next.js streams 200, then a Server Components render fails on the server; its twin logs an unrelated error.
+      case '/stream-crash': return void send(200, html('<h2>Something went wrong</h2>', '<script>console.error("Error: An error occurred in the Server Components render. The specific message is omitted in production builds to avoid leaking sensitive details.")</script>'));
+      case '/stream-ok': return void send(200, html('<h1>Listings</h1>', '<script>console.error("Failed to load analytics")</script>'));
       case '/gateway-action': return void send(200, html('<button onclick="fetch(\'/gateway-denied\').then(r => { if (!r.ok) throw new Error(\'Gateway refusal caused this error\'); })">Trigger refusal</button>'));
       default: return void send(404, html('<h1>Not found</h1>'));
     }
@@ -94,6 +97,20 @@ describe('detectors in a real browser', () => {
     expect(await kinds('/narrow')).not.toContain('mobile_overflow');
     await ctx.close();
   });
+  it('catch a server render failure streamed after HTTP 200 (B1), not other console errors', async () => {
+    const ctx = await browser.newContext();
+    const page = await ctx.newPage();
+    const got: Signal[] = [];
+    attachSentinels(page, (o) => o === origin, (s) => got.push(s));
+    await page.goto(`${origin}/stream-ok`);
+    await page.waitForTimeout(200);
+    expect(got).toEqual([]);
+    await page.goto(`${origin}/stream-crash`);
+    await page.waitForTimeout(200);
+    expect(got).toHaveLength(1);
+    expect(got[0]).toMatchObject({ kind: 'server_render_error', rule: 'B1', route: '/stream-crash' });
+    await ctx.close();
+  });
   it('does not attribute a gateway 502 to the target server', async () => {
     const ctx = await browser.newContext();
     const page = await ctx.newPage();
@@ -137,6 +154,18 @@ describe('trace replay in a fresh session', () => {
   it('reproduces a server error from a button press (B1)', async () => {
     const s: Scenario = { kind: 'trace', device: 'desktop', start: '/', steps: [{ op: 'click', target: 'Crash', role: 'button' }], oracle: { type: 'http_status', min: 500, max: 599, method: 'POST', route: '/api/crash' } };
     expect((await replayScenario(s, env())).outcome).toBe('failed');
+  });
+  it('reproduces a streamed server render failure with the 5xx check on that route, and passes its twin', async () => {
+    const s: Scenario = { kind: 'trace', device: 'desktop', start: '/stream-crash', steps: [], oracle: { type: 'http_status', min: 500, max: 599, method: 'GET', route: '/stream-crash' } };
+    const r = await replayScenario(s, env());
+    expect(r.outcome).toBe('failed');
+    expect(r.observed).toMatch(/Server Components render/);
+    const twin: Scenario = { ...s, start: '/stream-ok', oracle: { type: 'http_status', min: 500, max: 599, method: 'GET', route: '/stream-ok' } };
+    expect((await replayScenario(twin, env())).outcome).toBe('passed');
+    // A check for a POST failure on the same route is a different rule break.
+    expect((await replayScenario({ ...s, oracle: { type: 'http_status', min: 500, max: 599, method: 'POST', route: '/stream-crash' } }, env())).outcome).toBe('passed');
+    // A 404 check never matches a render failure.
+    expect((await replayScenario({ ...s, oracle: { type: 'http_status', min: 404, max: 404, route: '/stream-crash' } }, env())).outcome).toBe('passed');
   });
   it('reports a gateway 502 replay as blocked, never as a passed or verified server-error check', async () => {
     const s: Scenario = { kind: 'trace', device: 'desktop', start: '/gateway-denied', steps: [], oracle: { type: 'http_status', min: 500, max: 599, route: '/gateway-denied' } };

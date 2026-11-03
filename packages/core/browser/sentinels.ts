@@ -1,7 +1,8 @@
 // Automatic bug detectors ("sentinels"). Trusted code, no model involvement and no model cost.
 //
 // They watch every page the run opens and report signals that map to Oddhound's baseline rules:
-//   B1 server error (HTTP 5xx from the verified site or a verified API host)
+//   B1 server error (HTTP 5xx from the verified site or a verified API host, or a server render failure that
+//      Next.js reports in the console after streaming has already sent HTTP 200)
 //   B2 uncaught JavaScript error in the page
 //   B3 the markup probe typed into a field came back rendered as an element
 //   B4 stack traces / internal error details in the page text
@@ -31,6 +32,7 @@ export const MARKUP_PROBE_SELECTOR = '[data-oh-probe]';
 
 export type Signal =
   | { kind: 'http_5xx'; rule: 'B1'; method: string; url: string; route: string; status: number; resource: string }
+  | { kind: 'server_render_error'; rule: 'B1'; url: string; route: string; message: string }
   | { kind: 'page_error'; rule: 'B2'; message: string }
   | { kind: 'markup_rendered'; rule: 'B3'; path: string }
   | { kind: 'error_text'; rule: 'B4'; path: string; pattern: string; excerpt: string }
@@ -70,6 +72,7 @@ export function routeOf(url: string): string {
 export function signalKey(s: Signal): string {
   switch (s.kind) {
     case 'http_5xx': return `B1|${s.method}|${s.route}`;
+    case 'server_render_error': return `B1|render|${s.route}`;
     case 'page_error': return `B2|${s.message.slice(0, 80)}`;
     case 'markup_rendered': return `B3|${routeOf(`https://x${s.path}`)}`;
     case 'error_text': return `B4|${s.pattern}|${routeOf(`https://x${s.path}`)}`;
@@ -99,7 +102,21 @@ export function attachSentinels(page: Page, inScope: (origin: string) => boolean
   page.on('pageerror', (e: Error) => {
     onSignal({ kind: 'page_error', rule: 'B2', message: `${e.name}: ${e.message}`.replace(/\s+/g, ' ').slice(0, 300) });
   });
+  // A streamed page can fail on the server after HTTP 200 was sent; Next.js then reports it in the browser console
+  // with this fixed production message and shows the site's error screen. That is a server error (B1).
+  page.on('console', (m) => {
+    if (m.type() !== 'error') return;
+    const text = m.text();
+    if (!SERVER_RENDER_ERROR.test(text)) return;
+    let u: URL;
+    try { u = new URL(page.url()); } catch { return; }
+    if (!inScope(u.origin)) return;
+    onSignal({ kind: 'server_render_error', rule: 'B1', url: page.url(), route: routeOf(page.url()), message: text.replace(/\s+/g, ' ').slice(0, 200) });
+  });
 }
+
+/** Next.js's production report of a Server Components render that threw on the server. */
+export const SERVER_RENDER_ERROR = /An error occurred in the Server Components render/;
 
 /** In-page checks after an action settles: rendered probe, leaked internals, phone overflow. */
 export async function checkPage(page: Page, mobile: boolean): Promise<Signal[]> {
@@ -124,6 +141,7 @@ export async function checkPage(page: Page, mobile: boolean): Promise<Signal[]> 
 export function describeSignal(s: Signal): string {
   switch (s.kind) {
     case 'http_5xx': return `server error HTTP ${s.status} on ${s.method} ${s.route} (${s.resource})`;
+    case 'server_render_error': return `server error while rendering GET ${s.route}: the page was sent with HTTP 200, then Next.js reported "An error occurred in the Server Components render"`;
     case 'page_error': return `uncaught JavaScript error: ${s.message}`;
     case 'markup_rendered': return `the markup probe was rendered as an element on ${s.path} (input not escaped)`;
     case 'error_text': return `internal error details shown on ${s.path} (${s.pattern}): "${s.excerpt.slice(0, 120)}"`;
