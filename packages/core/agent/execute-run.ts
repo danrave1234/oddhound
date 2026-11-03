@@ -1439,6 +1439,15 @@ async function agentLoop(a: LoopArgs): Promise<{ stopReason?: string; summary?: 
           const usesPassword = steps.some((x) => x.step.op === 'fill' && x.step.value === '{password}');
           const auth = recorded.auth && !usesPassword ? recorded.auth : undefined;
           const rp = withRecordSetup(start, steps, recorded);
+          // A fresh session starts with fresh accounts and data. A check for text typed earlier in this run
+          // (by another session or account) that these steps never type again cannot hold, so it would "fail"
+          // for the wrong reason. Send it back instead of recording it.
+          const checked = rp.steps[oracleStep - 1]?.expect?.text_visible;
+          const typedHere = (v: string) => rp.steps.some((x) => x.step.op === 'fill' && x.step.value.includes(v)) || Object.values(rp.setup?.fields ?? {}).some((f) => f.includes(v));
+          const typedEarlier = (v: string) => stepLog.some((l) => l.step?.op === 'fill' && l.step.value.includes(v));
+          if (checked && checked.length >= 3 && typedEarlier(checked) && !typedHere(checked)) {
+            return { text: `Candidate NOT recorded: step ${oracleStep} checks for "${checked}", which was typed earlier in the run but not by these steps. A replay starts with a new account and no data. Run one batch that types "${checked}", saves it, then reloads or signs out and back in and checks it, and report that batch.` };
+          }
           const scenario: Scenario = { kind: 'batch', device: logs[0]!.device, ...(auth ? { auth } : {}), ...(rp.setup ? { setup: rp.setup } : {}), start: rp.start, steps: rp.steps, oracleStep };
           const stated = [...new Set(rec.steps.slice(0, k).map((x) => x.stated).filter(Boolean))].join(', ') || undefined;
           const knownRule = contract.rules.some((r) => r.id === args.rule_id) || BASELINE_RULES.some((r) => r.id === args.rule_id);
