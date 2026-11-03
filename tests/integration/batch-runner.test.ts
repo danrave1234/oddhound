@@ -161,7 +161,8 @@ describe('scenario batches in the worker pipeline', () => {
     expect(await executeRun(deps(new ScriptedPlanner()), retest.runId)).toBe('completed');
     expect((await db.query('SELECT lifecycle FROM findings WHERE id = $1', [f.id])).rows[0].lifecycle).toBe('fixed');
     const exec = (await db.query<{ assertion_hash: string; outcome: string }>(`SELECT assertion_hash, outcome FROM scenario_executions WHERE scenario_id = $1 AND kind = 'retest'`, [f.scenario_id])).rows;
-    expect(exec).toEqual([{ assertion_hash: sc.assertion_hash, outcome: 'passed' }]);
+    // A fix is granted only after two fresh replays of the pinned assertion both pass.
+    expect(exec).toEqual([{ assertion_hash: sc.assertion_hash, outcome: 'passed' }, { assertion_hash: sc.assertion_hash, outcome: 'passed' }]);
 
     // Retest on the unfixed server keeps it open (no false "fixed").
     strict = false;

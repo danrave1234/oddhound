@@ -1,7 +1,7 @@
 // Retest: replay the saved, unchanged assertions of a run's verified findings against the target.
 // For a verified site the target is the same origin (after the owner deploys a fix). The demo target
 // cannot redeploy itself, so its retest runs against the separately hosted corrected build.
-import { canControlRun, currentUser, json, loadRunForAccess, db, anonymousPrincipal } from '@/lib/server';
+import { canControlRun, currentUser, json, loadRunForAccess, db, anonymousPrincipal, mayScanVerifiedSites } from '@/lib/server';
 import { admitRun } from '@core/ledger/runs.ts';
 import { RunContractSchema, demoTargetContract } from '@core/contracts/contract.ts';
 import { enqueueRun } from '@core/queue/queue.ts';
@@ -20,6 +20,9 @@ export async function POST(_req: Request, ctx: { params: Promise<{ id: string }>
     if (!fixedOrigin) return json({ error: 'The corrected demo build is not configured.' }, 503);
     contract = demoTargetContract(fixedOrigin);
   } else {
+    if (!user || !mayScanVerifiedSites(user)) return json({ error: 'Verified-site retests are invite-only for now.' }, 403);
+    // A handed-over session cannot be replayed without the owner signing in again.
+    if (contract.handoff.enabled) return json({ error: 'This run used your own sign-in, which a retest cannot repeat. After deploying the fix, start a new run with the sign-in handoff instead.' }, 409);
     contract = { ...contract, expiresAt: new Date(Date.now() + 60 * 60_000).toISOString() };
   }
   const principal = user ? `user:${user.id}` : await anonymousPrincipal();

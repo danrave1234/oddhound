@@ -200,7 +200,7 @@ export async function executeRun(deps: ExecuteDeps, runId: string): Promise<RunS
     if (run.mode === 'retest') {
       const started = performance.now(); timings.verificationPhases++;
       verificationRan = true;
-      try { await executeRetest(deps, run, contract, generation, ev, (b) => { browser = b; }); }
+      try { const blocked = await executeRetest(deps, run, contract, generation, ev, (b) => { browser = b; }); if (blocked) await finish('blocked', blocked); }
       finally { timings.verificationMs += performance.now() - started; }
       return await done();
     }
@@ -2092,38 +2092,65 @@ async function recordConfigurationObservations(db: Db, run: RunRow, session: Run
 // ---------------------------------------------------------------------------------------------
 // Retest: replay the saved, unchanged assertions of the parent run against the (fixed) deployment.
 
-async function executeRetest(deps: ExecuteDeps, run: RunRow, contract: RunContract, generation: number, ev: (t: string, p?: Record<string, unknown>) => Promise<number>, setBrowser: (b: ProvisionedBrowser) => void) {
+/** Returns a block reason when the retest could not run under the same guarantees as a normal run. */
+async function executeRetest(deps: ExecuteDeps, run: RunRow, contract: RunContract, generation: number, ev: (t: string, p?: Record<string, unknown>) => Promise<number>, setBrowser: (b: ProvisionedBrowser) => void): Promise<string | null> {
   const { db } = deps;
-  const findings = (await db.query<{ id: string; title: string; lifecycle: string | null; scenario_id: string; control_scenario_id: string | null }>(
+  const findings = (await db.query<{ id: string; title: string; lifecycle: string | null; scenario_id: string | null; control_scenario_id: string | null }>(
     `SELECT id, title, lifecycle, scenario_id, control_scenario_id FROM findings WHERE run_id = $1 AND verification = 'verified' AND category = 'verified_issue'`, [run.parent_run_id])).rows;
-  const browser = await deps.runtime.provision({ runId: run.id, lab: deps.lab, onEgress: (d) => { if (!d.allowed) ev('egress.denied', { host: d.host, reason: d.reason }).catch(() => {}); } });
+  let exhausted = false;
+  const browser = await deps.runtime.provision({
+    runId: run.id, lab: deps.lab,
+    onEgress: (d) => { if (!d.allowed) ev('egress.denied', { host: d.host, reason: d.reason }).catch(() => {}); },
+    onEgressExhausted: (r) => { if (!exhausted) { exhausted = true; ev('egress.exhausted', { reason: r }).catch(() => {}); } },
+  });
   setBrowser(browser);
   await setRunStatus(db, run.id, generation, 'running', { browserState: 'ready', browserRef: browser.ref, sandboxVerdict: browser.sandboxVerdict });
   await ev('browser.ready', { runtime: browser.runtime, ref: browser.ref, sandbox: browser.sandboxVerdict });
+  // The same sandbox gate as a normal run: an owner's site is never retested from an unconfirmed sandbox.
+  if (deps.hosted && browser.sandboxVerdict !== 'sandbox_on') return `chromium_sandbox_not_confirmed:${browser.sandboxVerdict}`;
   await ev('run.status', { status: 'running' });
   const env = replayEnvFor(db, run.id, browser, contract, contract.target.origin, ev);
+  const loadPinned = async (id: string) => {
+    const row = (await db.query<{ assertion: Scenario; assertion_hash: string }>('SELECT assertion, assertion_hash FROM scenarios WHERE id = $1', [id])).rows[0];
+    // SELF-12: never replay a changed (or missing) assertion.
+    return row && scenarioHash(row.assertion) === row.assertion_hash ? row : null;
+  };
   for (const f of findings) {
     await assertLease(db, run.id, generation);
-    const s = (await db.query<{ assertion: Scenario; assertion_hash: string }>('SELECT assertion, assertion_hash FROM scenarios WHERE id = $1', [f.scenario_id])).rows[0]!;
-    if (scenarioHash(s.assertion) !== s.assertion_hash) { // SELF-12: never replay a changed assertion
-      await ev('retest.blocked', { findingId: f.id, reason: 'assertion_changed' });
-      continue;
+    const s = f.scenario_id ? await loadPinned(f.scenario_id) : null;
+    if (!s) { await ev('retest.blocked', { findingId: f.id, reason: f.scenario_id ? 'assertion_changed' : 'scenario_missing' }); continue; }
+    // Like verification, a fix is granted only when the unchanged assertion holds in two fresh sessions.
+    const replays: Awaited<ReturnType<typeof replayScenario>>[] = [];
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const r = await replayScenario(s.assertion, env);
+      const ids: string[] = [];
+      for (const shot of r.screenshots) ids.push(await saveArtifact(db, run.id, 'screenshot', 'image/jpeg', shot.data, `retest ${attempt + 1}: ${shot.label}`).catch(() => ''));
+      await recordExecution(db, f.scenario_id!, run.id, 'retest', s.assertion_hash, r.outcome, { observed: r.observed }, ids.filter(Boolean));
+      replays.push(r);
+      if (r.outcome !== 'passed' && r.outcome !== 'failed') break; // blocked or inconclusive: a second try cannot decide
     }
-    const original = await replayScenario(s.assertion, env);
-    const ids: string[] = [];
-    for (const shot of original.screenshots) ids.push(await saveArtifact(db, run.id, 'screenshot', 'image/jpeg', shot.data, `retest: ${shot.label}`).catch(() => ''));
-    await recordExecution(db, f.scenario_id, run.id, 'retest', s.assertion_hash, original.outcome, { observed: original.observed }, ids.filter(Boolean));
+    const outcomes = replays.map((r) => r.outcome);
+    const outcome = outcomes.every((o) => o === 'passed') && replays.length === 2 ? 'passed'
+      : outcomes.every((o) => o === 'failed') && replays.length === 2 ? 'failed'
+      : outcomes.includes('passed') && outcomes.includes('failed') ? 'inconclusive' : outcomes.at(-1)!;
     let controlOutcome = 'not_run';
     if (f.control_scenario_id) {
-      const cs = (await db.query<{ assertion: Scenario; assertion_hash: string }>('SELECT assertion, assertion_hash FROM scenarios WHERE id = $1', [f.control_scenario_id])).rows[0]!;
-      const ctl = await replayScenario(cs.assertion, env);
-      controlOutcome = ctl.outcome;
-      await recordExecution(db, f.control_scenario_id, run.id, 'retest', cs.assertion_hash, ctl.outcome, { observed: ctl.observed }, []);
+      const cs = await loadPinned(f.control_scenario_id);
+      if (cs) {
+        const ctl = await replayScenario(cs.assertion, env);
+        controlOutcome = ctl.outcome;
+        await recordExecution(db, f.control_scenario_id, run.id, 'retest', cs.assertion_hash, ctl.outcome, { observed: ctl.observed }, []);
+      } else {
+        controlOutcome = 'blocked';
+        await ev('retest.blocked', { findingId: f.id, reason: 'control_assertion_changed' });
+      }
     }
     let lifecycle = f.lifecycle;
-    if (original.outcome === 'passed' && (controlOutcome === 'passed' || controlOutcome === 'not_run')) lifecycle = 'fixed';
-    else if (original.outcome === 'failed') lifecycle = f.lifecycle === 'fixed' ? 'regressed' : 'open';
+    if (outcome === 'passed' && (controlOutcome === 'passed' || controlOutcome === 'not_run')) lifecycle = 'fixed';
+    else if (outcome === 'failed') lifecycle = f.lifecycle === 'fixed' || f.lifecycle === 'regressed' ? 'regressed' : 'open';
     await db.query('UPDATE findings SET lifecycle = $2, updated_at = now() WHERE id = $1', [f.id, lifecycle]);
-    await ev('retest.finished', { findingId: f.id, title: f.title, outcome: original.outcome, control: controlOutcome, lifecycle, observed: original.observed });
+    const observed = outcome === 'inconclusive' && outcomes.length === 2 ? `The two fresh replays disagreed (${outcomes.join(', ')}), so the fix is not confirmed.` : replays.at(-1)!.observed;
+    await ev('retest.finished', { findingId: f.id, title: f.title, outcome, replays: outcomes, control: controlOutcome, lifecycle, observed });
   }
+  return null;
 }

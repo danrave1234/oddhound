@@ -39,6 +39,15 @@ describe('proof chain', () => {
     expect(noControl.verdict.state).toBe('fixed');
   });
 
+  it('needs both retest replays to agree before judging the fix', () => {
+    const mixed = buildProofChain({ finding, scenario, controlHash: 'h-control', executions: [...verified(), ex('s1', 'retest', 'failed', 'r2'), ex('s1', 'retest', 'passed', 'r2'), ex('c1', 'retest', 'passed', 'r2')] });
+    expect(mixed.verdict.state).toBe('retest_inconclusive');
+    expect(mixed.verdict.text).toContain('disagreed');
+    const both = buildProofChain({ finding, scenario, controlHash: 'h-control', executions: [...verified(), ex('s1', 'retest', 'passed', 'r2'), ex('s1', 'retest', 'passed', 'r2'), ex('c1', 'retest', 'passed', 'r2')] });
+    expect(both.verdict.state).toBe('fixed');
+    expect(both.legs.filter((l) => l.stage === 'retest' && l.role === 'replay').map((l) => l.n)).toEqual([1, 2]);
+  });
+
   it('reports still failing and regressed retests', () => {
     expect(buildProofChain({ finding, scenario, controlHash: 'h-control', executions: [...verified(), ex('s1', 'retest', 'failed', 'r2')] }).verdict.state).toBe('still_failing');
     expect(buildProofChain({ finding: { ...finding, lifecycle: 'regressed' }, scenario, controlHash: 'h-control', executions: [...verified(), ex('s1', 'retest', 'failed', 'r3')] }).verdict.state).toBe('regressed');

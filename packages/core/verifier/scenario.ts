@@ -249,6 +249,13 @@ export function newReplaySessions(): Map<string, StorageState> { return new Map(
 
 class ReplayBlocked extends Error {}
 
+/** Opens a scenario's start page; an error status blocks the replay unless the oracle expects that status. */
+async function openStart(page: Page, url: string, expected?: (status: number) => boolean): Promise<void> {
+  const res = await page.goto(url, { waitUntil: 'domcontentloaded' });
+  const status = res?.status() ?? 0;
+  if (status >= 400 && !expected?.(status)) throw new ReplayBlocked(`the page the check starts on could not be opened (HTTP ${status} at ${new URL(url).pathname})`);
+}
+
 export function expand(template: string, vars: Record<string, string>): string {
   return template.replace(/\{(\w+)(?:([+-])(\d+))?\}/g, (whole, name: string, sign?: string, n?: string) => {
     if (name === 'date' || name === 'today') {
@@ -615,7 +622,8 @@ async function replayTrace(
   attachSentinels(page, inScope, (sig) => signals.push(sig));
   const vars: Record<string, string> = { ...env.identity(), marker };
   if (s.setup) vars.id = await runSetup(page, env.origin, s.setup, vars);
-  await page.goto(new URL(expand(s.start, vars), env.origin).toString(), { waitUntil: 'domcontentloaded' });
+  // A start page that no longer exists (an owner reset their data) must not read as 'passed'.
+  await openStart(page, new URL(expand(s.start, vars), env.origin).toString(), (st) => s.oracle.type === 'http_status' && st >= s.oracle.min && st <= s.oracle.max);
   for (const [i, step] of s.steps.entries()) {
     try { await runStep(page, env.origin, step, vars); }
     catch (e) {
@@ -667,7 +675,7 @@ async function replayBatch(
   const page = await open(s.device, s.auth ? 'A' : undefined, s.auth);
   const vars: Record<string, string> = { ...env.identity(), marker };
   if (s.setup) vars.id = await runSetup(page, env.origin, s.setup, vars);
-  await page.goto(new URL(expand(s.start, vars), env.origin).toString(), { waitUntil: 'domcontentloaded' });
+  await openStart(page, new URL(expand(s.start, vars), env.origin).toString());
   const last = Math.min(s.oracleStep, s.steps.length);
   const checks: { step: number; ok: boolean; detail: string }[] = [];
   for (let i = 0; i < last; i++) {
@@ -719,7 +727,7 @@ async function replayClaim(s: ClaimScenario, open: Opener, env: ReplayEnv, scree
   const page = await open(s.device, s.auth ? 'A' : undefined, s.auth);
   const vars: Record<string, string> = { ...env.identity(), marker };
   if (s.setup) vars.id = await runSetup(page, env.origin, s.setup, vars);
-  await page.goto(new URL(expand(s.start, vars), env.origin).toString(), { waitUntil: 'domcontentloaded' });
+  await openStart(page, new URL(expand(s.start, vars), env.origin).toString());
   for (const [i, step] of s.steps.entries()) {
     try { await runStep(page, env.origin, step, vars); }
     catch (e) {

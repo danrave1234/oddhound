@@ -187,7 +187,9 @@ export function fixBriefMarkdown(b: BriefInput): string {
   if (b.scenario?.assertion.kind === 'two_tab') lines.push('- The same two edits made one after the other in one tab are both kept.');
   lines.push('');
   lines.push('## Retest');
-  lines.push(`Press "Retest" on this finding in Oddhound after deploying the fix. Retest replays scenario ${b.scenario?.id ?? 'n/a'} with fresh synthetic accounts; no credentials are needed.`);
+  lines.push((b.scenario?.assertion as { auth?: { kind?: string } } | undefined)?.auth?.kind === 'handoff'
+    ? 'This finding was proven in the session you signed in to. A retest cannot repeat your sign-in, so after deploying the fix start a new run with the sign-in handoff; its verified findings replay the same assertion.'
+    : `Press "Retest after fix" in Oddhound after deploying. It replays scenario ${b.scenario?.id ?? 'n/a'} (and every other verified finding of the run) twice in fresh sessions with fresh synthetic accounts; no credentials are needed.`);
   lines.push('');
   lines.push('## Limits');
   lines.push(f.limitations || 'Only the scenario above was verified. Other inputs, roles and pages were not tested by this finding.');

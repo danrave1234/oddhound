@@ -284,7 +284,7 @@ export function RunWorkspace({ initial, controllable, replay, signedIn }: { init
         </span>
         <span className="row" style={{ gap: 8 }}>
           {controllable && active && <button className="btn btn-danger" onClick={stop} title="Blocks new actions immediately; cannot undo completed actions"><Icon name="stop" /> Stop run</button>}
-          {controllable && !active && run.mode !== 'retest' && verifiedCount > 0 && <button className="btn btn-primary" onClick={retest}><Icon name="retest" /> {run.mode === 'demo_target' ? 'Retest on corrected build' : 'Retest after fix'}</button>}
+          {controllable && !active && run.mode !== 'retest' && !run.handoff_enabled && verifiedCount > 0 && <button className="btn btn-primary" onClick={retest}><Icon name="retest" /> {run.mode === 'demo_target' ? 'Retest on corrected build' : 'Retest after fix'}</button>}
           {run.parent_run_id && <Link className="btn" href={`/runs/${run.parent_run_id}`}><Icon name="back" /> Original run</Link>}
         </span>
       </header>
@@ -409,7 +409,7 @@ export function RunWorkspace({ initial, controllable, replay, signedIn }: { init
 
         <aside className="pane inspector" aria-label="Inspector" ref={inspectorRef}>
           <div className="inspector-body">
-            {selectedFinding ? <FindingInspector finding={selectedFinding} controllable={controllable} onRetest={retest} runActive={active} runMode={run.mode}
+            {selectedFinding ? <FindingInspector finding={selectedFinding} controllable={controllable && !run.handoff_enabled} onRetest={retest} runActive={active} runMode={run.mode}
                 onBack={() => viewsRef.current?.scrollIntoView({ block: 'start' })} />
               : <RunDetails snap={snap} />}
           </div>
