@@ -458,7 +458,7 @@ export function RunWorkspace({ initial, controllable, replay, signedIn, canShare
                       {items.length ? (
                         <div className="table-wrap"><table className="grid selectable"><thead><tr><th>Title</th><th>Status</th><th className="hide-sm">Impact</th><th className="hide-sm">Device</th><th className="hide-sm">Rule</th></tr></thead><tbody>
                           {items.map((f) => (
-                            <tr key={f.id} aria-selected={f.id === selected} tabIndex={0} onClick={() => selectFinding(f.id)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectFinding(f.id); } }}>
+                            <tr key={f.id} className={active ? 'row-arrive' : undefined} aria-selected={f.id === selected} tabIndex={0} onClick={() => selectFinding(f.id)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectFinding(f.id); } }}>
                               <td style={{ fontWeight: 550, minWidth: 160 }}>{f.title}{(counts.get(fold(f)) ?? 1) > 1 && <span className="chip" style={{ marginLeft: 8 }} title="Similar findings collapsed into this row">×{counts.get(fold(f))}</span>}</td><td><StatusBadge value={findingStatus(f as never)} /></td><td className="hide-sm">{f.impact}</td><td className="hide-sm">{f.device}</td><td className="mono hide-sm">{f.rule_id ?? '—'}</td>
                             </tr>))}
                         </tbody></table></div>
