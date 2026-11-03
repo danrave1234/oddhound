@@ -135,3 +135,10 @@ def demo():
 @modal.web_server(8080, startup_timeout=30, label="oddhound-demo-fixed")
 def demo_fixed():
     fixture("fixed")()
+
+
+@app.function(image=web_image, secrets=[web_secret], env=COMMON_ENV, cpu=0.5, memory=1024, timeout=600)
+def migrate():
+    """One-off: applies pending database migrations now, without waiting for the next worker start.
+    Run with: modal run infra/modal/app.py::migrate"""
+    node(["/app/packages/core/db/migrate.ts"], cwd="/app", wait=True)
