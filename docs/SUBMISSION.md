@@ -40,6 +40,10 @@ model credit and reads the site's pages.
   tracker, a Playwright test and a read-only share link.
 - **Proves the fix.** Retest replays the same pinned check twice on the redeployed site. A per-project deploy hook
   runs this after every deploy in CI and fails the job until every open bug is fixed.
+- **Reads like a release check, not a log.** A home page that lists what needs you (open bugs, a failed run, an
+  unverified site); a retest that leads with Fixed or Not ready and a release note to copy; near-duplicate findings
+  folded into one row; plain-English reasons for every early stop; an original icon set and type built for reading
+  URLs and hashes.
 - **Tells you what it could not reach.** Results lead with setup hints (an app on another subdomain, Google sign-in, a
   CAPTCHA) and a checklist of what it saw but did not test.
 
