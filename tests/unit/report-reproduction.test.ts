@@ -68,7 +68,7 @@ describe('trusted report verdict', () => {
 
   it.each(['dismissed', 'inconclusive'] as const)('does not reproduce a linked %s finding', (verification) => {
     expect(computeReportVerdict([result({ verification, category: 'needs_review' })], counts, true)).toEqual({
-      verdict: 'not_reproduced', text: 'Not reproduced within the tested scope', ...counts,
+      verdict: 'not_reproduced', text: 'Not reproduced within the tested scope', ...counts, replayed: 1,
     });
   });
 
@@ -87,7 +87,13 @@ describe('trusted report verdict', () => {
 
   it('uses the before-verification text when verification never ran', () => {
     expect(computeReportVerdict([], counts, false)).toEqual({
-      verdict: 'not_reproduced', text: 'Not reproduced: the run ended before verification', ...counts,
+      verdict: 'not_reproduced', text: 'Not reproduced: the run ended before verification', ...counts, replayed: 0,
     });
+  });
+
+  it('says so when the linked candidate was recorded but never replayed', () => {
+    const v = computeReportVerdict([result({ verification: 'candidate', category: 'needs_review' }), result({ candidateIndex: 1, findingId: 'other', reportMatch: false })], counts, true);
+    expect(v).toMatchObject({ verdict: 'not_reproduced', replayed: 1 });
+    expect((v as { text: string }).text).toContain('not replayed');
   });
 });

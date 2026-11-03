@@ -8,8 +8,15 @@ import { placeOf, type CourseStop } from '@/ui/course';
 
 /** The page a saved assertion tests (form page or checked path). Setup pages such as sign-up or lists do not count. */
 function testedPlace(assertion: unknown): string | null {
-  const a = assertion as { form?: { path?: unknown }; path?: unknown } | null;
-  const p = typeof a?.form?.path === 'string' ? a.form.path : typeof a?.path === 'string' ? a.path : null;
+  const a = assertion as { form?: { path?: unknown }; path?: unknown; start?: unknown; steps?: unknown[]; oracleStep?: unknown } | null;
+  let p: string | null = typeof a?.form?.path === 'string' ? a.form.path : typeof a?.path === 'string' ? a.path : typeof a?.start === 'string' ? a.start : null;
+  // Trace and batch scenarios check wherever their last navigation before the oracle step landed.
+  const steps = Array.isArray(a?.steps) ? a.steps : [];
+  for (const s of typeof a?.oracleStep === 'number' ? steps.slice(0, a.oracleStep) : steps) {
+    const st = (s as { step?: unknown })?.step ?? s;
+    const op = st as { op?: unknown; path?: unknown } | null;
+    if (op?.op === 'goto' && typeof op.path === 'string') p = op.path;
+  }
   return p && p.startsWith('/') ? placeOf(p) : null;
 }
 

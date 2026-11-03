@@ -30,6 +30,15 @@ describe('proof chain', () => {
     expect(brokenControl.verdict.state).toBe('retest_inconclusive');
   });
 
+  it('does not call a finding fixed when the retest never replayed its valid case', () => {
+    const c = buildProofChain({ finding, scenario, controlHash: 'h-control', executions: [...verified(), ex('s1', 'retest', 'passed', 'r2')] });
+    expect(c.verdict.state).toBe('retest_inconclusive');
+    expect(c.verdict.text).toContain('valid case');
+    // A finding that never had a valid case is judged on the replay alone.
+    const noControl = buildProofChain({ finding: { ...finding, control_scenario_id: null }, scenario, controlHash: null, executions: [ex('s1', 'verify', 'failed'), ex('s1', 'verify', 'failed'), ex('s1', 'retest', 'passed', 'r2')] });
+    expect(noControl.verdict.state).toBe('fixed');
+  });
+
   it('reports still failing and regressed retests', () => {
     expect(buildProofChain({ finding, scenario, controlHash: 'h-control', executions: [...verified(), ex('s1', 'retest', 'failed', 'r2')] }).verdict.state).toBe('still_failing');
     expect(buildProofChain({ finding: { ...finding, lifecycle: 'regressed' }, scenario, controlHash: 'h-control', executions: [...verified(), ex('s1', 'retest', 'failed', 'r3')] }).verdict.state).toBe('regressed');

@@ -313,7 +313,7 @@ export function RunWorkspace({ initial, controllable, replay, signedIn }: { init
 
           <div className="pane-body">
             {!active && view !== 'results' && <div className="banner banner-info"><Icon name="report" /><span>This run has ended. Its results and coverage gaps are ready.</span><button className="btn btn-sm" onClick={() => setView('results')}>View results</button></div>}
-            {view === 'results' && !active && <ResultsDashboard status={run.status} reason={run.stop_reason} report={run.report ?? null} reportVerdict={snap.reportVerdict ?? null} findings={snap.findings} rules={run.rules ?? []} states={snap.graph.states} coverage={snap.coverage} discovery={snap.exploration?.summary}
+            {view === 'results' && !active && <ResultsDashboard status={run.status} reason={run.stop_reason} report={run.mode !== 'retest' ? run.report ?? null : null} reportVerdict={snap.reportVerdict ?? null} findings={snap.findings} rules={run.rules ?? []} states={snap.graph.states} coverage={snap.coverage} discovery={snap.exploration?.summary}
               onSelectFinding={id => { setView('findings'); selectFinding(id); }} onOpenCoverage={() => { setWfMode('list'); setView('workflows'); }} />}
             {controllable && run.status === 'waiting_for_input' && run.handoff_enabled && <HandoffPanel runId={runId} onStop={stop} />}
             <LiveDeck snap={snap} active={active} replay={replay} onOpenBrowser={() => setView('browser')} onOpenFindings={() => setView('findings')} />

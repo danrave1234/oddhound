@@ -94,6 +94,9 @@ export function buildProofChain(input: {
     verdict = { state: 'verified', text: `Verified: the rule broke in ${verifyFails} fresh ${verifyFails === 1 ? 'replay' : 'replays'}${controlOk ? ' while a valid case still passed' : ''}. No retest yet.` };
   } else if (!unchanged) {
     verdict = { state: 'retest_inconclusive', text: 'The assertion changed after verification, so this retest does not count.' };
+  } else if (lastRetest.outcome === 'passed' && f.control_scenario_id && !lastRetestControl) {
+    // The retest ended (or died) before it replayed the valid case, so "fixed" is not yet earned.
+    verdict = { state: 'retest_inconclusive', text: 'The retest ended before the valid case was replayed, so the fix is not confirmed yet.' };
   } else if (lastRetest.outcome === 'passed' && (!lastRetestControl || lastRetestControl.outcome === 'passed')) {
     verdict = { state: 'fixed', text: 'Fixed: the same, unchanged assertion now holds' + (lastRetestControl ? ' and the valid case still passes.' : '.') };
   } else if (lastRetest.outcome === 'failed') {

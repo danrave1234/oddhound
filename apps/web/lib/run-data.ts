@@ -6,7 +6,7 @@ export type RunSnapshot = Awaited<ReturnType<typeof loadRunSnapshot>>;
 
 export type ReportVerdict =
   | { verdict: 'reproduced'; findingId: string; title: string }
-  | { verdict: 'not_reproduced'; text: string; actions?: number; pages?: number; candidates?: number };
+  | { verdict: 'not_reproduced'; text: string; actions?: number; pages?: number; candidates?: number; replayed?: number };
 
 /** Controls in observed pages and how many a browser action actually used (see packages/core/agent/coverage.ts). */
 export type Coverage = {

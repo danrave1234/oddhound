@@ -1970,14 +1970,23 @@ async function recordExecution(db: Db, scenarioId: string, runId: string, kind: 
 async function verifyCandidates(v: { db: Db; runId: string; generation: number; run: RunRow; contract: RunContract; candidates: Candidate[]; browser: ProvisionedBrowser; ev: (t: string, p?: Record<string, unknown>) => Promise<number>; results: ReportVerificationResult[]; handoffState?: StorageState; deadline?: number }) {
   const { db, runId, run, contract, candidates, browser, ev } = v;
   const env = replayEnvFor(db, runId, browser, contract, contract.target.origin, ev, v.handoffState);
-  const seen = new Set<string>();
+  const seen = new Map<string, Candidate>();
   // Most serious first, so the important ones are verified even if time runs short.
   const rank = { high: 0, medium: 1, low: 2 } as const;
   const ordered = [...candidates].sort((a, b) => rank[a.impact] - rank[b.impact]);
   for (const c of ordered) {
     const hash = scenarioHash(c.scenario);
-    if (seen.has(hash)) continue;
-    seen.add(hash);
+    const first = seen.get(hash);
+    if (first) {
+      // The same scenario was already replayed; keep its link to the bug report if this duplicate carries one.
+      if (c.reportMatch === true && first.reportMatch !== true) {
+        first.reportMatch = true;
+        const r = v.results.find((x) => x.candidateIndex === candidates.indexOf(first));
+        if (r) r.reportMatch = true;
+      }
+      continue;
+    }
+    seen.set(hash, c);
     await assertLease(db, runId, v.generation);
     const known = contract.rules.find((r) => r.id === c.ruleId) ?? BASELINE_RULES.find((r) => r.id === c.ruleId);
     const fingerprint = `${c.ruleId}|${c.scenario.kind}|${hash.slice(0, 16)}`;
