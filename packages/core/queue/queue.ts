@@ -10,24 +10,36 @@ import { wakeWorker } from './wake.ts';
 // (Modal alongside Fly during the migration).
 export const RUN_QUEUE = process.env.ODDHOUND_RUN_QUEUE || 'oddhound-runs';
 
-const makeQueue = () => new Queue(RUN_QUEUE, { connection: databaseUrl() }, createPostgresBackend);
-let queue: ReturnType<typeof makeQueue> | undefined;
+/**
+ * A verified-site run can take an hour; demo runs and retests take minutes. Each lane runs one job at a
+ * time, so a visitor's demo or an owner's retest never waits behind someone's hour-long site run.
+ * One demo at a time also keeps the demo target's in-memory data to a single run.
+ */
+export type RunLane = 'site' | 'quick';
+export type RunMode = 'verified_site' | 'demo_target' | 'retest';
+export const RUN_LANES: readonly RunLane[] = ['site', 'quick'];
+export const laneFor = (mode: RunMode): RunLane => (mode === 'verified_site' ? 'site' : 'quick');
+const queueName = (lane: RunLane) => (lane === 'site' ? RUN_QUEUE : `${RUN_QUEUE}-quick`);
 
-export function runQueue() {
-  queue ??= makeQueue();
-  return queue;
+const makeQueue = (lane: RunLane) => new Queue(queueName(lane), { connection: databaseUrl() }, createPostgresBackend);
+const queues = new Map<RunLane, ReturnType<typeof makeQueue>>();
+
+export function runQueue(lane: RunLane = 'site') {
+  const q = queues.get(lane) ?? makeQueue(lane);
+  queues.set(lane, q);
+  return q;
 }
 
 /** Enqueue after admission. jobId = runId, so a duplicate enqueue cannot create a second job. */
-export async function enqueueRun(runId: string): Promise<void> {
-  await runQueue().add('run', { runId }, { jobId: runId, attempts: 1, removeOnComplete: 500, removeOnFail: 500 });
+export async function enqueueRun(runId: string, mode: RunMode): Promise<void> {
+  await runQueue(laneFor(mode)).add('run', { runId }, { jobId: runId, attempts: 1, removeOnComplete: 500, removeOnFail: 500 });
   await wakeWorker();
 }
 
-export function startRunWorker(processor: (runId: string) => Promise<unknown>, concurrency = 1) {
-  return new Worker(RUN_QUEUE, async (job) => processor((job.data as { runId: string }).runId), {
+export function startRunWorker(processor: (runId: string) => Promise<unknown>, lane: RunLane = 'site') {
+  return new Worker(queueName(lane), async (job) => processor((job.data as { runId: string }).runId), {
     connection: databaseUrl(),
-    concurrency,
+    concurrency: 1,
     lockDuration: 60_000,
     stalledInterval: 30_000,
     maxStalledCount: 0, // a stalled run is NOT re-executed blindly; the stale-run reaper fences it instead
@@ -35,6 +47,7 @@ export function startRunWorker(processor: (runId: string) => Promise<unknown>, c
 }
 
 export async function closeQueue(): Promise<void> {
-  const q = queue; queue = undefined;
-  await q?.close();
+  const open = [...queues.values()];
+  queues.clear();
+  await Promise.all(open.map((q) => q.close()));
 }

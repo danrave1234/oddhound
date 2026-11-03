@@ -44,7 +44,7 @@ export async function startRetest(parent: { id: string; mode: string; owner_id: 
     spendAccount: 'public', parentRunId: parent.id,
   });
   if (!result.ok) return { ok: false, status: 429, error: `Retest not admitted (${result.reason.replace(/_/g, ' ')}).`, reason: result.reason };
-  await enqueueRun(result.runId);
+  await enqueueRun(result.runId, 'retest');
   return { ok: true, runId: result.runId };
 }
 
@@ -65,6 +65,6 @@ export async function startRunAgain(parentId: string, user: AppUser): Promise<St
   });
   const result = await admitRun(db(), { principal: `user:${user.id}`, ownerId: user.id, projectId: parent.project_id, mode: 'verified_site', contract, spendAccount: 'public' });
   if (!result.ok) return { ok: false, status: 429, error: `Run not admitted: ${result.reason.replace(/_/g, ' ')}.`, reason: result.reason };
-  await enqueueRun(result.runId);
+  await enqueueRun(result.runId, 'verified_site');
   return { ok: true, runId: result.runId };
 }

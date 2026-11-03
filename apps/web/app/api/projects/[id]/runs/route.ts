@@ -73,6 +73,6 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   const devOperator = user.isAdmin && process.env.NODE_ENV !== 'production' && process.env.ODDHOUND_DEV_LOGIN === '1';
   const result = await admitRun(db(), { principal: `user:${user.id}`, ownerId: user.id, projectId: id, mode: 'verified_site', contract, spendAccount: devOperator ? 'development' : 'public' });
   if (!result.ok) return json({ error: `Run not admitted: ${result.reason.replace(/_/g, ' ')}.`, reason: result.reason }, 429);
-  await enqueueRun(result.runId);
+  await enqueueRun(result.runId, 'verified_site');
   return json({ runId: result.runId }, 201);
 }

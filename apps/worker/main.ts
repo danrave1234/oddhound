@@ -8,7 +8,7 @@ import { hostname } from 'node:os';
 import { randomBytes } from 'node:crypto';
 import { getPool } from '../../packages/core/db/pool.ts';
 import { migrate } from '../../packages/core/db/migrate.ts';
-import { startRunWorker } from '../../packages/core/queue/queue.ts';
+import { RUN_LANES, startRunWorker } from '../../packages/core/queue/queue.ts';
 import { executeRun } from '../../packages/core/agent/execute-run.ts';
 import { runtimeFromEnv } from '../../packages/core/browser/select.ts';
 import { reapOrphanContainers } from '../../packages/core/browser/docker-runtime.ts';
@@ -50,22 +50,24 @@ const log = (o: Record<string, unknown>) => console.log(JSON.stringify({ at: new
 // the worker in the middle of someone's run.
 process.on('unhandledRejection', (e) => log({ event: 'worker.unhandled_rejection', message: (e as Error)?.message ?? String(e) }));
 
-const worker = startRunWorker(async (runId) => {
-  log({ event: 'run.start', runId });
+const workers = RUN_LANES.map((lane) => startRunWorker(async (runId) => {
+  log({ event: 'run.start', runId, lane });
   const status = await executeRun({ db, runtime, providers: providers(await runKind(runId)), workerId, lab, hosted, allowOfflineTestDouble: offline }, runId);
-  log({ event: 'run.end', runId, status });
+  log({ event: 'run.end', runId, lane, status });
   return status;
-});
-worker.on('error', (e) => log({ event: 'worker.error', message: e.message }));
+}, lane));
 
 // Scale to zero (Modal): exit once no job has been active for ODDHOUND_WORKER_IDLE_EXIT_MS.
 const idleExitMs = Number(env.ODDHOUND_WORKER_IDLE_EXIT_MS ?? 0);
 let activeJobs = 0;
 let lastActivity = Date.now();
-worker.on('active', () => { activeJobs++; lastActivity = Date.now(); });
 const settle = () => { activeJobs = Math.max(0, activeJobs - 1); lastActivity = Date.now(); };
-worker.on('completed', settle);
-worker.on('failed', settle);
+for (const w of workers) {
+  w.on('error', (e) => log({ event: 'worker.error', message: e.message }));
+  w.on('active', () => { activeJobs++; lastActivity = Date.now(); });
+  w.on('completed', settle);
+  w.on('failed', settle);
+}
 
 async function reap() {
   try {
@@ -91,7 +93,7 @@ const shutdown = async () => {
   clearInterval(timer);
   if (idleTimer) clearInterval(idleTimer);
   await reap(); // one last orphan sweep before the worker scales to zero
-  await worker.close();
+  await Promise.all(workers.map((w) => w.close()));
   await db.end();
   process.exit(0);
 };

@@ -23,6 +23,6 @@ export async function POST() {
   // Every public demo run is billed to the public account. Only an admin grant elsewhere may use 'judging'.
   const result = await admitRun(db(), { principal, ownerId: null, projectId: null, mode: 'demo_target', contract: demoTargetContract(origin), spendAccount: 'public' });
   if (!result.ok) return json({ error: MESSAGES[result.reason] ?? `Not admitted (${result.reason}).`, reason: result.reason }, 429);
-  await enqueueRun(result.runId);
+  await enqueueRun(result.runId, 'demo_target');
   return json({ runId: result.runId }, 201);
 }
