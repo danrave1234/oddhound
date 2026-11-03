@@ -19,7 +19,7 @@ const gatewayName = `oddhound-gateway-eval-${suffix}`;
 const work = resolve('.data', `gateway-evaluation-${suffix}`);
 const trust = resolve(work, 'public-trust');
 const wsPath = `/pw-${randomUUID().replaceAll('-', '')}`;
-const image = process.env.ODDHOUND_EVALUATION_IMAGE ?? 'oddhound-claude-gateway:evaluation';
+const image = process.env.ODDHOUND_EVALUATION_IMAGE ?? 'oddhound-gateway:evaluation';
 const primary = 'https://fixture.test';
 const api = 'https://api.test';
 const resource = 'https://resource.test';
@@ -78,7 +78,7 @@ try {
   created.network = true;
   docker(['network', 'create', '--label', `oddhound.evaluation=${id}`, controlNetwork]);
   created.controlNetwork = true;
-  docker(['run', '-d', '--name', targetName, '--network', controlNetwork, '--label', `oddhound.evaluation=${id}`, '-p', '127.0.0.1::8080', '--mount', `type=bind,source=${work},target=/evaluation-target,readonly`, '--entrypoint', 'node', 'oddhound-claude-fixture:dev', '/evaluation-target/target.mjs']);
+  docker(['run', '-d', '--name', targetName, '--network', controlNetwork, '--label', `oddhound.evaluation=${id}`, '-p', '127.0.0.1::8080', '--mount', `type=bind,source=${work},target=/evaluation-target,readonly`, '--entrypoint', 'node', 'oddhound-fixture:dev', '/evaluation-target/target.mjs']);
   created.target = true;
   docker(['network', 'connect', '--ip', '93.184.216.10', '--alias', 'fixture.test', '--alias', 'api.test', '--alias', 'resource.test', '--alias', 'badcert.test', network, targetName]);
   if (docker(['inspect', targetName, '--format', '{{.State.Running}}']) !== 'true') throw new Error('Synthetic target exited before published-port discovery');

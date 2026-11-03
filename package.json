@@ -1,5 +1,5 @@
 {
-  "name": "oddhound-claude",
+  "name": "oddhound",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@11.9.0",

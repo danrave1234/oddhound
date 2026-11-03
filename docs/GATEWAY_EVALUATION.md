@@ -85,7 +85,7 @@ The evaluation image is not a general product runtime switch. Any result involvi
 that capability was unavailable. Supplied-account screenshots are withheld by the separate credential
 privacy slice; see [SUPPLIED_ACCOUNT_VERIFICATION.md](SUPPLIED_ACCOUNT_VERIFICATION.md).
 
-Build with `docker build -f apps/browser/gateway/Dockerfile -t oddhound-claude-gateway:evaluation .`.
+Build with `docker build -f apps/browser/gateway/Dockerfile -t oddhound-gateway:evaluation .`.
 Run `tests/lab/gateway-evaluation-canary.ts` using the pinned Node 26 controller. The separate authorized
 Modal image build is `python infra/modal/gateway_evaluation_image.py`; only its final printed image ID
 may be selected for the evaluation. These commands do not modify the deployed image setting.

@@ -1,6 +1,6 @@
-# Oddhound (Claude build) — status report
+# Oddhound — status report
 
-**Date:** October 27, 2026 · **Repository:** https://github.com/danrave1234/oddhound-claude · **Spec followed:** `docs/spec/` (copy of the shared planning documents)
+**Date:** October 27, 2026 · **Repository:** https://github.com/danrave1234/oddhound · **Spec followed:** `docs/spec/` (copy of the shared planning documents)
 
 This is an honest record of what was built, what was actually tested, and what is still open. Nothing here is a security certification.
 

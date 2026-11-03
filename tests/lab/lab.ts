@@ -13,22 +13,22 @@ const exists = (kind: 'network' | 'container', name: string) => sh([kind, 'inspe
 
 const cmd = process.argv[2] ?? 'status';
 if (cmd === 'up') {
-  sh(['build', '-q', '-f', 'apps/browser/Dockerfile', '-t', 'oddhound-claude-browser:dev', '.']);
-  sh(['build', '-q', '-f', 'apps/fixture/Dockerfile', '-t', 'oddhound-claude-fixture:dev', '.']);
-  if (!exists('network', 'oddhound-claude-lab')) sh(['network', 'create', '--subnet', '172.30.77.0/24', 'oddhound-claude-lab']);
-  if (!exists('container', 'oddhound-claude-pg')) {
-    sh(['run', '-d', '--name', 'oddhound-claude-pg', '-e', 'POSTGRES_USER=oddhound', '-e', 'POSTGRES_PASSWORD=oddhound_local_dev', '-e', 'POSTGRES_DB=oddhound', '-p', '127.0.0.1:55433:5432', 'postgres:17-bookworm']);
-  } else sh(['start', 'oddhound-claude-pg'], { quiet: true });
+  sh(['build', '-q', '-f', 'apps/browser/Dockerfile', '-t', 'oddhound-browser:dev', '.']);
+  sh(['build', '-q', '-f', 'apps/fixture/Dockerfile', '-t', 'oddhound-fixture:dev', '.']);
+  if (!exists('network', 'oddhound-lab')) sh(['network', 'create', '--subnet', '172.30.77.0/24', 'oddhound-lab']);
+  if (!exists('container', 'oddhound-pg')) {
+    sh(['run', '-d', '--name', 'oddhound-pg', '-e', 'POSTGRES_USER=oddhound', '-e', 'POSTGRES_PASSWORD=oddhound_local_dev', '-e', 'POSTGRES_DB=oddhound', '-p', '127.0.0.1:55433:5432', 'postgres:17-bookworm']);
+  } else sh(['start', 'oddhound-pg'], { quiet: true });
   for (const [name, ip, port, hostPort, fixed] of [['ohc-harbor-vulnerable', '172.30.77.10', '4310', '4320', false], ['ohc-harbor-fixed', '172.30.77.11', '4311', '4321', true]] as const) {
     sh(['rm', '-f', name], { quiet: true, allowFail: true });
-    sh(['run', '-d', '--name', name, '--network', 'oddhound-claude-lab', '--ip', ip, '-p', `127.0.0.1:${hostPort}:${port}`, '-e', `FIXTURE_PORT=${port}`, 'oddhound-claude-fixture:dev', ...(fixed ? ['--fixed'] : [])], { quiet: true });
+    sh(['run', '-d', '--name', name, '--network', 'oddhound-lab', '--ip', ip, '-p', `127.0.0.1:${hostPort}:${port}`, '-e', `FIXTURE_PORT=${port}`, 'oddhound-fixture:dev', ...(fixed ? ['--fixed'] : [])], { quiet: true });
   }
   console.log('lab up: demo target http://172.30.77.10:4310 (fixed: :4311), admin 127.0.0.1:4320/4321, postgres 127.0.0.1:55433');
 } else if (cmd === 'down') {
   sh(['rm', '-f', 'ohc-harbor-vulnerable', 'ohc-harbor-fixed'], { quiet: true, allowFail: true });
   const runs = sh(['ps', '-aq', '--filter', 'label=oddhound.run'], { quiet: true, allowFail: true });
   if (runs) sh(['rm', '-f', ...runs.split('\n')], { quiet: true, allowFail: true });
-  console.log('lab down (Postgres left running; remove with: docker rm -f oddhound-claude-pg)');
+  console.log('lab down (Postgres left running; remove with: docker rm -f oddhound-pg)');
 } else {
-  sh(['ps', '--filter', 'name=ohc-', '--filter', 'name=oddhound-claude', '--format', 'table {{.Names}}\t{{.Status}}\t{{.Ports}}']);
+  sh(['ps', '--filter', 'name=ohc-', '--filter', 'name=oddhound-', '--format', 'table {{.Names}}\t{{.Status}}\t{{.Ports}}']);
 }

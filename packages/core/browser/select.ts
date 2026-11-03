@@ -28,8 +28,8 @@ export function runtimeFromEnv(env: NodeJS.ProcessEnv = process.env): BrowserRun
   }
   if (kind === 'host') return new LocalBrowserRuntime();
   return new DockerBrowserRuntime({
-    image: env.BROWSER_IMAGE ?? 'oddhound-claude-browser:dev',
-    network: env.LAB_NETWORK ?? 'oddhound-claude-lab',
+    image: env.BROWSER_IMAGE ?? 'oddhound-browser:dev',
+    network: env.LAB_NETWORK ?? 'oddhound-lab',
     seccompProfile: resolve(env.SECCOMP_PROFILE ?? 'infra/docker/playwright-seccomp-profile.json'),
     labEndpoints: env.ODDHOUND_LAB_MODE === '1' ? env.ODDHOUND_LAB_ENDPOINTS : undefined,
   });
