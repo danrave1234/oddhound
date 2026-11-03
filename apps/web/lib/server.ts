@@ -10,9 +10,13 @@ export type AppUser = { id: string; name: string; email: string; isAdmin: boolea
 
 export async function currentUser(): Promise<AppUser | null> {
   const session = await auth.api.getSession({ headers: await headers() }).catch(() => null);
-  if (!session?.user) return null;
+  return session?.user ? loadAppUser(session.user.id) : null;
+}
+
+/** A user by id with their permissions; null when unknown or revoked. */
+export async function loadAppUser(id: string): Promise<AppUser | null> {
   const r = await db().query<{ id: string; name: string; email: string; is_admin: boolean; allowlisted: boolean; revoked: boolean }>(
-    'SELECT id, name, email, is_admin, allowlisted, revoked FROM "user" WHERE id = $1', [session.user.id]);
+    'SELECT id, name, email, is_admin, allowlisted, revoked FROM "user" WHERE id = $1', [id]);
   const u = r.rows[0];
   if (!u || u.revoked) return null;
   const adminEmails = (process.env.ODDHOUND_ADMIN_EMAILS ?? '').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);

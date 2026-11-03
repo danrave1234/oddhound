@@ -6,7 +6,7 @@ import { copyText } from '@/ui/copy';
 
 type Method = 'dns_txt' | 'well_known_file' | 'meta_tag';
 
-function CopyField({ value, label }: { value: string; label: string }) {
+export function CopyField({ value, label }: { value: string; label: string }) {
   const [state, setState] = useState<'idle' | 'copied' | 'failed'>('idle');
   return (
     <div className="copy-field">

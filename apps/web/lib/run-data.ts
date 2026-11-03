@@ -4,6 +4,20 @@ import { runSpend, spendAllowance } from '@core/ledger/spend.ts';
 
 export type RunSnapshot = Awaited<ReturnType<typeof loadRunSnapshot>>;
 
+/** Runs that verified what they found: completed, or stopped by the clock or budget after verification. */
+const FINISHED = `('completed', 'stopped')`;
+
+/** This run's findings against the previous finished exploration of the same site (null when there is none). */
+export async function previousRunComparison(pool: ReturnType<typeof db>, run: { id: string; mode: string; project_id: string | null; status: string; queued_at: Date | string }, current: CompareFinding[]): Promise<Comparison | null> {
+  if (run.mode !== 'verified_site' || !run.project_id || !['completed', 'stopped'].includes(run.status)) return null;
+  const prev = (await pool.query<{ id: string; finished_at: Date | null }>(
+    `SELECT id, finished_at FROM runs WHERE project_id = $1 AND mode = 'verified_site' AND status IN ${FINISHED} AND id <> $2 AND queued_at < $3 ORDER BY queued_at DESC LIMIT 1`,
+    [run.project_id, run.id, run.queued_at])).rows[0];
+  if (!prev) return null;
+  const before = (await pool.query<CompareFinding>('SELECT id, title, category, verification, fingerprint, rule_id, rule_source, impact FROM findings WHERE run_id = $1', [prev.id])).rows;
+  return compareFindings(current, before, { previousRunId: prev.id, previousAt: prev.finished_at ? new Date(prev.finished_at).toISOString() : null });
+}
+
 import { compareFindings, type CompareFinding, type Comparison } from '@core/reports/run-compare.ts';
 import { loadGaps } from './gaps-data';
 export type { Comparison };
@@ -52,17 +66,7 @@ export async function loadRunSnapshot(runId: string) {
     pool.query(`SELECT seq, at, type, payload FROM run_events WHERE run_id = $1 AND type IN ('retest.finished', 'retest.blocked') ORDER BY seq`, [runId]),
     pool.query<{ n: number }>(`SELECT count(*)::int AS n FROM findings WHERE run_id = $1 AND verification = 'verified' AND category = 'verified_issue'`, [run.parent_run_id ?? '00000000-0000-0000-0000-000000000000']),
   ]);
-  // The previous completed run of the same site, so results can say what is new since then.
-  let comparison: Comparison | null = null;
-  if (run.mode === 'verified_site' && run.project_id && run.status === 'completed') {
-    const prev = (await pool.query<{ id: string; finished_at: Date | null }>(
-      `SELECT id, finished_at FROM runs WHERE project_id = $1 AND mode = 'verified_site' AND status = 'completed' AND id <> $2 AND queued_at < $3 ORDER BY queued_at DESC LIMIT 1`,
-      [run.project_id, runId, run.queued_at])).rows[0];
-    if (prev) {
-      const before = (await pool.query<CompareFinding>('SELECT id, title, category, verification, fingerprint, rule_id, rule_source, impact FROM findings WHERE run_id = $1', [prev.id])).rows;
-      comparison = compareFindings(findings.rows as CompareFinding[], before, { previousRunId: prev.id, previousAt: prev.finished_at ? new Date(prev.finished_at).toISOString() : null });
-    }
-  }
+  const comparison = await previousRunComparison(pool, run, findings.rows as CompareFinding[]);
   const cov = (coverage.rows[0]?.payload ?? null) as Coverage | null;
   const gaps = run.status !== 'queued' && run.mode !== 'retest' ? await loadGaps(pool, runId, cov?.routes ?? null) : [];
   return {

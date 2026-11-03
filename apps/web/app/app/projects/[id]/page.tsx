@@ -13,6 +13,7 @@ import { isIP } from 'node:net';
 /** Domain-wide record suggestion; none for IP literals or single-label hosts. */
 const domainRecord = (host: string) => (isIP(host.replace(/^\[|\]$/g, '')) || !host.includes('.') ? undefined : suggestedDomainRecord(host));
 import { RunSetup } from './run-setup';
+import { DeployHook } from './deploy-hook';
 import { publicStatus } from '@/lib/status-data';
 
 export const dynamic = 'force-dynamic';
@@ -30,6 +31,7 @@ export default async function Project({ params }: { params: Promise<{ id: string
     WHERE project_id = $1 AND origin <> $2 ORDER BY origin, revision DESC`, [id, project.origin])).rows;
   const runs = (await db().query(`SELECT id, mode, status, stop_reason, created_at, (SELECT count(*) FROM findings f WHERE f.run_id = r.id AND f.verification = 'verified' AND f.category = 'verified_issue')::int AS issues
     FROM runs r WHERE project_id = $1 ORDER BY created_at DESC LIMIT 20`, [id])).rows;
+  const hook = (await db().query<{ last_used_at: Date | null }>('SELECT last_used_at FROM project_hooks WHERE project_id = $1', [id])).rows[0];
   const host = new URL(project.origin).hostname;
   const budget = sv.verified ? await publicStatus() : null;
   return (
@@ -74,6 +76,13 @@ export default async function Project({ params }: { params: Promise<{ id: string
           </div>
           {sv.verified && <RunSetup projectId={id} environment={project.environment} availableRunUsd={budget?.availableRunUsd ?? 0} />}
         </section>
+
+        {sv.verified && (
+          <section className="card card-pad" aria-labelledby="hook-h">
+            <h2 id="hook-h" className="h2" style={{ marginBottom: 8 }}>Test every deploy</h2>
+            <DeployHook projectId={id} hasHook={Boolean(hook)} lastUsed={hook?.last_used_at ? new Date(hook.last_used_at).toISOString() : null} />
+          </section>
+        )}
 
         <section className="card" aria-labelledby="runs-h">
           <div className="card-header"><h2 id="runs-h" className="h3"><Icon name="runs" /> Runs</h2><span className="muted tabular" style={{ marginLeft: 'auto', fontSize: 12.5 }}>{runs.length ? `${runs.length} most recent` : ''}</span></div>
