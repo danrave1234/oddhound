@@ -344,7 +344,7 @@ export function RunWorkspace({ initial, controllable, replay, signedIn }: { init
             {view === 'results' && !active && run.mode !== 'retest' && <ResultsDashboard status={run.status} reason={run.stop_reason} report={run.mode !== 'retest' ? run.report ?? null : null} reportVerdict={snap.reportVerdict ?? null} comparison={snap.comparison ?? null} gaps={gaps} origin={run.origin} runId={runId} findings={snap.findings} rules={run.rules ?? []} states={snap.graph.states} coverage={snap.coverage} discovery={snap.exploration?.summary}
               onSelectFinding={id => { setView('findings'); selectFinding(id); }} onOpenCoverage={() => { setWfMode('list'); setView('workflows'); }} />}
             {controllable && run.status === 'waiting_for_input' && run.handoff_enabled && <HandoffPanel runId={runId} onStop={stop} />}
-            <LiveDeck snap={snap} active={active} replay={replay} onOpenBrowser={() => setView('browser')} onOpenFindings={() => setView('findings')} />
+            {(active || run.mode !== 'retest') && <LiveDeck snap={snap} active={active} replay={replay} onOpenBrowser={() => setView('browser')} onOpenFindings={() => setView('findings')} />}
             {run.mode === 'retest' && (
               <div className="card">
                 <div className="card-header"><h2 className="h3"><Icon name="replay" /> Retest results</h2><span className="muted" style={{ fontSize: 12.5 }}>Saved assertions replayed unchanged</span>
@@ -454,7 +454,7 @@ export function RunWorkspace({ initial, controllable, replay, signedIn }: { init
           </div>
         </aside>
       </div>
-      <div aria-live="polite" className="sr-only">{`Run ${statusLabel(run.status)}. ${verifiedCount} verified issues.`}</div>
+      <div aria-live="polite" className="sr-only">{release ? `Retest ${statusLabel(run.status)}. ${release.fixed} fixed, ${release.stillFailing} still failing, ${release.undecided} undecided.` : `Run ${statusLabel(run.status)}. ${verifiedCount} verified issues.`}</div>
     </div>
   );
 }
@@ -469,7 +469,7 @@ function RunDetails({ snap }: { snap: Snapshot }) {
     <div style={{ display: 'grid', gap: 20 }} className="fade-in">
       <div className="row" style={{ gap: 10 }}><span className="tile"><Icon name="info" /></span><h2 className="h2">Run details</h2></div>
       <dl className="props">
-        <dt>Model</dt><dd>{r.provider ? `${r.provider === 'meta-direct' ? 'Meta (direct)' : r.provider} · ${r.model}` : 'Not selected yet'}</dd>
+        <dt>Model</dt><dd>{r.provider ? `${r.provider === 'meta-direct' ? 'Meta (direct)' : r.provider} · ${r.model}` : r.mode === 'retest' ? 'None: a retest replays saved checks without a model' : 'Not selected yet'}</dd>
         <dt>Browser</dt><dd className="mono">{r.browser_ref ?? '—'} ({r.browser_state ?? '—'})</dd>
         <dt>Chromium sandbox</dt><dd>{r.sandbox_verdict ?? '—'}</dd>
         <dt>Environment</dt><dd>{r.environment} · {r.test_mode === 'active' ? 'active testing' : 'observation only'}</dd>
