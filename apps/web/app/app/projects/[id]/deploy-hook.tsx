@@ -6,7 +6,7 @@ import { copyText } from '@/ui/copy';
 import { CopyField } from './verify-panel';
 
 /** GitHub Actions workflow: after a successful production deploy, retest open bugs (and gate on them) or explore again. */
-function workflow(app: string) {
+function workflow(app: string, strict = false) {
   return `# .github/workflows/oddhound.yml: test every production deploy with Oddhound
 name: Oddhound
 on: deployment_status
@@ -18,7 +18,7 @@ jobs:
     env:
       ODDHOUND: ${app}
       ODDHOUND_DEPLOY_TOKEN: \${{ secrets.ODDHOUND_DEPLOY_TOKEN }}
-      STRICT: 'false' # 'true': also wait for a new exploration and fail on a newly verified bug
+      STRICT: '${strict}' # 'true': also wait for a new exploration and fail on a newly verified bug
     steps:
       - name: Retest open bugs, or explore again
         run: |
@@ -64,29 +64,42 @@ export function DeployHook({ projectId, hasHook, lastUsed }: { projectId: string
     } catch { setError('Network error. Try again.'); } finally { setBusy(false); }
   }
 
+  const [strict, setStrict] = useState(false);
+  const yaml = workflow(app, strict);
   return (
     <div style={{ display: 'grid', gap: 14 }}>
       <p className="muted" style={{ margin: 0, fontSize: 13.5 }}>
-        Your CI calls Oddhound after each production deploy. If verified bugs are open, Oddhound retests them with the same pinned checks and the job passes only when every one is fixed. Otherwise it explores the site again with this project&apos;s last run settings and reports what is new, without blocking the deploy.
+        After each production deploy your CI calls Oddhound. Open verified bugs are retested with the same pinned checks, and the job passes only when every one is fixed. With none open, Oddhound explores again with this project&apos;s last run settings.
       </p>
-      {token ? (
-        <div className="well" style={{ display: 'grid', gap: 12 }}>
-          <p style={{ margin: 0, fontSize: 13.5 }}><strong>1.</strong> Save this token as the GitHub Actions secret <code className="mono">ODDHOUND_DEPLOY_TOKEN</code>. It is shown only now.</p>
-          <CopyField value={token} label="Deploy hook token" />
-          <p style={{ margin: 0, fontSize: 13.5 }}><strong>2.</strong> Add this workflow to the repository. Vercel reports each deploy to GitHub, which starts it.</p>
-          <pre className="brief" tabIndex={0} aria-label="GitHub Actions workflow" style={{ maxHeight: 220 }}>{workflow(app)}</pre>
-          <div className="row" style={{ gap: 8 }}>
-            <button type="button" className="btn btn-sm" onClick={async () => setYamlState(await copyText(workflow(app)))}><Icon name={yamlState === 'copied' ? 'tick' : 'copy'} /> {yamlState === 'copied' ? 'Workflow copied' : 'Copy workflow'}</button>
-            {yamlState === 'failed' && <span className="muted" style={{ fontSize: 12.5 }}>Clipboard unavailable; select the text above.</span>}
+      <ol className="hook-steps">
+        <li className={hasHook || token ? 'done' : undefined}>
+          <strong>Create the deploy hook</strong>
+          {token ? <><span>Copy this token now; it is shown only once.</span><CopyField value={token} label="Deploy hook token" /></>
+            : hasHook ? <span className="row" style={{ gap: 6 }}><Icon name="check" /> Active{lastUsed ? `, last called ${new Date(lastUsed).toLocaleString()}` : ', not called yet'}.</span>
+            : <span>One token per project. Oddhound stores only its hash.</span>}
+          <span className="row" style={{ gap: 8 }}>
+            <button type="button" className={hasHook ? 'btn btn-sm' : 'btn btn-primary btn-sm'} disabled={busy} onClick={() => call('POST')}><Icon name="plus" /> {hasHook ? 'Replace token' : 'Create deploy hook'}</button>
+            {hasHook && <button type="button" className="btn btn-sm" disabled={busy} onClick={() => call('DELETE')}>Remove hook</button>}
+          </span>
+        </li>
+        <li>
+          <strong>Save it as a GitHub secret</strong>
+          <span>Repository → Settings → Secrets and variables → Actions → New secret named <code className="mono">ODDHOUND_DEPLOY_TOKEN</code>.</span>
+        </li>
+        <li>
+          <strong>Add the workflow</strong>
+          <span>Vercel reports each deploy to GitHub, which starts it.</span>
+          <div className="segmented" role="group" aria-label="When the job fails" style={{ justifySelf: 'start' }}>
+            <button type="button" aria-pressed={!strict} onClick={() => setStrict(false)}>Fail only on unfixed bugs</button>
+            <button type="button" aria-pressed={strict} onClick={() => setStrict(true)}>Also fail on new bugs</button>
           </div>
-        </div>
-      ) : hasHook ? (
-        <p className="row" style={{ margin: 0, gap: 8, fontSize: 13.5 }}><Icon name="check" /> Deploy hook active{lastUsed ? `, last called ${new Date(lastUsed).toLocaleString()}` : ', not called yet'}.</p>
-      ) : null}
-      <div className="row" style={{ gap: 8 }}>
-        <button type="button" className={hasHook ? 'btn' : 'btn btn-primary'} disabled={busy} onClick={() => call('POST')}><Icon name="plus" /> {hasHook ? 'Replace token' : 'Create deploy hook'}</button>
-        {hasHook && <button type="button" className="btn" disabled={busy} onClick={() => call('DELETE')}>Remove hook</button>}
-      </div>
+          <pre className="brief" tabIndex={0} aria-label="GitHub Actions workflow" style={{ maxHeight: 220 }}>{yaml}</pre>
+          <span className="row" style={{ gap: 8 }}>
+            <button type="button" className="btn btn-sm" onClick={async () => setYamlState(await copyText(yaml))}><Icon name={yamlState === 'copied' ? 'tick' : 'copy'} /> {yamlState === 'copied' ? 'Workflow copied' : 'Copy workflow'}</button>
+            {yamlState === 'failed' && <span className="muted" style={{ fontSize: 12.5 }}>Clipboard unavailable; select the text above.</span>}
+          </span>
+        </li>
+      </ol>
       {error && <p role="alert" className="status-line" style={{ color: 'var(--bad)', margin: 0 }}><Icon name="fail" /> {error}</p>}
     </div>
   );

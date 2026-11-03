@@ -711,6 +711,13 @@ details.disclosure > .disclosure-body { padding: 4px 14px 16px; display: grid; g
 .scan-form { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .scan-form .input { width: 220px; height: 44px; }
 @media (max-width: 600px) { .scan-form, .scan-form .input { width: 100%; } }
+/* Deploy hook: three numbered steps. */
+.hook-steps { list-style: none; margin: 0; padding: 0; counter-reset: hs; display: grid; gap: 16px; }
+.hook-steps > li { counter-increment: hs; display: grid; gap: 8px; padding-left: 40px; position: relative; font-size: 13.5px; }
+.hook-steps > li::before { content: counter(hs); position: absolute; left: 0; top: -2px; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center;
+  border: 2px solid var(--accent); color: var(--accent-text); font-weight: 700; font-size: 13px; }
+.hook-steps > li.done::before { content: "✓"; background: var(--accent); color: var(--accent-contrast); }
+.hook-steps > li > span { color: var(--text-2); }
 /* Home: what needs the owner, first. */
 .needs { display: grid; gap: 10px; margin-bottom: 22px; }
 .needs ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
