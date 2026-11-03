@@ -40,6 +40,7 @@ import { runHandoff, HandoffEnded } from './handoff.ts';
 import { CLICK_ROLES, controlFor, fieldValue, fillAndSubmit, saveField, submitWithInterruption, newReplaySessions, recordIdsInUrl, replayScenario, scenarioDefect, scenarioHash, type Setup, type AuthRecipe, type Oracle, type ReplayEnv, type Scenario, type TraceStep } from '../verifier/scenario.ts';
 import { CLAIM_RETRY_DELAYS_MS, CLAIM_WINDOW_MS, NUMBER_ASSUMPTIONS, claimVisible, distinctiveValues, judgeCrossActor, judgeDifferential, judgeInterruption, judgeInvariant, occurrences, judgePersistence, judgeTwoTabs, readTables, readView, swapId, type ContextControls, type Family, type Interruption, type Invariant, type InvariantVerdict, type PageView } from '../verifier/behavior.ts';
 import { computeReportVerdict, type ReportRunCounts, type ReportVerificationResult } from './report-verdict.ts';
+import { dominantArea, repeatedGoal } from './focus.ts';
 
 export type ExecuteDeps = {
   db: Db;
@@ -726,7 +727,10 @@ async function agentLoop(a: LoopArgs): Promise<{ stopReason?: string; summary?: 
     const open = [...plan.values()].filter((c) => c.status === 'not_run' || c.status === 'testing');
     const urgent = open.filter((c) => c.risk === 'critical' || c.risk === 'high').length;
     const cov = coverage.summary(0);
-    return `[budget: ${budgetText()}; plan: ${plan.size ? `${plan.size - open.length}/${plan.size} charters done, ${urgent} critical/high open` : 'none yet - call plan_tests after recon'}; findings so far: ${candidates.length}; controls exercised: ${cov.exercised}/${cov.total}${pagesSincePlan.size ? `; new pages since your last plan update: ${[...pagesSincePlan].slice(0, 8).join(', ')} (add charters for any worth testing)` : ''}]`;
+    const stuck = dominantArea(stepLog.map((l) => l.urlBefore));
+    const focus = stuck ? `
+FOCUS: ${stuck.count} of your last ${stuck.window} actions were in ${stuck.area}. Unless a check there is still undecided, finish that charter (done, or blocked with the reason) and move to a different open charter or an unvisited page.` : '';
+    return `[budget: ${budgetText()}; plan: ${plan.size ? `${plan.size - open.length}/${plan.size} charters done, ${urgent} critical/high open` : 'none yet - call plan_tests after recon'}; findings so far: ${candidates.length}; controls exercised: ${cov.exercised}/${cov.total}${pagesSincePlan.size ? `; new pages since your last plan update: ${[...pagesSincePlan].slice(0, 8).join(', ')} (add charters for any worth testing)` : ''}]${focus}`;
   };
 
   // ---- Behavioral families (MVP §9). The model names what to check; Oddhound acts, looks and decides.
@@ -1293,6 +1297,13 @@ async function agentLoop(a: LoopArgs): Promise<{ stopReason?: string; summary?: 
         if (!modelObs) return { text: 'Observe the page first.' };
         const steps = args.steps as BatchStep[];
         const labelOfStep = (st: Record<string, any>) => typeof st.label === 'string' ? st.label : modelObs.elements.find((e) => e.ref === st.ref)?.label;
+        // A check the site has already answered several times is settled; re-running it only spends the run.
+        const repeats = repeatedGoal(String(args.goal ?? ''), [...batches.values()].slice(-30).map((b) => b.goal));
+        if (repeats >= 5) {
+          await ev('exploration.recovery', { reason: 'repeated_batch_goal', goal: args.goal, similar: repeats });
+          return { text: `Not run: ${repeats} of your recent batches already had this same goal ("${args.goal}"), so its outcome is settled. Mark that charter done (or blocked with the reason) and test a different open charter or an unvisited page. ${exploration.hint()}
+${statusLine()}` };
+        }
         const no = batches.size + 1;
         const rec: BatchRecord = { no, goal: args.goal, steps: [] };
         batches.set(no, rec);
@@ -2012,7 +2023,7 @@ async function verifyCandidates(v: { db: Db; runId: string; generation: number; 
     // An owner rule is one behaviour: once a run has verified it broken, a second scenario for the same rule
     // (the agent's batch next to Oddhound's own form check) is the same bug, not another one. Baseline rules
     // (another account's record, a lying save message...) can break on many pages, so they are not merged.
-    const ownerRule = contract.rules.some((r) => r.id === c.ruleId);
+    const ownerRule = contract.rules.some((r) => r.id === c.ruleId && r.source !== 'baseline');
     const already = ownerRule ? (await db.query<{ id: string; title: string }>(
       `SELECT id, title FROM findings WHERE run_id = $1 AND rule_id = $2 AND verification = 'verified' AND category = 'verified_issue' LIMIT 1`, [runId, c.ruleId])).rows[0] : undefined;
     if (already) {
