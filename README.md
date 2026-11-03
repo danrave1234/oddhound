@@ -1,26 +1,31 @@
-# Oddhound — Find what you didn't test.
+# Oddhound: find what you didn't test
 
-> **Work in progress for the Meta Global AI Developer Hackathon (Indie Developer track).**
-> Built during the event, starting October 27, 2026. This repository is one of two parallel implementations of the same specification (`docs/spec/`); only one will be submitted.
+**General AI browser agents can report a bug. Oddhound proves one, and proves the fix.**
+Built for the Meta Global AI Developer Hackathon (Indie Developer track), Oct 27 to Nov 4, 2026.
+
+- **Live app:** https://danravekeh123--oddhound-web.us-east.modal.run (press **Try the demo target**, no sign-in)
+- **Submission write-up:** [docs/SUBMISSION.md](docs/SUBMISSION.md) · **Honest status:** [docs/STATUS.md](docs/STATUS.md)
 
 Oddhound is an active exploratory-testing agent for web apps, driven by **Meta Muse Spark**:
 
-1. **You prove ownership** of a site with a DNS record, a `/.well-known` file or a meta tag.
-2. **You approve a run contract**: goals, rules, permitted test actions.
-3. **Oddhound explores** in a fresh, isolated, secret-free browser. It signs up synthetic accounts, completes workflows, and tries boundary values, blank input, odd orderings, a second account and a phone-sized screen.
-4. **Every suspected rule violation is replayed independently**, twice, in fresh sessions with a valid control, before it is called **verified**.
-5. **You copy a fix brief** into your coding AI, then **retest**. Oddhound replays the exact, unchanged assertion.
+1. **Paste your site and prove you own it** once (a DNS record, a `/.well-known` file or a meta tag). Oddhound keeps
+   checking until it sees the token, then Muse Spark reads the home page and drafts focus areas and business rules.
+2. **Oddhound explores** in a fresh, isolated, secret-free browser: it signs up synthetic accounts, completes
+   workflows, and tries boundary values, blank input, odd orderings, a second account and a 390 px phone.
+3. **Every suspected rule violation is replayed independently**, twice, in fresh sessions (with a valid control where
+   one exists), before it is called **verified**.
+4. **Copy the fix prompt** into your coding AI, ship, then **retest**: Oddhound replays the exact, unchanged assertion.
+   A deploy hook does this after every deploy in CI.
 
-**Full honest status: [docs/STATUS.md](docs/STATUS.md).** Highlights:
+Highlights:
 
-- **Real model:** Muse Spark 1.3 autonomously found and verified the demo target's seeded defects (8 verified functional bugs in the Nov 3 Modal run), with no click script. On the corrected build every finding flipped to *fixed*.
-- **Automated tests:**
-  - 236 unit tests (26 files) plus the integration suite (vitest), 7 UI tests (node --test);
-  - 15/15 end-to-end lab checks;
-  - 13/13 HTTP tenant-isolation checks;
-  - 10/10 in-container network checks;
-  - 9/9 live provider smoke checks.
-- **First real verified site:** `www.danravekeh.com` was verified with a `/.well-known` file and scanned by Muse Spark in observation-only mode. The app is deployed on Modal (web, worker, demo targets; per-run browser Sandboxes); see [docs/SUBMISSION.md](docs/SUBMISSION.md) for the URLs and the status doc for what is still open.
+- **A real production bug, fixed and proven:** on the Alaala memorial site one 1,200-character condolence made pages
+  10,465 px wide on a 390 px phone; verified by two replays, fixed in 16 lines, retest Fixed with no model call.
+- **Demo target:** a signed-out run verified 5 seeded functional bugs and 3 configuration issues for $0.04; a retest
+  on the corrected build marked every finding fixed with the assertion hash unchanged.
+- **Tests:** 257 unit tests and 90 integration tests (vitest), 7 UI tests (node --test).
+- **Deployed on Modal:** web, a worker with separate lanes for site runs and demos/retests, demo targets, and a fresh
+  browser sandbox per run.
 
 ## Layout
 
