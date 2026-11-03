@@ -31,6 +31,7 @@ Muse Spark Open has configured Baseten and Fireworks fallback profiles, but reco
 ## What is new this week
 
 - **Test every deploy.** A per-project deploy hook for CI: after a production deploy, Oddhound retests every open verified bug with the same hash-pinned checks (two fresh replays each) and the job passes only when all are fixed; with none open, it explores again with the last run's settings and reports new verified bugs without blocking the deploy. The project page hands you a ready GitHub Actions workflow triggered by Vercel's deployment status.
+- **Demos and retests never wait.** Hour-long site runs and quick runs (demos, retests) have separate queues, so pressing **Try the demo** starts without waiting even while a site run is in progress (checked on the deployment, Nov 3).
 - **Tester outputs.** Each run marks verified bugs as new or already found last run, lists what it saw but did not test as a manual checklist, and gives each bug a human bug report (steps, expected, actual, evidence) next to the coding-AI fix prompt. A retest ends in a release check: fixed, still failing or undecided.
 - A proof-chain view now brings independent replays, the valid case, retests and the pinned assertion hash together.
 - Findings can produce a copyable Markdown fix receipt.
@@ -65,6 +66,8 @@ Sites must be proven through DNS, a well-known file or an HTML meta tag, and own
 Spend is reserved before inference, with a **$10 run cap, $25 public daily ceiling and $50 lifetime ceiling**, plus a kill switch. Verification and retesting require no model calls. ([System status](STATUS.md))
 
 ## Honest limits
+
+**On a real production site (Alaala, Nov 3).** A run on the owner's live memorial app (run d001eaf5) verified that one condolence made of a single 1,200-character word widened a memorial page to 10,462 px, so every phone visitor had to scroll sideways (rule B5, two fresh replays). A 16-line fix was written from the finding's evidence and deployed, and Oddhound's retest (run 127cfabd) replayed the unchanged assertion twice on the redeployed site: **Fixed**, with no model call. That check had no neighbouring valid case, so its control is recorded as not run.
 
 The current build is deployed on Modal. On Nov 3 a signed-out demo run there (run 69451626, Muse Spark 1.3 contributor tier, Modal sandbox) verified 8 functional bugs. A golden recording for the video is still to be made.
 
