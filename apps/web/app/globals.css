@@ -584,6 +584,21 @@ details.disclosure > .disclosure-body { padding: 4px 14px 16px; display: grid; g
 .pc-v-verified, .pc-v-still_failing, .pc-v-regressed { border-left-color: var(--bad); }
 .pc-v-fixed { border-left-color: var(--ok); }
 .pc-v-retest_inconclusive, .pc-v-not_verified { border-left-color: var(--warn); }
+.pc-stamp { margin-left: auto; padding: 3px 10px; border: 2px solid currentColor; border-radius: 7px; font-family: var(--font-display); font-weight: 800; font-size: 13px;
+  letter-spacing: .01em; transform: rotate(-5deg); color: var(--bad); background: var(--surface); }
+.pc-stamp-fixed { color: var(--ok); }
+/* The proof plays in once: the route draws, each saved check ticks or crosses in order, then the stamp lands. */
+@media (prefers-reduced-motion: no-preference) {
+  .pc-course::before { transform-origin: top; animation: pc-route calc(var(--n, 1) * 220ms) ease-out both; }
+  .pc-leg { animation: pc-in 320ms ease-out both; animation-delay: calc(var(--i, 0) * 220ms); }
+  .pc-mark path { stroke-dasharray: 24; animation: pc-draw 360ms ease-out both; animation-delay: calc(var(--i, 0) * 220ms + 140ms); }
+  .pc-verdict { animation: pc-in 320ms ease-out both; animation-delay: calc(var(--n, 1) * 220ms); }
+  .pc-stamp { animation: pc-stamp 420ms cubic-bezier(.2, 1.4, .4, 1) both; animation-delay: calc(var(--n, 1) * 220ms + 160ms); }
+}
+@keyframes pc-route { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes pc-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes pc-draw { from { stroke-dashoffset: 24; } to { stroke-dashoffset: 0; } }
+@keyframes pc-stamp { 0% { opacity: 0; transform: rotate(-5deg) scale(1.9); } 70% { opacity: 1; transform: rotate(-5deg) scale(.94); } 100% { opacity: 1; transform: rotate(-5deg) scale(1); } }
 .pc-skeleton { height: 120px; border-radius: var(--radius-sm); background: var(--surface-2); }
 
 /* ── Course map (orienteering language: start triangle, numbered controls, straight legs) ── */
@@ -693,6 +708,24 @@ details.disclosure > .disclosure-body { padding: 4px 14px 16px; display: grid; g
 .rs-verdict-yes svg { color: var(--bad); }
 .link-btn { all: unset; color: var(--accent-text); font-weight: 600; cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
 .link-btn:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 3px; }
+.scan-form { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.scan-form .input { width: 220px; height: 44px; }
+@media (max-width: 600px) { .scan-form, .scan-form .input { width: 100%; } }
+/* First-visit tour of the run page. */
+.tour { position: fixed; right: 20px; bottom: 20px; z-index: 60; width: min(360px, calc(100vw - 32px)); display: grid; gap: 8px; padding: 16px 18px;
+  border-radius: 14px; background: var(--surface); border: 1px solid var(--separator); box-shadow: 0 18px 50px rgba(0,0,0,.18); }
+.tour-top { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--text-3); }
+.tour-title { margin: 0; font-family: var(--font-display); font-size: 16px; font-weight: 720; letter-spacing: -0.01em; }
+.tour-text { margin: 0; font-size: 13.5px; color: var(--text-2); line-height: 1.5; }
+.tour-actions { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+.tour-spot { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: 10px; }
+@media (prefers-reduced-motion: no-preference) { .tour-spot { animation: tour-ring 1.6s ease-out 2; } }
+@keyframes tour-ring { 0% { box-shadow: 0 0 0 0 var(--accent-soft); } 100% { box-shadow: 0 0 0 14px transparent; } }
+@media (max-width: 600px) { .tour { left: 16px; right: 16px; bottom: 16px; width: auto; } }
+.draft-card { display: grid; gap: 8px; justify-items: start; padding: 14px 16px; border-radius: 12px; background: var(--accent-softer); border: 1px solid var(--accent-soft); }
+.pulse-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); display: inline-block; animation: pulse-dot 1.6s ease-in-out infinite; }
+@keyframes pulse-dot { 0%, 100% { opacity: .35; transform: scale(.8); } 50% { opacity: 1; transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .pulse-dot { animation: none; opacity: .8; } }
 
 /* Since the last run, and what was not tested (results page) */
 .rs-change { display: inline-flex; align-items: center; height: 20px; padding: 0 7px; border-radius: 999px; font-size: 11.5px; font-weight: 600; line-height: 1; white-space: nowrap; }

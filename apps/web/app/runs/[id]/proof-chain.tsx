@@ -17,6 +17,8 @@ const legName = (l: Leg) => l.stage === 'verify'
 const host = (origin: string | undefined) => { if (!origin) return 'the retested build'; try { return new URL(origin).host; } catch { return origin; } };
 const tone = (l: Leg) => (l.outcome === 'failed' ? (l.role === 'replay' ? 'broke' : 'bad') : l.outcome === 'passed' ? 'held' : 'unclear');
 const time = (iso: string) => new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+/** The stamp that lands once the saved checks have played in; only for a decided result. */
+const STAMP: Record<string, string> = { verified: 'Verified', fixed: 'Fixed', still_failing: 'Still failing', regressed: 'Regressed' };
 
 /** The mark drawn inside a control circle: a cross where the rule broke, a tick where it held. */
 function Mark({ kind }: { kind: string }) {
@@ -62,9 +64,10 @@ export function ProofView({ findingId, chain, heading = 'How this was proven' }:
   // Group retest legs by the run that made them, so each retest shows which build it checked.
   let lastRun = '';
   return (
-    <section className="pc" aria-label="Proof chain">
+    <section className="pc" aria-label="Proof chain" style={{ '--n': chain.legs.length } as React.CSSProperties}>
       <div className="pc-head">
         <h3 className="section-title">{heading}</h3>
+        {STAMP[chain.verdict.state] && <span className={`pc-stamp pc-stamp-${chain.verdict.state}`} aria-hidden>{STAMP[chain.verdict.state]}</span>}
         {chain.assertionHash && (
           <span className={`pc-hash${chain.unchanged ? '' : ' pc-hash-changed'}`} title={chain.assertionHash}>
             <Icon name="lock" /> Check {chain.assertionHash.slice(0, 8)} {chain.unchanged ? 'unchanged' : 'changed'}
@@ -77,7 +80,7 @@ export function ProofView({ findingId, chain, heading = 'How this was proven' }:
           if (l.stage === 'retest') lastRun = l.runId;
           const expanded = open === i;
           return (
-            <li key={`${l.runId}-${i}`} className={`pc-leg pc-${tone(l)}${l.stage === 'retest' ? ' pc-retest' : ''}`}>
+            <li key={`${l.runId}-${i}`} className={`pc-leg pc-${tone(l)}${l.stage === 'retest' ? ' pc-retest' : ''}`} style={{ '--i': i } as React.CSSProperties}>
               {header && <div className="pc-target"><Icon name="retest" /> Retested on {header}</div>}
               <button type="button" className="pc-row" aria-expanded={expanded} onClick={() => setOpen(expanded ? null : i)}>
                 <Mark kind={tone(l)} />

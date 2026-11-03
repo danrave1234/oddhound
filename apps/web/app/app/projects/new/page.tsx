@@ -7,9 +7,11 @@ import { NewProjectForm } from './form';
 
 export const metadata = { title: 'New project' };
 
-export default async function NewProject() {
+export default async function NewProject({ searchParams }: { searchParams: Promise<{ url?: string }> }) {
+  const { url } = await searchParams;
+  const initialOrigin = typeof url === 'string' ? url.slice(0, 300) : '';
   const user = await currentUser();
-  if (!user) redirect('/login?next=/app/projects/new');
+  if (!user) redirect(`/login?next=${encodeURIComponent(`/app/projects/new${initialOrigin ? `?url=${encodeURIComponent(initialOrigin)}` : ''}`)}`);
   if (!mayScanVerifiedSites(user)) redirect('/app');
   return (
     <Shell active="/app" user={user} toolbar={<div className="crumbs"><Link href="/app">Projects</Link><span className="muted">/</span><strong>New project</strong></div>}>
@@ -22,7 +24,7 @@ export default async function NewProject() {
           </div>
         </div>
         <div className="card card-pad">
-          <NewProjectForm />
+          <NewProjectForm initialOrigin={initialOrigin} />
         </div>
       </div>
     </Shell>

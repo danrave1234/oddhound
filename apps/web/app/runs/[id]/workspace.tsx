@@ -15,6 +15,7 @@ import { RunHistory } from './run-history';
 import { ResultsDashboard } from './results-dashboard';
 import { isVerifiedIssue, type ResultFinding } from './results-data';
 import { OwnerPreview, type PreviewState } from './owner-preview';
+import { RunTour } from './run-tour';
 import type { NavigationFrontier } from '@core/agent/frontier.ts';
 type DiscoverySummary = ReturnType<NavigationFrontier['summary']>;
 
@@ -324,7 +325,7 @@ export function RunWorkspace({ initial, controllable, replay, signedIn, canShare
         </span>
         <span className="row" style={{ gap: 8 }}>
           {controllable && active && <button className="btn btn-danger" onClick={stop} title="Blocks new actions immediately; cannot undo completed actions"><Icon name="stop" /> Stop run</button>}
-          {controllable && !active && run.mode !== 'retest' && !run.handoff_enabled && verifiedCount > 0 && <button className="btn btn-primary" onClick={retest}><Icon name="retest" /> {run.mode === 'demo_target' ? 'Retest on corrected build' : 'Retest after fix'}</button>}
+          {controllable && !active && run.mode !== 'retest' && !run.handoff_enabled && verifiedCount > 0 && <button className="btn btn-primary" data-tour="retest" onClick={retest}><Icon name="retest" /> {run.mode === 'demo_target' ? 'Retest on corrected build' : 'Retest after fix'}</button>}
           {controllable && !active && run.mode === 'verified_site' && <button className="btn" onClick={runAgain} title="A new run with exactly these goals, rules, limits, devices and accounts"><Icon name="replay" /> Run again</button>}
           {canShare && !run.handoff_enabled && <button className="btn" onClick={createShare} disabled={share.state === 'busy'} title="A read-only link to this run and its retests; making a new one turns off the old one"><Icon name={share.state === 'copied' ? 'tick' : 'copy'} /> {share.state === 'copied' ? 'Share link copied' : 'Share read-only link'}</button>}
           {run.parent_run_id && <Link className="btn" href={`/runs/${run.parent_run_id}`}><Icon name="back" /> Original run</Link>}
@@ -342,7 +343,7 @@ export function RunWorkspace({ initial, controllable, replay, signedIn, canShare
           <div className="pane-head">
             <div className="segmented" role="group" aria-label="View">
               {VIEWS.map((v) => (
-                <button key={v.key} aria-pressed={view === v.key} onClick={() => { setView(v.key); if (v.key === 'activity') setNewEvents(0); }}>
+                <button key={v.key} aria-pressed={view === v.key} data-tour={v.key === 'findings' ? 'findings' : undefined} onClick={() => { setView(v.key); if (v.key === 'activity') setNewEvents(0); }}>
                   <Icon name={v.icon} /> {v.label}
                   {v.key === 'findings' && <span className="count tabular">{snap.findings.length}</span>}
                   {v.key === 'activity' && newEvents > 0 && view !== 'activity' && <span className="count count-new tabular pop-in">{newEvents}<span className="sr-only"> new</span></span>}
@@ -472,6 +473,7 @@ export function RunWorkspace({ initial, controllable, replay, signedIn, canShare
           </div>
         </aside>
       </div>
+      {run.mode !== 'retest' && <RunTour />}
       <div aria-live="polite" className="sr-only">{release ? `Retest ${statusLabel(run.status)}. ${release.fixed} fixed, ${release.stillFailing} still failing, ${release.undecided} undecided.` : `Run ${statusLabel(run.status)}. ${verifiedCount} verified issues.`}</div>
     </div>
   );
@@ -544,7 +546,7 @@ function FindingInspector({ finding: f, controllable, onRetest, runActive, runMo
       {f.scenario_id && <ProofChain findingId={f.id} />}
       {f.scenario_id && (
         <div className="row" style={{ gap: 8 }}>
-          <button className="btn btn-primary" onClick={copy}>{copyState === 'copied' ? <span className="pop-in" style={{ display: 'inline-flex' }}><Icon name="tick" /></span> : <Icon name="brief" />} {copyState === 'copied' ? 'Copied' : 'Copy fix prompt'}</button>
+          <button className="btn btn-primary" data-tour="fix" onClick={copy}>{copyState === 'copied' ? <span className="pop-in" style={{ display: 'inline-flex' }}><Icon name="tick" /></span> : <Icon name="brief" />} {copyState === 'copied' ? 'Copied' : 'Copy fix prompt'}</button>
           <button className="btn" onClick={copyTicket} title="A bug report for people: steps, expected, actual and evidence, for Jira or GitHub"><Icon name={ticketState === 'copied' ? 'tick' : 'report'} /> {ticketState === 'copied' ? 'Bug report copied' : 'Copy bug report'}</button>
           <a className="btn" href={`/api/findings/${f.id}/export`}><Icon name="download" /> Playwright test</a>
           {controllable && !runActive && runMode !== 'retest' && f.category === 'verified_issue' && <button className="btn" onClick={onRetest}><Icon name="retest" /> Retest</button>}

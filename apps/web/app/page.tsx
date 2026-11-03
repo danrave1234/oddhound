@@ -6,6 +6,7 @@ import { LIMITS, USD } from '@core/contracts/limits.ts';
 import { loadLandingRun } from '@/lib/landing-data';
 import { currentUser } from '@/lib/server';
 import { TryDemoButton } from './try-demo-button';
+import { ScanForm } from './scan-form';
 import { ProofView } from './runs/[id]/proof-chain';
 
 export const dynamic = 'force-dynamic';
@@ -59,7 +60,7 @@ export default async function Landing() {
             </p>
             <div className="hero-ctas">
               <TryDemoButton primary disabled={Boolean(demoReason)} reason={demoReason} />
-              <Link className="btn btn-lg" href={scanHref}><Icon name="sniff" /> Scan your site</Link>
+              <ScanForm />
             </div>
             <p className="hero-note">
               The demo target is Oddhound&apos;s own booking app with labelled defects. No account needed.

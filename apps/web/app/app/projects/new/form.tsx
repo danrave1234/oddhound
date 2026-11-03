@@ -3,7 +3,14 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Icon } from '@/ui/icons';
 
-export function NewProjectForm() {
+/** What people paste ("site.com", "https://site.com/pricing") reduced to the origin Oddhound verifies. */
+export function toOrigin(input: string): string {
+  const raw = input.trim();
+  if (!raw) return raw;
+  try { return new URL(/^[a-z][a-z0-9+.-]*:\/\//i.test(raw) ? raw : `https://${raw}`).origin; } catch { return raw; }
+}
+
+export function NewProjectForm({ initialOrigin = '' }: { initialOrigin?: string }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -12,7 +19,7 @@ export function NewProjectForm() {
     e.preventDefault();
     setBusy(true); setError(null);
     const f = new FormData(e.currentTarget);
-    const origin = String(f.get('origin') ?? '').trim();
+    const origin = toOrigin(String(f.get('origin') ?? ''));
     let name = String(f.get('name') ?? '').trim();
     if (!name) { try { name = new URL(origin).hostname; } catch { name = origin; } }
     const res = await fetch('/api/projects', { method: 'POST', headers: { 'content-type': 'application/json' },
@@ -25,8 +32,8 @@ export function NewProjectForm() {
     <form onSubmit={submit} style={{ display: 'grid', gap: 0 }}>
       <div className="form-section">
         <label className="field"><span>Site origin</span>
-          <input className="input mono" name="origin" required placeholder="https://staging.example.com" inputMode="url" autoComplete="url" autoFocus aria-describedby="origin-hint" />
-          <small id="origin-hint">Scheme, host and port only — no path. Private or internal addresses are always refused.</small></label>
+          <input className="input mono" name="origin" required defaultValue={initialOrigin} placeholder="https://staging.example.com" inputMode="url" autoComplete="url" autoFocus aria-describedby="origin-hint" />
+          <small id="origin-hint">Paste any page of the site; Oddhound keeps just the address (for example https://example.com). Private or internal addresses are always refused.</small></label>
         <label className="field"><span>Project name <span className="muted" style={{ fontWeight: 400 }}>— optional, defaults to the hostname</span></span><input className="input" name="name" minLength={2} maxLength={80} placeholder="My booking app (staging)" /></label>
       </div>
 
