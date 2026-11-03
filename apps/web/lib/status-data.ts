@@ -12,7 +12,8 @@ export async function publicStatus() {
     pool.query(`SELECT count(*)::int AS n FROM runs WHERE status IN ('provisioning','running','waiting_for_input','stopping','finalizing')`),
     pool.query(`SELECT r.id FROM runs r WHERE r.mode = 'demo_target' AND r.status = 'completed'
       AND EXISTS (SELECT 1 FROM findings f WHERE f.run_id = r.id AND f.verification = 'verified' AND f.category = 'verified_issue')
-      ORDER BY (SELECT count(*) FROM findings f WHERE f.run_id = r.id AND f.verification = 'verified') DESC, r.finished_at DESC LIMIT 1`),
+      ORDER BY EXISTS (SELECT 1 FROM runs t WHERE t.parent_run_id = r.id AND t.mode = 'retest' AND t.status = 'completed') DESC,
+        (SELECT count(*) FROM findings f WHERE f.run_id = r.id AND f.verification = 'verified') DESC, r.finished_at DESC LIMIT 1`),
   ]);
   const dailyLeft = Math.max(0, LIMITS.publicDailyMicros - pub.today);
   const lifetimeLeft = Math.max(0, LIMITS.publicLifetimeMicros - pub.lifetime);

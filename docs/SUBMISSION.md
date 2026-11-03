@@ -34,13 +34,13 @@ Muse Spark Open has configured Baseten and Fireworks fallback profiles, but reco
 
 ## How to try it as a judge
 
-**Try the demo target:** `<LIVE_URL>`  
+**Try the demo target:** https://danravekeh123--oddhound-web.us-east.modal.run (press **Try the demo target**, no sign-in)  
 Start a synthetic run and watch the route, actions and evidence develop.
 
-**Inspect a recorded run:** `<LIVE_URL>`  
+**Inspect a recorded run:** https://danravekeh123--oddhound-web.us-east.modal.run/runs/69451626-a084-4c0c-9b48-56ec85dc8288  
 Open a completed run to inspect its proof chain, unchanged assertion, retest evidence and fix receipt.
 
-**Scan your site:** `<LIVE_URL>`  
+**Scan your site:** https://danravekeh123--oddhound-web.us-east.modal.run (sign in with GitHub, then **Scan your site**)  
 Prove ownership, define allowed actions and exclusions, optionally paste a bug report, and start the run.
 
 ## Architecture
@@ -60,13 +60,13 @@ Spend is reserved before inference, with a **$2 run cap, $7 public daily ceiling
 
 ## Honest limits
 
-The newest model split and report-reproduction commits still need a hosted deployment, signed-out check and recorded golden run. ([Remaining work](WIN_PLAN_2026-11-03.md))
+The current build is deployed on Modal. On Nov 3 a signed-out demo run there (run 69451626, Muse Spark 1.3 contributor tier, Modal sandbox) verified 8 functional bugs. A golden recording for the video is still to be made.
 
 The bug-report flow passed end to end once on the local demo target with real Meta inference: the pasted ticket was **reproduced** and linked to a verified finding, and 9 of 10 verified issues flipped to fixed on the corrected build ($0.15, 34 minutes). That run used Chromium on the developer machine rather than the Modal sandbox; a hosted reported run is still pending. ([Report reproduction evidence](REPORT_REPRODUCTION.md))
 
 The latest broad StudyBoost evaluation stopped before completing coverage. It found **zero independently verified functional issues**; its persistence candidates remained inconclusive, and mobile coverage was unproven. ([StudyBoost evaluation](STUDYBOOST_EVALUATION.md))
 
-A live retest against the corrected demo build has not yet been completed on Modal. ([Modal verification](MODAL_VERIFICATION.md))
+Its retest on Modal (run 45350674) marked all 8 **fixed** on the corrected demo build with every assertion hash unchanged. The demo target cannot redeploy itself, so its retests run against a separately hosted corrected build; on an owner site they run against the same origin after the owner ships a fix.
 
 ## Built with
 
