@@ -37,7 +37,7 @@ import { findByLabel, usesRef } from './by-label.ts';
 import { blockedReason, disabledReason } from '../browser/click-check.ts';
 import { readSiteMap } from '../browser/site-map.ts';
 import { runHandoff, HandoffEnded } from './handoff.ts';
-import { CHECK_FIELD, CLICK_ROLES, controlFor, fieldValue, fillAndSubmit, saveField, submitWithInterruption, newReplaySessions, recordIdsInUrl, replayScenario, scenarioDefect, scenarioHash, type Setup, type AuthRecipe, type Oracle, type ReplayEnv, type Scenario, type TraceStep } from '../verifier/scenario.ts';
+import { CHECK_FIELD, CLICK_ROLES, controlFor, signedOutRetry, fieldValue, fillAndSubmit, saveField, submitWithInterruption, newReplaySessions, recordIdsInUrl, replayScenario, scenarioDefect, scenarioHash, type Setup, type AuthRecipe, type Oracle, type ReplayEnv, type Scenario, type TraceStep } from '../verifier/scenario.ts';
 import { CLAIM_RETRY_DELAYS_MS, CLAIM_WINDOW_MS, NUMBER_ASSUMPTIONS, claimVisible, distinctiveValues, judgeCrossActor, judgeDifferential, judgeInterruption, judgeInvariant, occurrences, judgePersistence, judgeTwoTabs, readTables, readView, swapId, type ContextControls, type Family, type Interruption, type Invariant, type InvariantVerdict, type PageView } from '../verifier/behavior.ts';
 import { computeReportVerdict, type ReportRunCounts, type ReportVerificationResult } from './report-verdict.ts';
 import { dominantArea, repeatedGoal } from './focus.ts';
@@ -2062,14 +2062,26 @@ async function verifyCandidates(v: { db: Db; runId: string; generation: number; 
     }
     await ev('finding.verifying', { title: c.title, ruleId: c.ruleId });
     // Reproduce twice; a verified finding needs both replays to show the violation.
-    const attempts = [await replayScenario(c.scenario, env), await replayScenario(c.scenario, env)];
+    let attempts = [await replayScenario(c.scenario, env), await replayScenario(c.scenario, env)];
+    // A check that only opens pages, blocked because the signed-in setup could not complete (on SolarMatch the page
+    // after sign-up crashed too), is replayed signed out. A public page that breaks for everyone is the same rule
+    // broken; when both signed-out replays break it, that signed-out scenario is the one pinned and later retested.
+    const signedOut = signedOutRetry(c.scenario, attempts);
+    if (signedOut) {
+      const again = [await replayScenario(signedOut, env), await replayScenario(signedOut, env)];
+      await ev('finding.signed_out_replay', { title: c.title, ruleId: c.ruleId, outcomes: again.map((x) => x.outcome) });
+      if (again.every((x) => x.outcome === 'failed')) {
+        c.scenario = signedOut;
+        attempts = again.map((x) => ({ ...x, observed: `${x.observed} Reproduced signed out; the signed-in setup could not complete.` }));
+      }
+    }
     const scenarioId = await saveScenario(db, runId, run.project_id, c, c.scenario, false, null, rule.text, rule.source);
     const evidence: string[] = [];
     for (const [i, a] of attempts.entries()) {
       const ids: string[] = [];
       for (const s of a.screenshots) ids.push(await saveArtifact(db, runId, 'screenshot', 'image/jpeg', s.data, `verify ${i + 1}: ${s.label}`).catch(() => ''));
       evidence.push(...ids.filter(Boolean));
-      await recordExecution(db, scenarioId, runId, 'verify', hash, a.outcome, { observed: a.observed, details: a.details }, ids.filter(Boolean));
+      await recordExecution(db, scenarioId, runId, 'verify', scenarioHash(c.scenario), a.outcome, { observed: a.observed, details: a.details }, ids.filter(Boolean));
     }
     let verification: 'verified' | 'dismissed' | 'inconclusive';
     let category: 'verified_issue' | 'needs_review' = 'needs_review';

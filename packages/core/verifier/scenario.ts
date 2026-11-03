@@ -331,6 +331,18 @@ async function authenticate(page: Page, origin: string, auth: FormAuthRecipe, id
 
 const shot = async (page: Page, label: string) => ({ label, data: await page.screenshot({ type: 'jpeg', quality: 60, fullPage: false }) });
 
+/**
+ * When both signed-in replays of a page-opening check were blocked at sign-in, the same check is worth replaying signed
+ * out: it only opens pages, so a public page that breaks for everyone is the same rule broken. Returns the signed-out
+ * scenario to try, or null.
+ */
+export function signedOutRetry(s: Scenario, attempts: { outcome: string; observed: string }[]): Scenario | null {
+  if (s.kind !== 'trace' || !s.auth || !s.steps.every((st) => st.op === 'goto' || st.op === 'back')) return null;
+  if (!attempts.length || !attempts.every((a) => a.outcome === 'blocked' && /^authentication did not reach/.test(a.observed))) return null;
+  const { auth: _signedIn, ...signedOut } = s;
+  return signedOut;
+}
+
 export async function replayScenario(s: Scenario, env: ReplayEnv): Promise<ReplayResult> {
   const secrets = new Set<string>();
   const gatewayBlocks: { reason: string; route: string; resourceType: string }[] = [];
