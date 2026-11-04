@@ -59,8 +59,10 @@ fallbacks (Baseten, Fireworks) are configured but were not exercised.
 
 - **Alaala (memorial pages):** 1 verified bug (phone overflow), fixed by a 16-line commit, proven by retest.
 - **SolarMatch (solar directory):** its home, browse and services pages show an error screen to every visitor.
-  Oddhound flagged it; Vercel's logs trace it to two database migrations missing in production. A rerun to verify it
-  formally is in progress.
+  Oddhound flagged it; Vercel's logs trace it to two database migrations missing in production. The pages answer
+  HTTP 200 and then fail while streaming, so the first run's 5xx replays could not see the failure and left it
+  for review. Oddhound now records Next.js's own report of that server render failure as a server error, and the
+  next run flagged it on its own on the profile, company, service and dashboard pages.
 - **PayTsek, Agos:** verified configuration issues (no Content-Security-Policy, pages can be framed).
 - **EstabWeb, Billis:** no verified bugs. EstabWeb's app lives on another subdomain behind Google sign-in, which
   Oddhound now tells the owner up front. Billis exposed an agent loop that Oddhound now prevents.
